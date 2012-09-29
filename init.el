@@ -524,7 +524,6 @@ KEY が non-nil の場合は KEY に、nil の場合は q に `burry-buffer' が
 
 ;; バッファ名のユニーク化
 (when (require 'uniquify nil t)
-  (setq uniquify-buffer-name-style 'forward)
   (setq uniquify-buffer-name-style 'post-forward-angle-brackets)
   (setq uniquify-ignore-buffers-re "*[^*]+*"))
 

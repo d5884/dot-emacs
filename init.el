@@ -875,17 +875,33 @@ KEY が non-nil の場合は KEY に、nil の場合は q に `burry-buffer' が
        (setq calendar-holidays
 	     (append japanese-holidays holiday-local-holidays holiday-other-holidays))
        
-       (setq calendar-weekend-marker (make-face 'calendar-weekend))
+       (setq calendar-weekend-marker (defface calendar-weekend nil
+				       "Face for indicating week end in the calendar."))
        
        (add-hook 'today-visible-calendar-hook 'calendar-mark-weekend)
        (add-hook 'today-invisible-calendar-hook 'calendar-mark-weekend))
      ))
 
+;; emacs-w3m / cvs -d :pserver:anonymous@cvs.namazu.org:/storage/cvsroot co emacs-w3m
+(when (and (executable-find "w3m")
+	   (require 'w3m-load nil t))
+  (eval-after-load "w3m"
+    '(progn
+       (setq w3m-home-page "http://www.google.com")
+       (setq w3m-default-display-inline-images t)
+       (setq w3m-use-title-buffer-name t)
+       (setq w3m-use-cookies t)
+
+       (ini:awhen (ini:library-within "w3m" "icons" t)
+	 (setq w3m-icon-directory it))
+       ))
+  )
+
 ;; markdown-mode / git clone git://jblevins.org/git/markdown-mode.git
 (when (locate-library "markdown-mode")
   (autoload 'markdown-mode "markdown-mode" nil t)
-  (add-to-list 'auto-mode-alist '("\\.\\(md\\(wn\\|t\\)?\\|markdown\\|text\\)\\'"
-				  . markdown-mode)))
+  (add-to-list 'auto-mode-alist '("\\.\\(md\\(wn\\|t\\)?\\|markdown\\|text\\)\\'" .
+				  markdown-mode)))
 
 ;; sdic / http://www.namazu.org/~tsuchiya/sdic/
 (when (locate-library "sdic")
@@ -973,13 +989,14 @@ KEY が non-nil の場合は KEY に、nil の場合は q に `burry-buffer' が
 ;; session / http://emacs-session.sourceforge.net/
 (when (require 'session nil t)
   (add-hook 'after-init-hook 'session-initialize)
+  (setq session-initialize '(de-saveplace session places))
   (setq session-save-file (locate-user-emacs-file "session"))
   (setq session-globals-include '((kill-ring 50)
 				  (session-file-alist 500 t)
 				  (file-name-history 10000)))
   (setq session-globals-max-string 100000000)
-  (setq history-length t)
   (setq session-undo-check -1)
+  (setq history-length t)
   (defadvice session-initialize-do (around ini:session-load-silently activate)
     "セッションロード時のメッセージを抑制する."
     (let ((org-load (symbol-function 'load)))

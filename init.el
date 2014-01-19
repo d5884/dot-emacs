@@ -285,8 +285,7 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 	(setq shell-file-name "bash")
 	(setq shell-command-switch "-c")
 	(setq system-uses-terminfo nil)
-	;; (setq locale-coding-system 'utf-8) ; ansi-term, term (conflict current-time-zone)
-	
+
 	(setenv "SHELL" shell-file-name)
 
 	;; DOSコマンド混在のためプロセスでの出力のコードを未定に
@@ -315,7 +314,10 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 	  (process-send-string nil "\C-d"))
 
 	(with-eval-after-load "term"
-	  (require 'shell))
+	  (require 'shell)
+	  (defadvice term-emulate-terminal (around ini:terminal-detect-coding activate)
+	    (let ((locale-coding-system 'undecided))
+	      ad-do-it)))	
 	
 	(with-eval-after-load "tramp"
 	  (setq tramp-encoding-shell "bash"))

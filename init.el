@@ -362,28 +362,57 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
       (ini:when-when-compile (executable-find "fakecygpty")
 	(defvar fakery-enabled t
 	  "non-nil の場合、fakecygpty によるラップを有効にする.")
-      	(defvar fakery-programs '("sh" "bash" "zsh" "ssh" "scp" "rsync" "sftp" "irb" "ruby")
-      	  "fakecygpty を経由させるプログラムのリスト.")
-      	(defvar fakery-exclude-process-regexps '("^grep$")
-      	  "fakecygpty を経由させたくないプロセス名のリスト.")
-      	(defvar fakery-exclude-buffer-regexps '(" \\*url" " \\*nn" "\\*trace of SMTP")
-      	  "fakecygpty を経由させたくないプロセスバッファ名のリスト.")
-
-      	(defadvice start-process (before ini:start-process-to-fake last activate)
-      	  "fakecygpty を経由させる."
-      	  (if (and
+	
+      	(defadvice start-process (around ini:start-process-to-fake last activate)
+      	  "`process-connection-type' が non-nil の場合、fakecygpty を経由させる."
+	  (if (and
 	       fakery-enabled
-      	       (ad-get-arg 2)
-      	       (member (file-name-sans-extension (file-name-nondirectory (ad-get-arg 2)))
-      		       fakery-programs)
-      	       (not (delq nil (mapcar (lambda (x) (string-match x (ad-get-arg 0)))
-      				      fakery-exclude-process-regexps)))
-      	       (not (delq nil (mapcar (lambda (x) (string-match x (buffer-name (ad-get-arg 1))))
-      				      fakery-exclude-buffer-regexps))))
-      	      (progn
-      		(ad-set-args 3 (cons (ad-get-arg 2) (ad-get-args 3)))
-      		(ad-set-arg 2 "fakecygpty")))))
-      )))
+	       process-connection-type	; if non-nil, required pty.
+	       (ad-get-arg 2))
+	      (progn
+		(ad-set-args 3 (cons (ad-get-arg 2) (ad-get-args 3)))
+		(ad-set-arg 2 "fakecygpty")
+		ad-do-it
+		(when ad-return-value
+		  (process-put ad-return-value :fakery-pty-p t)))
+	    ad-do-it))
+
+	(defadvice process-command (after ini:process-command-to-fake activate)
+	  "fakecygpty 経由の場合は実際に実行しているコマンド名を返す."
+	  (when (process-get (ad-get-arg 0) :fakery-pty-p)
+	    (setq ad-return-value (cdr ad-return-value))))
+
+	(defadvice process-tty-name (around ini:process-tty-name-to-fake activate)
+	  "fakecygpty 経由の場合は tty 名を返す."
+	  (if (process-get (ad-get-arg 0) :fakery-pty-p)
+	      (setq ad-return-value
+		    (or (process-get (ad-get-arg 0) :fakery-pty-cache)
+			(progn
+			  (process-put
+			   (ad-get-arg 0) :fakery-pty-cache
+			   (with-temp-buffer
+			     (call-process
+			      "sh" nil (current-buffer) nil
+			      "-c"
+			      (format 
+			       (concat
+				"X=`ls /proc/*/ppid | xargs grep -l \"^%s$\" 2> /dev/null`;"
+				"X=`dirname $X`;"
+				"cat `echo -n \"$X/ctty\"`")
+			       (process-id (ad-get-arg 0))))
+			     (replace-regexp-in-string "\r?\n" "" (buffer-string))))
+			  (process-get (ad-get-arg 0) :fakery-pty-cache))))
+	    ad-do-it))
+	
+	(defadvice process-send-eof (around ini:send-process-eof-to-fake activate)
+	  "fakecygpty 経由の場合は ^D を送信する."
+	  (let ((target (if (ad-get-arg 0)
+			    (get-process (ad-get-arg 0))
+			  (get-buffer-process (current-buffer)))))
+	    (if (process-get target :fakery-pty-p)
+		(send-string target "\004")
+	      ad-do-it)))
+	))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; キーバインド変更
@@ -1430,7 +1459,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
       (setq migemo-options '("-q" "--emacs"))
       (setq migemo-user-dictionary nil)
       (setq migemo-regex-dictionary nil)
-      (setq migemo-coding-system 'utf-8-unix)
+      (setq migemo-coding-system 'utf-8-dos)
       (setq migemo-dictionary (eval-when-compile
 				(locate-file "utf-8/migemo-dict"
 					     `(,(ini:emacs-d "etc/migemo")

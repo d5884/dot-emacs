@@ -1546,6 +1546,10 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
   (setq yas-expand-only-for-last-commands '(self-insert-command ac-expand))
   (yas-global-mode t)
 
+  (with-eval-after-load "term"
+    (add-hook 'term-mode-hook
+	      (lambda () (yas-minor-mode -1))))
+  
   ;; auto insert
   (add-hook 'find-file-hook 'auto-insert)
   (with-eval-after-load "autoinsert"

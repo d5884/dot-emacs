@@ -1472,7 +1472,9 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
     (setq migemo-pattern-alist-length 1024)
     (define-key isearch-mode-map (kbd "M-k") 'migemo-isearch-toggle-migemo) ; compatible with kogiku
 
-    (migemo-init)
+    ;; pty を消費しない
+    (let ((process-connection-type nil))
+      (migemo-init))
 
     ;; query-replace 系での lazy-highlight 対応
     (dolist (fn '(query-replace query-replace-regexp))

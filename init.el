@@ -302,17 +302,6 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 				       (coding-system-change-text-conversion
 					(cdr default-process-coding-system) 'utf-8))))
 
-	;; Cygwin 環境だと C-c/C-z/C-d がまともに動かないので直接送信に置き換え
-	(defadvice comint-interrupt-subjob (around ini:comint-send-raw-intr activate)
-	  "直接 C-c を送信."
-	  (process-send-string nil "\C-c"))
-	(defadvice comint-stop-subjob (around ini:comint-send-raw-stop activate)
-	  "直接 C-z を送信."
-	  (process-send-string nil "\C-z"))
-	(defadvice comint-send-eof (around ini:comint-send-raw-eof activate)
-	  "直接 C-d を送信."
-	  (process-send-string nil "\C-d"))
-
 	(with-eval-after-load "term"
 	  (require 'shell)
 	  (defadvice cd (around ini:cd-accept-multibyte activate)
@@ -358,8 +347,13 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
       
       ;; fakecygpty
       ;; gcc -o fakecygpty.exe fakecygpty.c
-      ;; http://www.meadowy.org/meadow/browser/trunk/nt/fakecygpty.c
+      ;; https://github.com/d5884/fakecygpty
       (ini:when-when-compile (executable-find "fakecygpty")
+	(defvar fakery-command (executable-find "fakecygpty")
+	  "fakecygpty の実行ファイル.")
+	(defvar fakery-sigqueue-command (executable-find "sigqueue")
+	  "sigqueue の実行ファイル.")
+	
 	(defvar fakery-enabled t
 	  "non-nil の場合、fakecygpty によるラップを有効にする.")
 	
@@ -382,27 +376,22 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 	  (when (process-get (ad-get-arg 0) :fakery-pty-p)
 	    (setq ad-return-value (cdr ad-return-value))))
 
-	(defadvice process-tty-name (around ini:process-tty-name-to-fake activate)
+	(defadvice process-tty-name (after ini:process-tty-name-to-fake activate)
 	  "fakecygpty 経由の場合は tty 名を返す."
-	  (if (process-get (ad-get-arg 0) :fakery-pty-p)
-	      (setq ad-return-value
-		    (or (process-get (ad-get-arg 0) :fakery-pty-cache)
-			(progn
-			  (process-put
-			   (ad-get-arg 0) :fakery-pty-cache
-			   (with-temp-buffer
-			     (call-process
-			      "sh" nil (current-buffer) nil
-			      "-c"
-			      (format 
-			       (concat
-				"X=`ls /proc/*/ppid | xargs grep -l \"^%s$\" 2> /dev/null`;"
-				"X=`dirname $X`;"
-				"cat `echo -n \"$X/ctty\"`")
-			       (process-id (ad-get-arg 0))))
-			     (replace-regexp-in-string "\r?\n" "" (buffer-string))))
-			  (process-get (ad-get-arg 0) :fakery-pty-cache))))
-	    ad-do-it))
+	  (when (process-get (ad-get-arg 0) :fakery-pty-p)
+	    (setq ad-return-value
+		    (with-temp-buffer
+		      (if (\= 0 (call-process
+				 "sh" nil (current-buffer) nil
+				 "-c"
+				 (format 
+				  (concat
+				   "X=`ls /proc/*/ppid | xargs grep -l \"^%s$\" 2> /dev/null` ; "
+				   "X=`dirname $X 2>/dev/null` && "
+				   "cat `echo -n \"$X/ctty\"`")
+				  (process-id (ad-get-arg 0)))))
+			  (replace-regexp-in-string "\r?\n" "" (buffer-string))
+			"?")))))
 	
 	(defadvice process-send-eof (around ini:send-process-eof-to-fake activate)
 	  "fakecygpty 経由の場合は ^D を送信する."
@@ -410,8 +399,59 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 			    (get-process (ad-get-arg 0))
 			  (get-buffer-process (current-buffer)))))
 	    (if (process-get target :fakery-pty-p)
-		(send-string target "\004")
+		(send-string target "\C-d")
 	      ad-do-it)))
+	
+	(defadvice interrupt-process (around ini:interrupt-process-to-fake activate)
+	  "fakecygpty 経由の場合は ^C を送信する."
+	  (let ((target (if (ad-get-arg 0)
+			    (get-process (ad-get-arg 0))
+			  (get-buffer-process (current-buffer)))))
+	    (if (process-get target :fakery-pty-p)
+		(send-string target "\C-c")
+	      ad-do-it)))
+	
+	(defadvice quit-process (around ini:quit-process-to-fake activate)
+	  "fakecygpty 経由の場合は ^\\ を送信する."
+	  (let ((target (if (ad-get-arg 0)
+			    (get-process (ad-get-arg 0))
+			  (get-buffer-process (current-buffer)))))
+	    (if (process-get target :fakery-pty-p)
+		(send-string target "\C-\\")
+	      ad-do-it)))
+	
+	(defadvice stop-process (around ini:stop-process-to-fake activate)
+	  "fakecygpty 経由の場合は ^Z を送信する."
+	  (let ((target (if (ad-get-arg 0)
+			    (get-process (ad-get-arg 0))
+			  (get-buffer-process (current-buffer)))))
+	    (if (process-get target :fakery-pty-p)
+		(send-string target "\C-z")
+	      ad-do-it)))
+
+	(defadvice signal-process (around ini:signal-process-to-fake activate)
+	  "cygwin のプロセスに対して任意のシグナルを送れるようにする.
+対話的に呼び出された場合は無効."
+	  (let* ((proc (ad-get-arg 0))
+		 (pid (cond
+		       ((integerp proc)
+			proc)
+		       ((stringp proc)
+			(ignore-errors (process-id (get-process proc))))
+		       ((processp proc)
+			(process-id proc))
+		       ((null proc)
+			(ignore-errors (process-id (get-buffer-process
+						    (current-buffer)))))
+		       (t nil))))
+	    (if (or (null pid)
+		    (/= 0 (call-process fakery-sigqueue-command nil nil nil
+					(prin1-to-string pid t)
+					(prin1-to-string (ad-get-arg 1) t)
+					"0")))
+		ad-do-it
+	      (setq ad-return-value 0))))
+
 	))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

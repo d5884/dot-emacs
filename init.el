@@ -488,9 +488,12 @@ Windows のプロセスに対してはオリジナルの `signal-process' を呼
 (global-set-key (kbd "C-x 7") 'toggle-truncate-lines)
 (global-set-key (kbd "C-x C-z") 'compile)
 (global-unset-key (kbd "C-z"))
-(global-set-key (kbd "C-z z") 'shell)
 (global-set-key (kbd "<pause>") 'toggle-debug-on-error)
 (global-set-key [remap list-buffers] 'bs-show)
+(global-set-key (kbd "C-z z") (defun ini:ansi-term ()
+				(interactive)
+				"`ansi-term' を実行する."
+				(ansi-term shell-file-name)))
 
 (when (display-mouse-p)
   ;; フレーム外/モードラインでのホイール回しでエラーを出さない
@@ -683,6 +686,28 @@ Windows のプロセスに対してはオリジナルの `signal-process' を呼
 (with-eval-after-load "imenu"
   (setq imenu-auto-rescan t))
 
+;; shell and term utility
+(defun ini:add-process-sentinel (process sentinel)
+  "PROCESS に センチネル SENTINEL を追加する.
+SENTINEL は元々設定されていたセンチネルが実行されてから呼び出される."
+  (let ((org-sentinel (and (processp process)
+			   (process-sentinel process))))
+    (set-process-sentinel process
+			  (if org-sentinel
+			      `(lambda (proc msg)
+				 (funcall (function ,org-sentinel) proc msg)
+				 (funcall (function ,sentinel) proc msg))
+			    sentinel))
+    ))
+
+(defun ini:kill-process-buffer-and-close-window (process)
+  "PROCESS のバッファを削除し、ウィンドウが開いていたら閉じる."
+  (let ((buf (process-buffer process)))
+    (dolist (win (get-buffer-window-list buf))
+      (unless (one-window-p)
+	(delete-window win)))
+    (kill-buffer buf)))
+
 ;; shell
 (with-eval-after-load "shell"
   (setq comint-prompt-read-only t)
@@ -693,13 +718,9 @@ Windows のプロセスに対してはオリジナルの `signal-process' を呼
 		;; 終了時に確認しない
 		(set-process-query-on-exit-flag it nil)
 		;; シェルを終了させたらバッファもウィンドウも閉じる
-		(set-process-sentinel it
+		(ini:add-process-sentinel it
 				      (lambda (process event)
-					(let ((buf (process-buffer process)))
-					  (dolist (win (get-buffer-window-list buf))
-					    (unless (one-window-p)
-					      (delete-window win)))
-					  (kill-buffer buf))))
+					(ini:kill-process-buffer-and-close-window process)))
 		)))
   
   (define-key shell-mode-map (kbd "M-p") 'comint-previous-matching-input-from-input)
@@ -712,8 +733,16 @@ Windows のプロセスに対してはオリジナルの `signal-process' を呼
 	      (ini:awhen (get-buffer-process (current-buffer))
 		;; 終了時に確認しない
 		(set-process-query-on-exit-flag it nil)
-		))
-	    )
+		;; 端末を終了させたらバッファもウィンドウも閉じる
+		(ini:add-process-sentinel it
+				      (lambda (process event)
+					(ini:kill-process-buffer-and-close-window process)))
+		)))
+  (set-keymap-parent term-raw-escape-map nil)
+  (define-key term-raw-map (kbd "M-x") (lookup-key global-map (kbd "M-x")))
+  (define-key term-raw-map (kbd "M-:") (lookup-key global-map (kbd "M-:")))
+  (define-key term-raw-map (kbd "C-c C-z") 'term-send-raw)
+  (define-key term-raw-map (kbd "C-z") nil)
   )
 
 ;; ansi-color
@@ -1335,6 +1364,10 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
   (autoload 'shell-pop "shell-pop" nil t)
   (global-set-key (kbd "C-z C-z") 'shell-pop)
   (with-eval-after-load "shell-pop"
+    (setq shell-pop-internal-mode "ansi-term")
+    (setq shell-pop-internal-mode-buffer "*ansi-term*")
+    (setq shell-pop-internal-mode-func (lambda () (ansi-term shell-file-name)))
+
     (defadvice shell-pop--cd-to-cwd-term (around ini:pure-cd activate)
       "単純な cd 送信に置き換え."
       (term-send-raw-string (concat "cd " (ad-get-arg 0) " && echo \n"))
@@ -1384,7 +1417,8 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
   (dolist (fn '(set-mark exchange-point-and-mark scroll-up scroll-down recenter))
     (eval `(defadvice ,fn (after ,(intern (format "ini:show-yascroll-on-%s" fn)) activate)
 	     "スクロールバーを表示する."
-	     (yascroll:show-scroll-bar))))
+	     (when (not (memq major-mode '(term-mode shell-mode)))
+	       (yascroll:show-scroll-bar)))))
   (with-eval-after-load "isearch"
     (add-hook 'isearch-update-post-hook 'yascroll:show-scroll-bar))
   )

@@ -371,14 +371,19 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 		  (process-put ad-return-value :fakery-pty-p t)))
 	    ad-do-it))
 
+	(defun fakery-process-p (process)
+	  "PROCESS が fakecygpty 経由で起動している場合は non-nil を返す."
+	  (and (processp process)
+	       (process-get process :fakery-pty-p)))
+
 	(defadvice process-command (after ini:process-command-to-fake activate)
 	  "fakecygpty 経由の場合は実際に実行しているコマンド名を返す."
-	  (when (process-get (ad-get-arg 0) :fakery-pty-p)
+	  (when (fakery-process-p (ad-get-arg 0))
 	    (setq ad-return-value (cdr ad-return-value))))
 
 	(defadvice process-tty-name (after ini:process-tty-name-to-fake activate)
-	  "fakecygpty 経由の場合は tty 名を返す."
-	  (when (process-get (ad-get-arg 0) :fakery-pty-p)
+	  "fakecygpty 経由の場合は cygwin 上での tty 名を返す."
+	  (when (fakery-process-p (ad-get-arg 0))
 	    (setq ad-return-value
 		    (with-temp-buffer
 		      (if (\= 0 (call-process
@@ -386,9 +391,8 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 				 "-c"
 				 (format 
 				  (concat
-				   "X=`ls /proc/*/ppid | xargs grep -l \"^%s$\" 2> /dev/null` ; "
-				   "X=`dirname $X 2>/dev/null` && "
-				   "cat `echo -n \"$X/ctty\"`")
+				   "X=`ls /proc/*/ppid | xargs grep -l \"^%s$\" 2>/dev/null` ; "
+				   "X=`dirname $X 2>/dev/null` && cat `echo -n \"$X/ctty\"`")
 				  (process-id (ad-get-arg 0)))))
 			  (replace-regexp-in-string "\r?\n" "" (buffer-string))
 			"?")))))
@@ -398,7 +402,7 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 	  (let ((target (if (ad-get-arg 0)
 			    (get-process (ad-get-arg 0))
 			  (get-buffer-process (current-buffer)))))
-	    (if (process-get target :fakery-pty-p)
+	    (if (fakery-process-p target)
 		(send-string target "\C-d")
 	      ad-do-it)))
 	
@@ -407,7 +411,7 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 	  (let ((target (if (ad-get-arg 0)
 			    (get-process (ad-get-arg 0))
 			  (get-buffer-process (current-buffer)))))
-	    (if (process-get target :fakery-pty-p)
+	    (if (fakery-process-p target)
 		(send-string target "\C-c")
 	      ad-do-it)))
 	
@@ -416,7 +420,7 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 	  (let ((target (if (ad-get-arg 0)
 			    (get-process (ad-get-arg 0))
 			  (get-buffer-process (current-buffer)))))
-	    (if (process-get target :fakery-pty-p)
+	    (if (fakery-process-p target)
 		(send-string target "\C-\\")
 	      ad-do-it)))
 	
@@ -425,12 +429,13 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 	  (let ((target (if (ad-get-arg 0)
 			    (get-process (ad-get-arg 0))
 			  (get-buffer-process (current-buffer)))))
-	    (if (process-get target :fakery-pty-p)
+	    (if (fakery-process-p target)
 		(send-string target "\C-z")
 	      ad-do-it)))
 
 	(defadvice signal-process (around ini:signal-process-to-fake activate)
 	  "cygwin のプロセスに対して任意のシグナルを送れるようにする.
+Windows のプロセスに対してはオリジナルの `signal-process' を呼び出す.
 対話的に呼び出された場合は無効."
 	  (let* ((proc (ad-get-arg 0))
 		 (pid (cond
@@ -451,6 +456,19 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 					"0")))
 		ad-do-it
 	      (setq ad-return-value 0))))
+
+	(defadvice set-process-window-size (around set-process-window-size-to-fake activate)
+	  "fakecygpty 経由の場合は siqgueue にて WINCH シグナルを送信する."
+	  (if (and (fakery-process-p (ad-get-arg 0))
+		   (= 0 (call-process fakery-sigqueue-command nil nil nil
+				      (prin1-to-string (process-id (ad-get-arg 0)) t)
+				      "SIGWINCH"
+				      (prin1-to-string (+ (* 65536 (ad-get-arg 1))
+							  (ad-get-arg 2))))))
+	      (setq ad-return-value t)
+	    ad-do-it)
+
+	  )
 
 	))))
 
@@ -686,6 +704,17 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
   
   (define-key shell-mode-map (kbd "M-p") 'comint-previous-matching-input-from-input)
   (define-key shell-mode-map (kbd "M-n") 'comint-next-matching-input-from-input))
+
+;; term
+(with-eval-after-load "term"
+  (add-hook 'term-exec-hook
+	    (lambda ()
+	      (ini:awhen (get-buffer-process (current-buffer))
+		;; 終了時に確認しない
+		(set-process-query-on-exit-flag it nil)
+		))
+	    )
+  )
 
 ;; ansi-color
 (with-eval-after-load "comint"

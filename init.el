@@ -738,11 +738,15 @@ SENTINEL は元々設定されていたセンチネルが実行されてから�
 				      (lambda (process event)
 					(ini:kill-process-buffer-and-close-window process)))
 		)))
+  ;; C-c に C-x を取り込まない
   (set-keymap-parent term-raw-escape-map nil)
-  (define-key term-raw-map (kbd "M-x") (lookup-key global-map (kbd "M-x")))
-  (define-key term-raw-map (kbd "M-:") (lookup-key global-map (kbd "M-:")))
+  ;; C-z は自分で使いたいので C-c C-z に移動
   (define-key term-raw-map (kbd "C-c C-z") 'term-send-raw)
-  (define-key term-raw-map (kbd "C-z") nil)
+  ;; char-mode で使いたいキーを開放
+  (dolist (key '("M-x" "M-:" "C-z" "C-u"))
+    (define-key term-raw-map (kbd key) (lookup-key global-map (kbd key))))
+  
+  (define-key term-mode-map (kbd "C-c C-w") nil)
   )
 
 ;; ansi-color
@@ -1228,7 +1232,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
   (setq calendar-time-display-form '((format "%2s:%2s%s" 12-hours minutes am-pm)))
   (setq calendar-date-display-form '((format "%2s/%2s/%2s" year month day)))
   (setq calendar-mark-holidays-flag t)
-  (add-hook 'today-visible-calendar-hook 'calendar-mark-today)
+  (add-hook 'calendar-today-visible-hook 'calendar-mark-today)
 
   (setq diary-file (ini:emacs-d "diary"))
   (setq diary-entry-marker 'link)
@@ -1257,12 +1261,9 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
     (setq calendar-holidays
 	  (append japanese-holidays holiday-local-holidays holiday-other-holidays))
     
-    (setq calendar-weekend-marker (defface calendar-weekend nil
-				    "Face for indicating week end in the calendar."
-				    :group 'calendar-faces))
-    
     (add-hook 'today-visible-calendar-hook 'japanese-holiday-mark-weekend)
-    (add-hook 'today-invisible-calendar-hook 'japanese-holiday-mark-weekend))
+    (add-hook 'today-invisible-calendar-hook 'japanese-holiday-mark-weekend)
+    )
   )
 
 ;; auth-source
@@ -1367,11 +1368,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
     (setq shell-pop-internal-mode "ansi-term")
     (setq shell-pop-internal-mode-buffer "*ansi-term*")
     (setq shell-pop-internal-mode-func (lambda () (ansi-term shell-file-name)))
-
-    (defadvice shell-pop--cd-to-cwd-term (around ini:pure-cd activate)
-      "単純な cd 送信に置き換え."
-      (term-send-raw-string (concat "cd " (ad-get-arg 0) " && echo \n"))
-      (cd (ad-get-arg 0)))
+    (setq shell-pop-autocd-to-working-dir nil)
 
     (defadvice shell-pop-out (around ini:safe-pop-out activate)
       "戻り先の window が死んでいたら window を消すだけにする."

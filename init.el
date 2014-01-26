@@ -700,51 +700,43 @@ SENTINEL は元々設定されていたセンチネルが実行されてから�
 			    sentinel))
     ))
 
-(defun ini:kill-process-buffer-and-close-window (process)
-  "PROCESS のバッファを削除し、ウィンドウが開いていたら閉じる."
-  (let ((buf (process-buffer process)))
-    (dolist (win (get-buffer-window-list buf))
-      (unless (one-window-p)
-	(delete-window win)))
-    (kill-buffer buf)))
+(defun ini:set-process-cleaner (&optional process)
+  "PROCESS 終了時にバッファとウィンドウを削除する.
+また Emacs 終了時にプロセスも終了させる.
+PROCESS が nil の場合はカレントバッファのプロセスに設定する."
+  (ini:awhen (or (and (processp process)
+		      process)
+		 (get-buffer-process (current-buffer)))
+    (set-process-query-on-exit-flag it nil)
+    ;; PROCESS のバッファを削除し、ウィンドウが開いていたら閉じる
+    (ini:add-process-sentinel it
+			      (lambda (process event)
+				(let ((buf (process-buffer process)))
+				  (dolist (win (get-buffer-window-list buf))
+				    (unless (one-window-p)
+				      (delete-window win)))
+				  (kill-buffer buf))))
+    ))
 
 ;; shell
 (with-eval-after-load "shell"
   (setq comint-prompt-read-only t)
 
-  (add-hook 'shell-mode-hook
-	    (lambda ()
-	      (ini:awhen (get-buffer-process (current-buffer))
-		;; 終了時に確認しない
-		(set-process-query-on-exit-flag it nil)
-		;; シェルを終了させたらバッファもウィンドウも閉じる
-		(ini:add-process-sentinel it
-				      (lambda (process event)
-					(ini:kill-process-buffer-and-close-window process)))
-		)))
-  
+  (add-hook 'shell-mode-hook 'ini:set-process-cleaner)
   (define-key shell-mode-map (kbd "M-p") 'comint-previous-matching-input-from-input)
   (define-key shell-mode-map (kbd "M-n") 'comint-next-matching-input-from-input))
 
 ;; term
 (with-eval-after-load "term"
-  (add-hook 'term-exec-hook
-	    (lambda ()
-	      (ini:awhen (get-buffer-process (current-buffer))
-		;; 終了時に確認しない
-		(set-process-query-on-exit-flag it nil)
-		;; 端末を終了させたらバッファもウィンドウも閉じる
-		(ini:add-process-sentinel it
-				      (lambda (process event)
-					(ini:kill-process-buffer-and-close-window process)))
-		)))
+  (add-hook 'term-exec-hook 'ini:set-process-cleaner)
+
   ;; C-c に C-x を取り込まない
   (set-keymap-parent term-raw-escape-map nil)
   ;; C-z は自分で使いたいので C-c C-z に移動
   (define-key term-raw-map (kbd "C-c C-z") 'term-send-raw)
   ;; char-mode で使いたいキーを開放
   (dolist (key '("M-x" "M-:" "C-z" "C-u"))
-    (define-key term-raw-map (kbd key) (lookup-key global-map (kbd key))))
+    (define-key term-raw-map (kbd key) nil))
   
   (define-key term-mode-map (kbd "C-c C-w") nil)
   )
@@ -1596,7 +1588,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
       (setq kogiku-use-advocate nil)
       ;; emacs-23 以降の partial-completion に非対応
       ;; initial-completionもダメっぽい
-      (setq completion-styles (delete 'partial-completion completion-styles)))
+      (setq completion-styles (delq 'partial-completion completion-styles)))
     ))
 
 ;; direx / git clone https://github.com/m2ym/direx-el
@@ -1644,7 +1636,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 ;; yasnippet / git clone --recursive https://github.com/capitaomorte/yasnippet
 (when (require 'yasnippet nil t)
   (setq yas-verbosity 1)
-  (setq yas-prompt-functions (delete 'yas-x-prompt yas-prompt-functions))
+  (setq yas-prompt-functions (delq 'yas-x-prompt yas-prompt-functions))
   (setq yas-expand-only-for-last-commands '(self-insert-command ac-expand))
   (yas-global-mode t)
 
@@ -1923,6 +1915,7 @@ SILENT が non-nil の場合は切り替えメッセージを表示しない.
 ;; 色設定
 (cl-macrolet ((color-candidate (&rest colors)
 			       (cl-find-if #'color-defined-p colors)))
+  (require 'color)
   (when (and (eq (frame-parameter nil 'background-mode) 'dark)
 	     (string= (frame-parameter nil 'cursor-color) "black")
 	     (set-cursor-color "white")))
@@ -1932,22 +1925,18 @@ SILENT が non-nil の場合は切り替えメッセージを表示しない.
 		      :background (color-candidate "SystemHilight" "Royal Blue"))
 
   (set-face-attribute 'isearch nil
-		      :foreground "#fff"
-		      :background "#27c")
+		      :background (color-darken-name (color-candidate "SystemHilight"
+								      "Royal Blue") 10)
+		      :inherit 'region)
   
   (set-face-attribute 'lazy-highlight nil
-		      :foreground "#fff"
-		      :background "#aaa")
+		      :background (color-darken-name (color-candidate "SystemWindow"
+								      "While") 40)
+		      :inherit 'isearch)
   
   (face-spec-reset-face 'match)
   (set-face-attribute 'match nil :inherit 'lazy-highlight)
   
-  (with-eval-after-load "calendar"
-    (when (facep 'calendar-weekend)
-      (set-face-attribute 'calendar-weekend nil
-			  :foreground "red1"))
-    )
-
   (with-eval-after-load "cua-base"
     (face-spec-reset-face 'cua-rectangle)
     (set-face-attribute 'cua-rectangle nil :inherit 'region)

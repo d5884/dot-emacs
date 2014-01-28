@@ -596,7 +596,9 @@ Windows のプロセスに対してはオリジナルの `signal-process' を呼
 (put 'downcase-region 'disabled nil)
 
 ;; package
-(with-eval-after-load "package"
+(ini:when-when-compile (locate-library "package")
+  (package-initialize)
+  (setq package-enable-at-startup nil)
   (setq package-archives (append
 			  '(("marmalade" . "http://marmalade-repo.org/packages/")
 			    ("melpa" . "http://melpa.milkbox.net/packages/"))
@@ -1760,7 +1762,10 @@ FULLBOTH が non-nil なら最大化時にフルスクリーン表示にする."
 (defun ini:make-buffer-permanently (buffer &optional flag)
   "バッファを kill 出来なくする.
 flag が clear の場合は kill 時にバッファの中身を空にする.
-flag が -1 の場合は kill 可能に戻す."
+flag が関数の場合は対象関数を呼び出す.
+その際、関数の戻り値が non-nil の場合バッファは kill される.
+flag が -1 の場合は kill 可能に戻す.
+flag が上記以外の non-nil の場合は削除不可にする."
   (with-current-buffer buffer
     (setq ini:permanent-buffer (if (eq flag -1)
 				   nil
@@ -1769,20 +1774,24 @@ flag が -1 の場合は kill 可能に戻す."
 (add-hook 'kill-buffer-query-functions
 	  (lambda ()
 	    (cond
+	     ((null ini:permanent-buffer)
+	      t)
 	     ((eq ini:permanent-buffer 'clear)
 	      (widen)
 	      (erase-buffer)
 	      (message "Buffer was cleared.")
 	      nil)
-	     ((null ini:permanent-buffer)
-	      t)
+	     ((functionp ini:permanent-buffer)
+	      (funcall ini:permanent-buffer))
 	     (t
 	      (message "This buffer is flagged to permanent buffer.")
 	      nil))))
 
 (add-hook 'after-init-hook
 	  (lambda ()
-	    (ini:make-buffer-permanently "*scratch*")
+	    (ini:make-buffer-permanently "*scratch*"
+					 (lambda ()
+					   (ini:refresh-scratch-buffer t)))
 	    (ini:make-buffer-permanently "*Messages*" 'clear)
 	    ))
 
@@ -1790,7 +1799,10 @@ flag が -1 の場合は kill 可能に戻す."
 ;;;;;;;;;;;;;;;;;;;
 ;; scratch 自動保存
 (defvar ini:scratch-save-file (ini:emacs-d "scratch")
-  "`*scratch' バッファの保存先ファイル名.")
+  "`*scratch*' バッファの自動保存先ファイル名.")
+
+(defvar ini:scratch-snap-directory (ini:emacs-d "snap")
+  "`*scratch*' バッファのスナップ先ディレクトリ名")
 
 (defvar ini:scratch-buffer-save-interval 1
   "`*scratch*' バッファの自動保存間隔.")
@@ -1798,12 +1810,16 @@ flag が -1 の場合は kill 可能に戻す."
 (defvar ini:prev-scratch-modified-tick 0
   "`*scratch*' バッファの前回保存時の更新状態.")
 
-(defun ini:refresh-scratch-buffer ()
+(defun ini:refresh-scratch-buffer (&optional snap)
   "`*scratch*' バッファを新規作成する.
-既に存在している場合は内容をクリアする."
+既に存在している場合は内容をクリアする.
+SNAP が non-nil の場合、`ini:scratch-snap-directory' 内に
+現在の `*scratch*' バッファの内容を保存する."
   (interactive)
   (let ((exists-p (get-buffer "*scratch*")))
-    (with-current-buffer (get-buffer-create "*scratch*")
+    (when (and exists-p snap)
+      (ini:scratch-buffer-snap))
+    (with-current-buffer (or exists-p (get-buffer-create "*scratch*"))
       (unless (eq major-mode initial-major-mode)
 	(funcall initial-major-mode))
       (erase-buffer)
@@ -1817,6 +1833,26 @@ flag が -1 の場合は kill 可能に戻す."
       (message "another *scratch* is created."))
     )
   nil) ; for kill-buffer-query-functions
+
+(defun ini:scratch-buffer-snap ()
+  "`*scratch*' バッファの内容を `ini:scratch-snap-directory' 内に保存する."
+  (interactive)
+  (ini:awhen (get-buffer "*scratch*")
+    (make-directory ini:scratch-snap-directory t)
+    (let ((name-base (format "scratch-%s%%02d.el" (format-time-string "%Y%m%d-%H%M%S")))
+	  (serial 0))
+      (while (file-exists-p (expand-file-name
+			     (format name-base serial) ini:scratch-snap-directory))
+	(setq serial (1+ serial)))
+      (with-current-buffer it
+	(save-restriction
+	(widen)
+	(write-region (point-min) (point-max)
+		      (expand-file-name (format name-base serial)
+					ini:scratch-snap-directory)
+		      nil 'silent))))
+	))
+    
 
 (defun ini:resume-scratch-buffer ()
   "`*scratch*' バッファの内容を復帰する."

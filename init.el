@@ -600,9 +600,7 @@ Windows のプロセスに対してはオリジナルの `signal-process' を呼
   (setq package-archives (append
 			  '(("marmalade" . "http://marmalade-repo.org/packages/")
 			    ("melpa" . "http://melpa.milkbox.net/packages/"))
-			  package-archives))
-  (package-initialize)
-  )
+			  package-archives)))
 
 ;; transient-mark-mode
 (defadvice exchange-point-and-mark (after ini:exchange-point-and-mark-deactivate activate)

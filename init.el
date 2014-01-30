@@ -113,7 +113,7 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
       nil
     (if (eval (caar clauses))
 	(cons 'progn (cdar clauses))
-      `(expand-cond ,@(cdr clauses)))))
+      `(ini:cond-when-compile ,@(cdr clauses)))))
 
 ;; before emacs-24.4
 (unless (fboundp 'with-eval-after-load)

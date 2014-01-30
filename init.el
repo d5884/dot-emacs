@@ -1801,8 +1801,8 @@ flag が上記以外の non-nil の場合は削除不可にする."
 (defvar ini:scratch-save-file (ini:emacs-d "scratch")
   "`*scratch*' バッファの自動保存先ファイル名.")
 
-(defvar ini:scratch-snap-directory (ini:emacs-d "snap")
-  "`*scratch*' バッファのスナップ先ディレクトリ名")
+(defvar ini:scratch-scrap-directory (ini:emacs-d "snap")
+  "`*scratch*' バッファのスクラップ先ディレクトリ名")
 
 (defvar ini:scratch-buffer-save-interval 1
   "`*scratch*' バッファの自動保存間隔.")
@@ -1810,15 +1810,15 @@ flag が上記以外の non-nil の場合は削除不可にする."
 (defvar ini:prev-scratch-modified-tick 0
   "`*scratch*' バッファの前回保存時の更新状態.")
 
-(defun ini:refresh-scratch-buffer (&optional snap)
-  "`*scratch*' バッファを新規作成する.
-既に存在している場合は内容をクリアする.
-SNAP が non-nil の場合、`ini:scratch-snap-directory' 内に
+(defun ini:refresh-scratch-buffer (&optional scrap)
+  "`*scratch*' バッファを初期状態に戻す.
+削除されていた場合はバッファを新規作成し、存在している場合は内容をクリアする.
+SCRAP が non-nil の場合、`ini:scratch-scrap-directory' 内に
 現在の `*scratch*' バッファの内容を保存する."
   (interactive)
   (let ((exists-p (get-buffer "*scratch*")))
-    (when (and exists-p snap)
-      (ini:scratch-buffer-snap))
+    (when (and exists-p scrap)
+      (ini:scratch-buffer-scrap))
     (with-current-buffer (or exists-p (get-buffer-create "*scratch*"))
       (unless (eq major-mode initial-major-mode)
 	(funcall initial-major-mode))
@@ -1834,25 +1834,26 @@ SNAP が non-nil の場合、`ini:scratch-snap-directory' 内に
     )
   nil) ; for kill-buffer-query-functions
 
-(defun ini:scratch-buffer-snap ()
-  "`*scratch*' バッファの内容を `ini:scratch-snap-directory' 内に保存する."
+(defun ini:scratch-buffer-scrap ()
+  "`*scratch*' バッファの内容を `ini:scratch-scrap-directory' 内に保存する."
   (interactive)
   (ini:awhen (get-buffer "*scratch*")
-    (make-directory ini:scratch-snap-directory t)
+    (make-directory ini:scratch-scrap-directory t)
     (let ((name-base (format "scratch-%s%%02d.el" (format-time-string "%Y%m%d-%H%M%S")))
-	  (serial 0))
-      (while (file-exists-p (expand-file-name
-			     (format name-base serial) ini:scratch-snap-directory))
+	  (serial 0)
+	  scrap-name)
+      (while (file-exists-p
+	      (setq scrap-name (expand-file-name
+				(format name-base serial) ini:scratch-scrap-directory)))
 	(setq serial (1+ serial)))
       (with-current-buffer it
-	(save-restriction
-	(widen)
-	(write-region (point-min) (point-max)
-		      (expand-file-name (format name-base serial)
-					ini:scratch-snap-directory)
-		      nil 'silent))))
-	))
-    
+	(save-match-data
+	  (save-restriction
+	    (widen)
+	    (goto-char (point-min))
+	    (unless (re-search-forward "\\`[ \r\n\t]*\\'" nil t)
+	      (write-region (point-min) (point-max) scrap-name nil 'silent))))))
+    ))
 
 (defun ini:resume-scratch-buffer ()
   "`*scratch*' バッファの内容を復帰する."

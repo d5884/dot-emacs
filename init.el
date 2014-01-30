@@ -862,6 +862,10 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
   (setq gdb-use-separate-io-buffer t)
   (add-hook 'gdb-mode-hook 'gud-tooltip-mode))
 
+;; magit
+(ini:when-when-compile (locate-library "magit")
+  (autoload 'magit-status "magit" nil t)
+  (global-set-key (kbd "C-z C-m") 'magit-status))
 
 ;; flymake
 (ini:when-when-compile (locate-library "flymake")

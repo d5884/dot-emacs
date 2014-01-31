@@ -866,14 +866,31 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
 (with-eval-after-load "ediff"
   (setq ediff-window-setup-function 'ediff-setup-windows-plain)
   (setq ediff-split-window-function 'split-window-horizontally)
+
+  (defadvice ediff-find-file (around ini:ediff-mark-newly-opened activate)
+    "ediff が開いたファイルを quit 時に削除できるようフラグを付ける."
+    (let ((existing-p (and find-file-existing-other-name
+			   (find-buffer-visiting (symbol-value (ad-get-arg 0))))))
+      ad-do-it
+      (or existing-p
+	  (ediff-with-current-buffer (symbol-value (ad-get-arg 1))
+	    (setq-local ini:ediff-kill-on-quit t)))))
+
+  (eval-when-compile (require 'ediff nil t))
   (defvar ini:ediff-window-configuration-stash nil
     "`ediff' 実行前のウィンドウ状態の一時保存先.")
+
   (add-hook 'ediff-before-setup-hook
 	    (lambda ()
 	      (setq ini:ediff-window-configuration-stash
 		    (current-window-configuration))))
   (add-hook 'ediff-quit-hook
 	    (lambda ()
+	      (dolist (buf (list ediff-buffer-A ediff-buffer-B ediff-ancestor-buffer))
+	      	(ediff-with-current-buffer buf
+	      	  (when (and (boundp 'ini:ediff-kill-on-quit)
+			     ini:ediff-kill-on-quit)
+		    (kill-buffer))))
 	      (set-window-configuration ini:ediff-window-configuration-stash)))
   )
 

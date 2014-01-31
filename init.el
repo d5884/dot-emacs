@@ -1404,7 +1404,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
   )
 
 ;; yascroll / git clone https://github.com/m2ym/yascroll-el yascroll
-(ini:when-when-compile "yascroll"
+(ini:when-when-compile (locate-library "yascroll")
   (autoload 'yascroll:show-scroll-bar "yascroll" nil t)
   ;; 1行単位のスクロールにしているとちらつくので必要な時だけ表示にする
   (dolist (fn '(set-mark exchange-point-and-mark scroll-up scroll-down recenter))

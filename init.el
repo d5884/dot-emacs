@@ -862,6 +862,21 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
   (setq gdb-use-separate-io-buffer t)
   (add-hook 'gdb-mode-hook 'gud-tooltip-mode))
 
+;; ediff
+(with-eval-after-load "ediff"
+  (setq ediff-window-setup-function 'ediff-setup-windows-plain)
+  (setq ediff-split-window-function 'split-window-horizontally)
+  (defvar ini:ediff-window-configuration-stash nil
+    "`ediff' 実行前のウィンドウ状態の一時保存先.")
+  (add-hook 'ediff-before-setup-hook
+	    (lambda ()
+	      (setq ini:ediff-window-configuration-stash
+		    (current-window-configuration))))
+  (add-hook 'ediff-quit-hook
+	    (lambda ()
+	      (set-window-configuration ini:ediff-window-configuration-stash)))
+  )
+
 ;; magit
 (ini:when-when-compile (locate-library "magit")
   (autoload 'magit-status "magit" nil t)

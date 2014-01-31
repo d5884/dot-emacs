@@ -1418,6 +1418,12 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
   (popwin-mode 1)
   )
 
+;; stripe-buffer / git clone https://github.com/sabof/stripe-buffer
+(ini:when-when-compile (locate-library "stripe-buffer")
+  (autoload 'turn-on-stripe-buffer-mode "stripe-buffer")
+  (add-hook 'dired-mode-hook 'turn-on-stripe-buffer-mode)
+  (add-hook 'tabulated-list-mode-hook 'turn-on-stripe-buffer-mode))
+
 ;; yascroll / git clone https://github.com/m2ym/yascroll-el yascroll
 (ini:when-when-compile (locate-library "yascroll")
   (autoload 'yascroll:show-scroll-bar "yascroll" nil t)
@@ -2009,6 +2015,13 @@ SILENT が non-nil の場合は切り替えメッセージを表示しない.
 			:foreground "#700"
 			:background "#fcc")
     )
+
+  (with-eval-after-load "stripe-buffer"
+    (set-face-attribute 'stripe-highlight nil
+			:background (color-darken-name
+				     (color-candidate "SystemHilightText" "White")
+				     5)
+			:inherit 'default))
   )
 
 

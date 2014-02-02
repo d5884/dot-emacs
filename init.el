@@ -2037,8 +2037,7 @@ SILENT が non-nil の場合は切り替えメッセージを表示しない.
     (set-face-attribute 'stripe-highlight nil
 			:background (color-darken-name
 				     (color-candidate "SystemHilightText" "White")
-				     5)
-			:inherit 'default))
+				     3)))
   )
 
 

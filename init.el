@@ -977,11 +977,11 @@ COMMAND が存在しない場合は定義を行なわない."
 (with-eval-after-load "view"
   (define-key view-mode-map "j" 'next-line)
   (define-key view-mode-map "k" 'previous-line)
-  (defadvice view-mode-exit (before ini:view-mode-exit activate)
-    "`hl-line-mode' を無効にする."
-    (when view-mode
-      (hl-line-mode -1)))
-  (add-hook 'view-mode-hook (lambda () (hl-line-mode t)))
+  ;; (defadvice view-mode-exit (before ini:view-mode-exit activate)
+  ;;   "`hl-line-mode' を無効にする."
+  ;;   (when view-mode
+  ;;     (hl-line-mode -1)))
+  ;; (add-hook 'view-mode-hook (lambda () (hl-line-mode t)))
   )
 
 ;; dired

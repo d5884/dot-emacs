@@ -897,7 +897,13 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
 ;; magit
 (ini:when-when-compile (locate-library "magit")
   (autoload 'magit-status "magit" nil t)
-  (global-set-key (kbd "C-z C-m") 'magit-status))
+  (global-set-key (kbd "C-z C-m") 'magit-status)
+
+  (with-eval-after-load "session"
+    (setq session-set-file-name-exclude-regexp
+  	  (concat session-set-file-name-exclude-regexp
+  		  "\\|" (regexp-opt '("COMMIT_EDITMSG"))))
+    ))
 
 ;; flymake
 (ini:when-when-compile (locate-library "flymake")

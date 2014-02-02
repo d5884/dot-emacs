@@ -1969,7 +1969,7 @@ SILENT が non-nil の場合は切り替えメッセージを表示しない.
   (let* ((cur (current-window-configuration))
 	 (state (frame-parameter nil 'ini:last-window-state))
 	 (conf (car state))
-	 (side (case (cdr state) (?A ?B) (?B ?A) (t ?B))))
+	 (side (cl-case (cdr state) (?A ?B) (?B ?A) (t ?B))))
     (if conf
 	(set-window-configuration conf)
       (delete-other-windows))

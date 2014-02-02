@@ -567,6 +567,7 @@ Windows のプロセスに対してはオリジナルの `signal-process' を呼
 ;; バックアップ関係
 (setq make-backup-files nil)
 (setq auto-save-default nil)
+(setq auto-save-list-file-prefix nil)
 
 ;; 起動時のエコーエリアメッセージを黙らせる
 ;; inhibit-startup-echo-area-message はユーザ名をリテラルで書く必要があるので

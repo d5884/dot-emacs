@@ -194,7 +194,7 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 	  (inhibit-redisplay t))
       ;; ベースとなる ASCII フォント
       (ini:awhen (font-candidate "Consolas-11:weight=normal:slant=normal"
-				 "DejaVu Sans Mono-10:weight=normal:slant=normal")
+				 "DejaVu Sans Mono-11:weight=normal:slant=normal")
 	
 	;; ASCII
 	(set-fontset-font fontset 'ascii it)

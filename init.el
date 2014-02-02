@@ -675,7 +675,7 @@ Windows のプロセスに対してはオリジナルの `signal-process' を呼
 ;; man & woman
 (with-eval-after-load "woman"
   (setq woman-fill-frame t
-	woman-cache-filename (ini:emacs-d "woman_cache")))
+	woman-cache-filename (ini:emacs-d "woman-cache")))
 
 ;; bookmark
 (with-eval-after-load "bookmark"
@@ -1460,7 +1460,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 (when (require 'session nil t)
   (add-hook 'after-init-hook 'session-initialize)
   (setq session-initialize '(de-saveplace session places))
-  (setq session-save-file (ini:emacs-d "session"))
+  (setq session-save-file (ini:emacs-d "session-data"))
   (setq session-globals-include '((kill-ring 50)
 				  (read-expression-history 100)
 				  (session-file-alist 500 t)

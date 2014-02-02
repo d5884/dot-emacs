@@ -2008,7 +2008,7 @@ SILENT が non-nil の場合は切り替えメッセージを表示しない.
   
   (set-face-attribute 'lazy-highlight nil
 		      :background (color-darken-name (color-candidate "SystemWindow"
-								      "While") 40)
+								      "White") 40)
 		      :inherit 'isearch)
   
   (face-spec-reset-face 'match)

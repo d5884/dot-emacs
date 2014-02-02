@@ -624,7 +624,7 @@ Windows のプロセスに対してはオリジナルの `signal-process' を呼
   (define-key compilation-mode-map (kbd "n") 'next-error)
   (define-key compilation-mode-map (kbd "p") 'previous-error)
 
-  (add-hook 'compilation-mode-hook 'next-error-follow-minor-mode)
+  ;; (add-hook 'compilation-mode-hook 'next-error-follow-minor-mode)
   
   (dolist (func '(compile recompile))
     (eval `(defadvice ,func (around ,(intern (format "ini:%s-silently" func)) activate)

@@ -2043,7 +2043,7 @@ SILENT が non-nil の場合は切り替えメッセージを表示しない.
   (with-eval-after-load "stripe-buffer"
     (set-face-attribute 'stripe-highlight nil
 			:background (color-darken-name
-				     (color-candidate "SystemHilightText" "White")
+				     (face-attribute 'default :background)
 				     3)))
   )
 

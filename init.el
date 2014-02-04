@@ -1997,7 +1997,7 @@ SILENT が non-nil の場合は切り替えメッセージを表示しない.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 色設定
-(cl-macrolet ((color-candidate (&rest colors)
+(cl-flet ((color-candidate (&rest colors)
 			       (cl-find-if #'color-defined-p colors)))
   (require 'color)
   (when (and (eq (frame-parameter nil 'background-mode) 'dark)

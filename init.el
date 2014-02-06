@@ -2001,8 +2001,8 @@ SILENT が non-nil の場合は切り替えメッセージを表示しない.
 			       (cl-find-if #'color-defined-p colors)))
   (require 'color)
   (when (and (eq (frame-parameter nil 'background-mode) 'dark)
-	     (string= (frame-parameter nil 'cursor-color) "black")
-	     (set-cursor-color "white")))
+	     (string= (frame-parameter nil 'cursor-color) "black"))
+    (set-cursor-color "white"))
 
   (set-face-attribute 'region nil
 		      :foreground (color-candidate "SystemHilightText" "White")

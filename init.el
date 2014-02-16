@@ -848,7 +848,8 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
 
 ;; Tramp
 (with-eval-after-load "tramp"
-  (setq tramp-default-method "ssh"))
+  (setq tramp-default-method "ssh")
+  (setq tramp-verbose 2))
 
 (with-eval-after-load "tramp-sh"
   (let ((process-environment tramp-remote-process-environment))

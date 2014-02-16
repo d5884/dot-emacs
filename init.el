@@ -406,7 +406,7 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 				 (format 
 				  (concat
 				   "X=`ls /proc/*/ppid | xargs grep -l \"^%s$\" 2>/dev/null` ; "
-				   "X=`dirname $X 2>/dev/null` && cat `echo -n \"$X/ctty\"`")
+				   "X=`dirname $X 2>/dev/null` && cat $X/ctty")
 				  (process-id (ad-get-arg 0)))))
 			  (replace-regexp-in-string "\r?\n" "" (buffer-string))
 			"?")))))

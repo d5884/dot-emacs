@@ -846,6 +846,22 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
 (ini:when-when-compile (fboundp 'executable-make-buffer-file-executable-if-script-p)
   (add-hook 'after-save-hook 'executable-make-buffer-file-executable-if-script-p))
 
+;; ssh-agent
+(ini:when-when-compile (locate-library "ssh-agent")
+  (autoload 'ssh-agent-add-key "ssh-agent" nil t)
+
+  (with-eval-after-load "magit"
+    (defadvice magit-push-dwim (before ini:ssh-agent-with-magit-push activate)
+      (ssh-agent-add-key))
+
+    (defadvice magit-fetch (before ini:ssh-agent-with-magit-fetch activate)
+      (ssh-agent-add-key)))
+
+  (with-eval-after-load "tramp-sh"
+    (defadvice tramp-send-command (before ini:ssh-agent-with-tramp activate)
+      (ssh-agent-add-key)))
+  )
+
 ;; Tramp
 (with-eval-after-load "tramp"
   (setq tramp-default-method "ssh")

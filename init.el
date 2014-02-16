@@ -687,6 +687,12 @@ Windows のプロセスに対してはオリジナルの `signal-process' を呼
 					       ,user-emacs-directory)))
     (setq ispell-alternate-dictionary it)))
 
+;; windmove
+(global-set-key (kbd "C-z C-n") 'windmove-down)
+(global-set-key (kbd "C-z C-p") 'windmove-up)
+(global-set-key (kbd "C-z C-f") 'windmove-right)
+(global-set-key (kbd "C-z C-b") 'windmove-left)
+
 ;; man & woman
 (with-eval-after-load "woman"
   (setq woman-fill-frame t

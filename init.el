@@ -334,6 +334,14 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 	  (setq tramp-encoding-shell "bash"))
 	)
       
+      ;; gdb 使用時のエラー回避
+      (with-eval-after-load "gdb-mi"
+	(eval-when-compile
+	  (declare-function gdb-input "gdb-mi"))
+	(add-hook 'gdb-mode-hook
+		  (lambda ()
+		    (gdb-input "-gdb-set interactive-mode auto" 'ignore))))
+
       ;; cygwin で追加される Info
       (with-eval-after-load "info"
 	(ini:awhen (ini:locate-path "/usr/share/info")
@@ -897,9 +905,8 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
   (define-key hs-minor-mode-map (kbd "C-c <C-SPC>") 'hs-toggle-hiding))
 
 ;; gdb
-(with-eval-after-load "gdb"
+(with-eval-after-load "gdb-mi"
   (setq gdb-many-windows t)
-  (setq gdb-use-separate-io-buffer t)
   (add-hook 'gdb-mode-hook 'gud-tooltip-mode))
 
 ;; ediff

@@ -191,9 +191,10 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 				(cl-find-if (lambda (f) (find-font (font-spec :name f)))
 					    font-list)))
     (let ((fontset "fontset-standard")
-	  (inhibit-redisplay t))
+	  (inhibit-redisplay t)
+	  width1-charset-list)
       ;; ベースとなる ASCII フォント
-      (ini:awhen (font-candidate "Consolas-11:weight=normal:slant=normal"
+      (ini:awhen (font-candidate "Consolas:pixelsize=15:weight=normal:slant=normal"
 				 "DejaVu Sans Mono-11:weight=normal:slant=normal")
 	
 	;; ASCII
@@ -208,7 +209,8 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 			     latin-iso8859-4
 			     cyrillic-iso8859-5
 			     greek-iso8859-7))
-	    (set-fontset-font fontset charset it)))
+	    (set-fontset-font fontset charset it)
+	    (push charset width1-charset-list)))
 	
 	;; 日本語 / meiryoKe_602r1.ttc
 	;; http://okrchicagob.blog4.fc2.com/blog-entry-121.html
@@ -234,6 +236,18 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 	;; (setq face-font-rescale-alist (append '(("MeiryoKe_Console" . 1.2)
 	;; 					("Consolas" . 1.0))
 	;; 				      face-font-rescale-alist))
+
+	;; 文字幅調整
+	(when width1-charset-list
+	  (let ((table (make-char-table nil)))
+	    (dolist (charset width1-charset-list)
+	      (map-charset-chars
+	       (lambda (range _a)
+		 (set-char-table-range table range 1))
+	       charset))
+	    (optimize-char-table table)
+	    (set-char-table-parent table char-width-table)
+	    (setq char-width-table table)))
 	
 	;; フレームに設定
 	(add-to-list 'default-frame-alist (cons 'font fontset))

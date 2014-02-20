@@ -644,11 +644,10 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
 
   ;; C-c に C-x を取り込まない
   (set-keymap-parent term-raw-escape-map nil)
-  ;; C-z は自分で使いたいので C-c C-z に移動
-  (define-key term-raw-map (kbd "C-c C-z") 'term-send-raw)
-  ;; char-mode で使いたいキーを開放
+  ;; char-mode で使いたいキーを開放して C-c に移動
   (dolist (key '("M-x" "M-:" "C-z" "C-u"))
-    (define-key term-raw-map (kbd key) nil))
+    (define-key term-raw-map (kbd key) nil)
+    (define-key term-raw-map (kbd (concat "C-c " key)) 'term-send-raw))
   
   (define-key term-mode-map (kbd "C-c C-w") nil)
   )

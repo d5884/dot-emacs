@@ -1895,20 +1895,20 @@ SCRAP が non-nil の場合、`ini:scratch-scrap-directory' 内に
 	    ((stringp beg)
 	     (return))))))
 
-(defun ini:flip-window-state (&optional silent)
+(defun ini:flip-window-state (&optional renew)
   "ウィンドウ分割状態を切り替える.
-SILENT が non-nil の場合は切り替えメッセージを表示しない.
+RENEW が non-nil の場合は新しい状態を作る.
 2状態固定."
-  (interactive)
+  (interactive "P")
   (let* ((cur (current-window-configuration))
 	 (state (frame-parameter nil 'ini:last-window-state))
-	 (conf (car state))
+	 (conf (unless renew (car state)))
 	 (side (cl-case (cdr state) (?A ?B) (?B ?A) (t ?B))))
     (if conf
 	(set-window-configuration conf)
-      (delete-other-windows))
-    (unless silent
-      (message "Flip to side \"%c\"." side))
+      (delete-other-windows)
+      (switch-to-buffer "*scratch*"))
+    (message "Flip to side \"%c\"." side)
     (set-frame-parameter nil 'ini:last-window-state (cons cur side))
     (force-mode-line-update)))
 

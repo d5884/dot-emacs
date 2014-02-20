@@ -786,8 +786,11 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
 
 ;; gdb
 (with-eval-after-load "gdb-mi"
-  (setq gdb-many-windows t)
-  (add-hook 'gdb-mode-hook 'gud-tooltip-mode))
+  (eval-when-compile
+    (declare-function gdb-many-windows "gdb-mi"))
+  (add-hook 'gdb-mode-hook (lambda ()
+			     (gdb-many-windows)
+			     (gud-tooltip-mode))))
 
 ;; ediff
 (with-eval-after-load "ediff"

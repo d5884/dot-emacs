@@ -649,7 +649,10 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
   ;; char-mode で使いたいキーを開放して C-c に移動
   (dolist (key '("M-x" "M-:" "C-z" "C-u"))
     (define-key term-raw-map (kbd key) nil)
-    (define-key term-raw-map (kbd (concat "C-c " key)) 'term-send-raw))
+    (define-key term-raw-map (kbd (concat "C-c " key))
+      (if (string-match-p "^M-" key)
+	  'term-send-raw-meta
+	'term-send-raw)))
   
   (define-key term-mode-map (kbd "C-c C-w") nil)
   )

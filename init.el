@@ -321,9 +321,11 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 	(with-eval-after-load "term"
 	  (require 'shell)
 	  (defadvice cd (around ini:cd-accept-multibyte activate)
-	    "`term' でマルチバイトのディレクトリに移動時の強制終了を防ぐ."
+	    "`term' でマルチバイトのディレクトリや/proc等に移動時の強制終了を防ぐ."
 	    (let ((dir (decode-coding-string dir 'undecided)))
-	      ad-do-it))
+	      (unless (ignore-errors ad-do-it)
+		(ad-set-arg 0 "~/")
+		ad-do-it)))
 
 	  (defadvice term-emulate-terminal (around ini:terminal-detect-coding activate)
 	    "`term' で複数のコーディング出力を受け付ける."

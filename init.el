@@ -1378,6 +1378,15 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 	   (dired-mode :stick t))
 	 popwin:special-display-config))
   (popwin-mode 1)
+
+  ;; dedicated-p 対応. ただし stick t で残した場合に dedicated なステータスが壊れる.
+  (defadvice popwin:switch-to-buffer (around ini:popwin-workaround-for-dedicated activate)
+    "window-dedicated-p が non-nil な時にレイアウトを壊さない."
+    (if (window-dedicated-p (selected-window))
+	(progn (set-window-dedicated-p (selected-window) nil)
+	       ad-do-it
+	       (set-window-dedicated-p (selected-window) t))
+      ad-do-it))
   )
 
 ;; stripe-buffer / git clone https://github.com/sabof/stripe-buffer

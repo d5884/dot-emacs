@@ -256,8 +256,8 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
   ;; ウィンドウサイズ
   (if (require 'w32-resume-frame nil t)
       (w32-resume-activate)
-    (setq initial-frame-alist `((top . 60) (left . 120) ,@initial-frame-alist))
-    (setq default-frame-alist `((width . 100) (height . 40) ,@default-frame-alist)))
+    (setq initial-frame-alist `((top . 60) (left . 120) ,@initial-frame-alist)))
+  (setq default-frame-alist `((width . 100) (height . 40) ,@default-frame-alist))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

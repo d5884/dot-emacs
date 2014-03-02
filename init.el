@@ -879,11 +879,11 @@ COMMAND が存在しない場合は定義を行なわない."
   )
 
 ;; elisps
-(autoload 'byte-compile-dest-file "bytecomp")
 (defun ini:byte-compile-current-file-if-necessary ()
   "開いているファイルをバイトコンパイルする.
 既にコンパイル済みのファイルがあり、ソースファイルの方が新しい場合のみコンパイルする."
   (interactive)
+  (require 'bytecomp)
   (let* ((file (buffer-file-name))
 	 (dest (byte-compile-dest-file file)))
     (when (and (file-exists-p dest)

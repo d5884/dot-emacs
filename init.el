@@ -871,6 +871,8 @@ COMMAND が存在しない場合は定義を行なわない."
   (with-eval-after-load "flymake"
     (setq flymake-start-syntax-check-on-newline nil)
     (setq flymake-gui-warnings-enabled nil)
+    (unless (boundp 'flymake-warning-predicate)
+      (defvaralias 'flymake-warning-predicate 'flymake-warning-re))
 
     ;; (defadvice flymake-post-syntax-check (before ini:flymake-force-interrupted-flag activate)
     ;; 	 "`flymake-mode' でチェックが異常終了時に固まるのを防ぐ."
@@ -1017,7 +1019,7 @@ COMMAND が存在しない場合は定義を行なわない."
 	    (lambda ()
 	      (hs-minor-mode t)
 	      (hide-ifdef-mode t)
-	      (setq-local flymake-warning-re "^[Ww]arning\\|警告")))
+	      (setq-local flymake-warning-predicate "^[Ww]arning\\|警告")))
   
   (when (require 'flymake nil t)
     ;; c

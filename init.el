@@ -687,27 +687,24 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
 (when (require 'cua-base nil t)
   (cua-selection-mode t))
 
-;; iswitchb
-(when (require 'iswitchb nil t)
-  (iswitchb-mode t)
-  (setq iswitchb-default-method 'samewindow)
-  (add-hook 'iswitchb-define-mode-map-hook
-	    (lambda ()
-	      (define-key iswitchb-mode-map (kbd "C-f") 'iswitchb-next-match)
-	      (define-key iswitchb-mode-map (kbd "C-b") 'iswitchb-prev-match)))
+;; ido
+(when (require 'ido nil t)
+  (setq ido-save-directory-list-file nil)
+  (ido-mode 'buffer)
 
-  (defadvice iswitchb-exhibit
-    (after ini:iswitchb-exhibit-with-display-buffer activate)
+  (define-key ido-buffer-completion-map (kbd "C-f") 'ido-next-match)
+  (define-key ido-buffer-completion-map (kbd "C-b") 'ido-prev-match)
+  (define-key ido-buffer-completion-map (kbd "C-x C-f") nil)
+
+  (defadvice ido-exhibit (after ini:ido-exhibit-display-buffer activate)
     "選択しているバッファをウィンドウに表示する."
-    (when (and (eq iswitchb-method iswitchb-default-method)
-	       iswitchb-matches)
-      (let ((iswitchb-method 'samewindow)
-	    (selected (get-buffer-window
+    (when ido-matches
+      (let ((selected (get-buffer-window
 		       (cl-find-if-not #'minibufferp (buffer-list)))))
 	(when selected
 	  (select-window selected)
-	  (iswitchb-visit-buffer
-	   (get-buffer (car iswitchb-matches)))
+	  (ido-visit-buffer
+	   (get-buffer (car ido-matches)) t)
 	  (select-window (minibuffer-window))))
       ))
   )

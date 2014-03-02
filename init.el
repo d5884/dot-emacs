@@ -561,6 +561,10 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
   )
 
 
+;; gnutls
+(with-eval-after-load "gnutls"
+  (setq gnutls-trustfiles (mapcar 'expand-file-name gnutls-trustfiles)))
+
 ;; recentf
 (with-eval-after-load "recentf" ;; 基本的に使わないがファイルをホームに作らないよう設定
   (setq recentf-save-file (ini:emacs-d "recentf")))

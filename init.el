@@ -690,11 +690,15 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
 ;; ido
 (when (require 'ido nil t)
   (setq ido-save-directory-list-file nil)
+  (setcar (nthcdr 2 ido-decorations) ",")
+  (setcar (nthcdr 3 ido-decorations) ", ...")
   (ido-mode 'buffer)
 
-  (define-key ido-buffer-completion-map (kbd "C-f") 'ido-next-match)
-  (define-key ido-buffer-completion-map (kbd "C-b") 'ido-prev-match)
-  (define-key ido-buffer-completion-map (kbd "C-x C-f") nil)
+  (add-hook 'ido-minibuffer-setup-hook
+	    (lambda ()
+	      ;; disable some keys
+	      (dolist (key '("C-f" "C-b" "C-d" "C-x C-f" "C-x C-d"))
+		(define-key ido-buffer-completion-map (kbd key) nil))))
 
   (defadvice ido-exhibit (after ini:ido-exhibit-display-buffer activate)
     "選択しているバッファをウィンドウに表示する."

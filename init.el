@@ -455,6 +455,12 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 		      (interactive "@e")
 		      (popup-menu menu-bar-edit-menu event prefix))))
 
+  ;; アプリケーションキーも同様
+  (global-set-key (kbd "<apps>") (defun ini:show-apps-menu ()
+				   "編集メニューを表示する."
+				   (interactive)
+				   (popup-menu menu-bar-edit-menu)))
+
   ;; Ctrl+Wheel で文字サイズ変更
   (when (display-multi-font-p)
     (global-set-key (kbd "<C-wheel-up>") 'text-scale-increase)

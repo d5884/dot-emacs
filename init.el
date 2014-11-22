@@ -1580,6 +1580,28 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 		 ad-do-it
 		 ))))
     
+    ;; isearch 前後での LEIM 切り替えバグパッチ
+    (defadvice isearch-mode (before migemo-search-ad activate)
+      "adviced by migemo."
+      (setq migemo-search-pattern nil)
+      (setq migemo-search-pattern-alist nil)
+      (setq migemo-current-input-method nil)
+      (when migemo-isearch-enable-p
+    	;; when migemo is enabled, disable input method.
+    	(setq migemo-current-input-method current-input-method)
+    	(deactivate-input-method)))
+
+    (defadvice isearch-done (after migemo-search-ad activate)
+      "adviced by migemo."
+      (setq migemo-search-pattern nil)
+      (setq migemo-search-pattern-alist nil)
+      (when (and migemo-current-input-method
+    		 (not current-input-method))
+    	;; when current input method is saved, and
+    	;; was not changed during isearch-mode,
+    	;; restore it.
+    	(activate-input-method migemo-current-input-method)))
+
     ;; 小菊 / http://sourceforge.jp/projects/kogiku/
     ;; ... or cvs -d:pserver:anonymous@cvs.sourceforge.jp:/cvsroot/kogiku login
     ;;        cvs -d:pserver:anonymous@cvs.sourceforge.jp:/cvsroot/kogiku co kogiku

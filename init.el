@@ -115,6 +115,19 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 	(cons 'progn (cdar clauses))
       `(ini:cond-when-compile ,@(cdr clauses)))))
 
+(defmacro ini:make-silently-loading (func)
+  "FUNC 内の `load' のメッセージ出力を強制的に抑制する."
+  `(defadvice ,func (around
+		     ,(intern (format "ini:make-silently-loading-in-%s" (quote func)))
+		     activate)
+     "`load' 時のメッセージを抑制する."
+     (let ((org-load (symbol-function 'load)))
+       (cl-letf (((symbol-function 'load)
+		  (lambda (file &optional noerror nomessage nosuffix must-suffix)
+		    (funcall org-load file noerror t nosuffix must-suffix))))
+	 ad-do-it)
+       )))
+
 ;; before emacs-24.4
 (unless (fboundp 'with-eval-after-load)
   (defmacro with-eval-after-load (file &rest body)
@@ -1416,15 +1429,8 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
   (setq session-globals-max-string 100000000)
   (setq session-undo-check -1)
   (setq history-length t)
-  (defadvice session-initialize-do (around ini:session-load-silently activate)
-    "セッションロード時のメッセージを抑制する."
-    (let ((org-load (symbol-function 'load)))
-      (cl-letf (((symbol-function 'load)
-		 (lambda (file &optional noerror nomessage nosuffix must-suffix)
-		   (funcall org-load file noerror t nosuffix must-suffix))))
-	ad-do-it)
-      ))
-  )
+
+  (ini:make-silently-loading session-initialize-do))
 
 ;; Daredevil SKK / http://openlab.ring.gr.jp/skk/
 ;; ... or cvs -d:pserver:guest@openlab.jp:/circus/cvsroot login [guest]
@@ -1628,6 +1634,10 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
   (setq yas-verbosity 1)
   (setq yas-prompt-functions (delq 'yas-x-prompt yas-prompt-functions))
   (setq yas-expand-only-for-last-commands '(self-insert-command ac-expand))
+
+ (when (fboundp 'yas--load-yas-setup-file)
+   (ini:make-silently-loading yas--load-yas-setup-file))
+
   (yas-global-mode t)
 
   (with-eval-after-load "term"

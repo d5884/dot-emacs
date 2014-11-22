@@ -170,6 +170,15 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 ;; (require 'locate-file-cache nil t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Package 初期化
+(ini:when-when-compile (locate-library "package")
+  (package-initialize)
+  (setq package-enable-at-startup nil)
+  (setq package-archives (append
+			  '(("melpa" . "http://melpa.milkbox.net/packages/"))
+			  package-archives)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 言語設定
 (set-language-environment 'Japanese)
 (ini:cond-when-compile
@@ -515,15 +524,6 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 (put 'narrow-to-page 'disabled nil)
 (put 'upcase-region 'disabled nil)
 (put 'downcase-region 'disabled nil)
-
-;; package
-(ini:when-when-compile (locate-library "package")
-  (package-initialize)
-  (setq package-enable-at-startup nil)
-  (setq package-archives (append
-			  '(("marmalade" . "http://marmalade-repo.org/packages/")
-			    ("melpa" . "http://melpa.milkbox.net/packages/"))
-			  package-archives)))
 
 ;; transient-mark-mode
 (defadvice exchange-point-and-mark (after ini:exchange-point-and-mark-deactivate activate)

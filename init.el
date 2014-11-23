@@ -472,6 +472,14 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 					  (text-scale-set 0)))
     ))
 
+;; IME関連キーの無効化
+(global-set-key (kbd "<enlw>") 'toggle-input-method) ; 半角/全角
+(global-set-key (kbd "<auto>") 'toggle-input-method) ; 半角/全角
+(global-set-key (kbd "<M-kanji>") 'ignore)           ; Alt+半角/全角
+(global-set-key (kbd "<convert>") 'ignore)           ; 無変換
+(global-set-key (kbd "<no-convert>") 'ignore)        ; 変換
+(global-set-key (kbd "<copy>") 'ignore)	             ; カタカナ/ひらがな/ローマ字
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 標準の変数設定
 
@@ -1438,10 +1446,68 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 
   (ini:make-silently-loading session-initialize-do))
 
+;; Mozc / https://code.google.com/p/mozc/source/browse/trunk/src/unix/emacs/mozc.el
+;;    and http://www49.atwiki.jp/ntemacs?cmd=upload&act=open&pageid=50&file=mozc_emacs_helper.zip
+(when (and (executable-find "mozc_emacs_helper")
+	   (require 'mozc nil t))
+  (setq default-input-method "japanese-mozc")
+
+  (when (eq system-type 'windows-nt)
+    (defadvice mozc-session-execute-command (after ini:mozc-session-execute-command activate)
+      "`mozc' を有効化した際に自動的にひらがな入力モードに変更する."
+      (if (eq (ad-get-arg 0) 'CreateSession)
+	  (mozc-session-sendkey '(hiragana)))))
+
+  (defadvice mozc-mode (after ini:mozc-minibuffer-workaround activate)
+    "ミニバッファから抜ける際に正しく input-method を無効化する."
+    (when (and mozc-mode
+  	       (eq (selected-window) (minibuffer-window)))
+      (add-hook 'minibuffer-exit-hook 'mozc-exit-from-minibuffer)))
+
+  (defun mozc-exit-from-minibuffer ()
+    "`minibuffer' から抜ける際に `deactivate-input-method' を呼び出す."
+    (when (equal current-input-method "japanese-mozc")
+      (deactivate-input-method)
+      (if (<= (minibuffer-depth) 1)
+  	  (remove-hook 'minibuffer-exit-hook 'mozc-exit-from-minibuffer))))
+
+  (defadvice mozc-leim-deactivate (around ini:mozc-deactive-workaround activate)
+    "正しく `mozc-mode' を終了させる."
+    (mozc-mode -1))
+
+  ;; ;; mozc-el-extensions / git clone https://github.com/iRi-E/mozc-el-extensions
+  ;; (setq mozc-isearch-use-workaround nil)
+  ;; (require 'mozc-isearch nil t)
+
+  (when (require 'mozc-cursor-color nil t)
+    (let ((normal (if (and (eq (frame-parameter nil 'background-mode) 'dark)
+				       (string= (frame-parameter nil 'cursor-color) "black"))
+		      "white" "black"))
+	  (ime "dark red"))
+      (setq mozc-cursor-color-alist
+	    `((direct . ,normal)
+	      (read-only . ,normal)
+	      (hiragana . ,ime)
+	      (full-katakana . ,ime)
+	      (half-ascii . ,ime)
+	      (full-ascii . ,ime)
+	      (half-katakana . ,ime)))))
+
+  (setq mozc-leim-title "[あ]")
+
+  (when (require 'mozc-mode-line-indicator nil t)
+    (setq mozc-mode-line-indicator-title-format "[%s]"))
+
+  ;; git clone https://github.com/d5884/mozc-popup
+  (when (and (require 'popup nil t)
+	     (require 'mozc-popup nil t))
+    (setq mozc-candidate-style 'popup)))
+
 ;; Daredevil SKK / http://openlab.ring.gr.jp/skk/
 ;; ... or cvs -d:pserver:guest@openlab.jp:/circus/cvsroot login [guest]
 ;;        cvs -d:pserver:guest@openlab.jp:/circus/cvsroot co -d skk skk/main
-(when (require 'skk-setup nil t)
+(when (and (not (featurep 'mozc))
+	   (require 'skk-setup nil t))
   (setq skk-user-directory user-emacs-directory)
   (setq skk-init-file (expand-file-name "skk-init.el" skk-user-directory))
   (global-set-key [remap toggle-input-method] 'skk-mode)
@@ -1580,6 +1646,13 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 		 ad-do-it
 		 ))))
     
+    (with-eval-after-load "isearch"
+      ;; isearch 中に leim を使用しない
+      (define-key isearch-mode-map [remap toggle-input-method] 'undefined)
+      (define-key isearch-mode-map [remap isearch-toggle-input-method] 'undefined)
+      (define-key isearch-mode-map [remap isearch-toggle-specified-input-method]
+	'undefined))
+
     ;; isearch 前後での LEIM 切り替えバグパッチ
     (defadvice isearch-mode (before migemo-search-ad activate)
       "adviced by migemo."
@@ -2024,6 +2097,26 @@ RENEW が non-nil の場合は新しい状態を作る.
 			:background (color-darken-name
 				     (face-attribute 'default :background)
 				     3)))
+
+  (with-eval-after-load "mozc"
+    (set-face-attribute 'mozc-cand-overlay-even-face nil
+			:background (color-darken-name
+				     (face-attribute 'default :background)
+				     20))
+    (set-face-attribute 'mozc-cand-overlay-odd-face nil
+			:background (color-darken-name
+				     (face-attribute 'default :background)
+				     20))
+    (set-face-attribute 'mozc-cand-overlay-footer-face nil
+			:foreground "white"
+			:background (color-darken-name
+				     (face-attribute 'default :background)
+				     50))
+    (set-face-attribute 'mozc-cand-overlay-focused-face nil
+			:foreground "white"
+			:background (color-darken-name
+				     (face-attribute 'default :background)
+				     70)))
   )
 
 

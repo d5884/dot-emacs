@@ -1355,7 +1355,8 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 	  (and sdic-warning-hidden-entry
 	       (> p (point-min))
 	       (message "この前にもエントリがあります。"))
-	  (display-buffer (get-buffer sdic-buffer-name))
+	  (unless (eq (window-buffer) (get-buffer sdic-buffer-name))
+	    (display-buffer (get-buffer sdic-buffer-name)))
 	  (set-window-start (get-buffer-window sdic-buffer-name) p)
 	  (goto-char p)
 	  ))

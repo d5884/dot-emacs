@@ -477,7 +477,7 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 (global-set-key (kbd "<auto>") 'toggle-input-method) ; 半角/全角
 (global-set-key (kbd "<M-kanji>") 'ignore)           ; Alt+半角/全角
 (global-set-key (kbd "<convert>") 'ignore)           ; 無変換
-(global-set-key (kbd "<no-convert>") 'ignore)        ; 変換
+(global-set-key (kbd "<non-convert>") 'ignore)       ; 変換
 (global-set-key (kbd "<copy>") 'ignore)	             ; カタカナ/ひらがな/ローマ字
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

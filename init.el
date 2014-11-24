@@ -2117,6 +2117,9 @@ RENEW が non-nil の場合は新しい状態を作る.
 			:background (color-darken-name
 				     (face-attribute 'default :background)
 				     70)))
+  (with-eval-after-load "mozc-popup"
+    (set-face-attribute 'mozc-cand-overlay-description-face nil
+			:foreground "gray46"))
   )
 
 

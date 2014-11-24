@@ -492,7 +492,7 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 (setq view-read-only t)
 (setq visible-bell t)
 (setq comment-style 'multi-line)
-(setq recenter-positions '(middle))
+(setq recenter-positions '(middle top))
 ;; (setq-default cursor-in-non-selected-windows nil)
 
 ;; 起動画面

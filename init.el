@@ -1309,6 +1309,20 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
     )
   )
 
+;; eww
+(with-eval-after-load "eww"
+  (setq eww-search-prefix "http://www.google.co.jp/search?q=")
+
+  (defadvice eww-display-html (after ini:eww-change-buffer-coding-system activate)
+    (set-buffer-file-coding-system (ad-get-arg 0)))
+
+  (defadvice eww-submit (around ini:eww-override-find-coding-systems-string activate)
+    (cl-letf (((symbol-function 'find-coding-systems-string)
+	       (lambda (string)
+		 (list buffer-file-coding-system))))
+      ad-do-it))
+  )
+
 ;; markdown-mode / git clone git://jblevins.org/git/markdown-mode.git
 (ini:when-when-compile (locate-library "markdown-mode")
   (autoload 'markdown-mode "markdown-mode" nil t)

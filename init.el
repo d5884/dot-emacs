@@ -1149,7 +1149,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
     (interactive "P")
     (if (or (not (local-variable-p 'compile-command))
 	    arg)
-	(smart-compile)
+	(smart-compile 4)
       (recompile)))
   
   (global-set-key [remap compile] 'ini:smart-recompile)

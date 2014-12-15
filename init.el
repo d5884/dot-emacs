@@ -1534,12 +1534,19 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 ;; Daredevil SKK / http://openlab.ring.gr.jp/skk/
 ;; ... or cvs -d:pserver:guest@openlab.jp:/circus/cvsroot login [guest]
 ;;        cvs -d:pserver:guest@openlab.jp:/circus/cvsroot co -d skk skk/main
-(when (and (not (featurep 'mozc))
-	   (require 'skk-setup nil t))
+(when (and (load "skk-autoloads" nil t)
+	   (require 'skk-leim nil t))
   (setq skk-user-directory user-emacs-directory)
   (setq skk-init-file (expand-file-name "skk-init.el" skk-user-directory))
-  (global-set-key [remap toggle-input-method] 'skk-mode)
-  (global-set-key [remap skk-auto-fill-mode] 'ignore)
+
+  (global-set-key (kbd "C-x C-j") (defun ini:force-skk-activate ()
+				    "強制的に `current-input-method' を `skk-mode' にする."
+				    (interactive)
+				    (if (equal current-input-method "japanese-skk")
+					(deactivate-input-method)
+				      (when current-input-method
+					(deactivate-input-method))
+				      (set-input-method "japanese-skk"))))
   
   ;; 実験的拡張へのロードパス追加(あれば)
   (ini:awhen (eval-when-compile (ini:library-within "skk" "experimental" t))

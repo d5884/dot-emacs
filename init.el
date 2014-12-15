@@ -1655,6 +1655,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
     (setq migemo-use-pattern-alist t)
     (setq migemo-use-frequent-pattern-alist t)
     (setq migemo-pattern-alist-length 1024)
+    (setq migemo-pattern-alist-file (ini:emacs-d "migemo-pattern"))
     (define-key isearch-mode-map (kbd "M-k") 'migemo-isearch-toggle-migemo) ; compatible with kogiku
 
     ;; pty を消費しない

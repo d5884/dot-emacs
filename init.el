@@ -1461,6 +1461,10 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 
   (ini:make-silently-loading session-initialize-do))
 
+;; quail-japanese
+(with-eval-after-load "japanese"
+  (setq quail-japanese-use-double-n t))
+
 ;; Mozc / https://code.google.com/p/mozc/source/browse/trunk/src/unix/emacs/mozc.el
 ;;    and http://www49.atwiki.jp/ntemacs?cmd=upload&act=open&pageid=50&file=mozc_emacs_helper.zip
 (when (and (executable-find "mozc_emacs_helper")

@@ -1575,6 +1575,12 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 					   "zipcode/SKK-JISYO.office.zipcode")
 					 )))
 		
+		;; cdb は使わない
+		(setq skk-search-prog-list
+		      (cl-remove-if (lambda (prog)
+				      (eq (car prog) 'skk-search-cdb-jisyo))
+				    skk-search-prog-list))
+
 		;; チュートリアルファイル
 		(ini:awhen (locate-file "SKK.tut" (list dict-dir
 							(ini:library-within "skk" "etc")))

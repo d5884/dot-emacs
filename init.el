@@ -840,9 +840,9 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
     (let ((existing-p (and find-file-existing-other-name
 			   (find-buffer-visiting (symbol-value (ad-get-arg 0))))))
       ad-do-it
-      (or existing-p
-	  (ediff-with-current-buffer (symbol-value (ad-get-arg 1))
-	    (setq-local ini:ediff-kill-on-quit t)))))
+      (unless existing-p
+	(ediff-with-current-buffer (symbol-value (ad-get-arg 1))
+	  (setq-local ini:ediff-kill-on-quit t)))))
 
   (eval-when-compile (require 'ediff nil t))
   (defvar ini:ediff-window-configuration-stash nil
@@ -1609,9 +1609,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 	      (setq skk-use-jisx0201-input-method t)
 
 	      (when (require 'pos-tip nil t)
-		(setq skk-tooltip-function
-		      (lambda (tooltip-str)
-			(pos-tip-show tooltip-str))))
+		(setq skk-tooltip-function 'pos-tip-show))
 	      )))
 
 ;; migemo / http://0xcc.net/migemo/
@@ -1667,7 +1665,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
       (define-key isearch-mode-map [remap toggle-input-method] 'undefined)
       (define-key isearch-mode-map [remap isearch-toggle-input-method] 'undefined)
       (define-key isearch-mode-map [remap isearch-toggle-specified-input-method]
-	'undefined))
+    	'undefined))
 
     ;; isearch 前後での LEIM 切り替えバグパッチ
     (defadvice isearch-mode (before migemo-search-ad activate)

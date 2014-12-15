@@ -1498,19 +1498,27 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
   ;; (setq mozc-isearch-use-workaround nil)
   ;; (require 'mozc-isearch nil t)
 
-  (when (require 'mozc-cursor-color nil t)
-    (let ((normal (if (and (eq (frame-parameter nil 'background-mode) 'dark)
-				       (string= (frame-parameter nil 'cursor-color) "black"))
-		      "white" "black"))
-	  (ime "dark red"))
-      (setq mozc-cursor-color-alist
-	    `((direct . ,normal)
-	      (read-only . ,normal)
-	      (hiragana . ,ime)
-	      (full-katakana . ,ime)
-	      (half-ascii . ,ime)
-	      (full-ascii . ,ime)
-	      (half-katakana . ,ime)))))
+  ;; ccc がある場合(= skk と共存する場合)は ccc でカーソルカラー変更
+  (if (require 'ccc nil t)
+      (progn
+	(add-hook 'input-method-activate-hook
+		  (lambda () (set-buffer-local-cursor-color "dark red")))
+	(add-hook 'input-method-deactivate-hook
+		  (lambda () (set-cursor-color-buffer-local nil))))
+    (when (require 'mozc-cursor-color nil t)
+      (let ((normal (if (and (eq (frame-parameter nil 'background-mode) 'dark)
+			     (string= (frame-parameter nil 'cursor-color) "black"))
+			"white" "black"))
+	    (ime "dark red"))
+	(setq mozc-cursor-color-alist
+	      `((direct . ,normal)
+		(read-only . ,normal)
+		(hiragana . ,ime)
+		(full-katakana . ,ime)
+		(half-ascii . ,ime)
+		(full-ascii . ,ime)
+		(half-katakana . ,ime)))))
+    )
 
   (setq mozc-leim-title "[あ]")
 

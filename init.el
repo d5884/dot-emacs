@@ -524,7 +524,8 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 
 (tool-bar-mode -1)
 (menu-bar-mode -1)
-(scroll-bar-mode -1)
+(when (fboundp 'scroll-bar-mode)
+  (scroll-bar-mode -1))
 ;; (set-scroll-bar-mode 'right)
 (blink-cursor-mode -1)
 (column-number-mode t)

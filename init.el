@@ -2106,31 +2106,22 @@ RENEW が non-nil の場合は新しい状態を作る.
 			:background "#fcc")
     )
 
-  (with-eval-after-load "stripe-buffer"
-    (set-face-attribute 'stripe-highlight nil
-			:background (color-darken-name
-				     (face-attribute 'default :background)
-				     3)))
+  (when (> (display-color-cells nil) 256)
+    (with-eval-after-load "stripe-buffer"
+      (set-face-attribute 'stripe-highlight nil
+			  :background "gray97")))
 
   (with-eval-after-load "mozc"
     (set-face-attribute 'mozc-cand-overlay-even-face nil
-			:background (color-darken-name
-				     (face-attribute 'default :background)
-				     20))
+			:background "gray80")
     (set-face-attribute 'mozc-cand-overlay-odd-face nil
-			:background (color-darken-name
-				     (face-attribute 'default :background)
-				     20))
+			:background "gray80")
     (set-face-attribute 'mozc-cand-overlay-footer-face nil
 			:foreground "white"
-			:background (color-darken-name
-				     (face-attribute 'default :background)
-				     50))
+			:background "gray50")
     (set-face-attribute 'mozc-cand-overlay-focused-face nil
 			:foreground "white"
-			:background (color-darken-name
-				     (face-attribute 'default :background)
-				     70)))
+			:background "gray30"))
   (with-eval-after-load "mozc-popup"
     (set-face-attribute 'mozc-cand-overlay-description-face nil
 			:foreground "gray46"))

@@ -976,14 +976,13 @@ COMMAND が存在しない場合は定義を行なわない."
 	      (setq-local delete-by-moving-to-trash t)
 	      (hl-line-mode t)))
 
-  (ini:when-when-compile (executable-find "cygstart")
+  (when (eq system-type 'windows-nt)
     (define-key dired-mode-map (kbd "E")
-      (defun ini:dired-execute-by-cygstart ()
-	"cygstart を使ってファイルに関連付けられたプログラムを実行する."
+      (defun ini:dired-execute ()
+	"ファイルを関連付けされたプログラムで開く."
 	(interactive)
-	(start-process "cygstart" nil "cygstart"
-		       (dired-get-file-for-visit)))))
-  
+	(w32-shell-execute nil (dired-get-file-for-visit)))))
+
   (define-key dired-mode-map (kbd "v")
     (defun ini:dired-view-other-window ()
       "別ウィンドウでファイルを閲覧する."

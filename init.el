@@ -1495,6 +1495,40 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
     "正しく `mozc-mode' を終了させる."
     (mozc-mode -1))
 
+  (defadvice mozc-helper-process-recv-response (after ini:mozc-accept-output-workaround activate)
+    "他プロセスが終了した際に accept-process-output がタイムアウトする問題対策."
+    (unless ad-return-value
+      (setq ad-return-value (mozc-helper-process-recv-response))))
+
+  ;; mozc のステータス取得系
+  (defvar ini:mozc-status-alist nil
+    "`mozc-mode' の状態を表す alist.")
+
+  (defconst ini:mozc-status-default-mode
+    (if (eq system-type 'windows-nt) 'direct 'hiragana)
+    "`mozc-mode' の初期変換モード.")
+
+  (defadvice mozc-mode (after ini:mozc-status-init activate)
+    "`mozc-status-alist' を初期化する."
+    (unless mozc-mode
+      (setq ini:mozc-status-alist nil)))
+
+  (defadvice mozc-session-recv-corresponding-response (after ini:mozc-status-update activate)
+    "`mozc-status-alist' を更新する."
+    (when ad-return-value
+      (setq ini:mozc-status-alist
+	    `((session-id . ,(mozc-protobuf-get ad-return-value 'emacs-session-id))
+	      (mode       . ,(or (mozc-protobuf-get ad-return-value 'output 'mode)
+				 ini:mozc-status-default-mode
+				 'direct))
+	      (state      . ,(cond
+			      ((mozc-protobuf-get ad-return-value 'output 'preedit)
+			       'preedit)
+			      ((mozc-protobuf-get ad-return-value 'output 'result)
+			       'result)
+			      (t
+			       'empty)))))))
+
   ;; ;; mozc-el-extensions / git clone https://github.com/iRi-E/mozc-el-extensions
   ;; (setq mozc-isearch-use-workaround nil)
   ;; (require 'mozc-isearch nil t)

@@ -717,6 +717,7 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
 
 ;; ido
 (when (require 'ido nil t)
+  (setq ido-default-buffer-method 'selected-window)
   (setq ido-save-directory-list-file nil)
   (setcar (nthcdr 2 ido-decorations) ",")
   (setcar (nthcdr 3 ido-decorations) ", ...")

@@ -392,7 +392,36 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
       					      (encode-coding-string arg 'cp932)
       					    arg))
       					(ad-get-args ,p)))))))
-      
+
+      (when (and (= emacs-major-version 24)
+		 (= emacs-minor-version 4)) ;; 24.5 以降はどうなるかわからんので
+	(defconst w32-pipe-limit 4096
+	  "Windows でのパイプバッファサイズ.")
+
+	(defadvice process-send-string (around ini:workaround-for-process-send-string activate)
+	  "4096 バイト以上を一度に送信すると cygwin の select が停止する問題への対処."
+	  (if (not (eq (process-type (ad-get-arg 0)) 'real))
+	      ad-do-it
+	    (let* ((proc (get-process (or (ad-get-arg 0)
+					  (get-buffer-process (current-buffer)))))
+		   (org-coding-system (process-coding-system proc))
+		   (rest (encode-coding-string (ad-get-arg 1) (cdr org-coding-system))))
+	      (unwind-protect
+		  (progn
+		    (set-process-coding-system proc
+					       (car org-coding-system)
+					       'no-conversion)
+		    (while (> (length rest) w32-pipe-limit)
+		      (ad-set-arg 1 (substring rest 0 w32-pipe-limit))
+		      ad-do-it
+		      (setq rest (substring rest w32-pipe-limit)))
+		    (ad-set-arg 1 rest)
+		    ad-do-it)
+		(set-process-coding-system proc
+					   (car org-coding-system)
+					   (cdr org-coding-system))
+		))))
+	)
       ;; fakecygpty
       ;; gcc -o fakecygpty.exe fakecygpty.c
       ;; gcc -o qkill.exe qkill.c

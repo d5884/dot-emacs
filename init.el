@@ -1577,7 +1577,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 ;; Daredevil SKK / http://openlab.ring.gr.jp/skk/
 ;; ... or cvs -d:pserver:guest@openlab.jp:/circus/cvsroot login [guest]
 ;;        cvs -d:pserver:guest@openlab.jp:/circus/cvsroot co -d skk skk/main
-(when (and (load "skk-autoloads" nil t)
+(when (and (load "skk-autoloads" t t)
 	   (require 'skk-leim nil t))
   (setq skk-user-directory user-emacs-directory)
   (setq skk-init-file (expand-file-name "skk-init.el" skk-user-directory))

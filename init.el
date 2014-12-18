@@ -404,23 +404,16 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 	      ad-do-it
 	    (let* ((proc (get-process (or (ad-get-arg 0)
 					  (get-buffer-process (current-buffer)))))
-		   (org-coding-system (process-coding-system proc))
-		   (rest (encode-coding-string (ad-get-arg 1) (cdr org-coding-system))))
-	      (unwind-protect
-		  (progn
-		    (set-process-coding-system proc
-					       (car org-coding-system)
-					       'no-conversion)
+		   (rest (encode-coding-string (ad-get-arg 1)
+					       (cdr (process-coding-system proc))))
+		   (inhibit-eol-conversion t))
 		    (while (> (length rest) w32-pipe-limit)
 		      (ad-set-arg 1 (substring rest 0 w32-pipe-limit))
 		      ad-do-it
 		      (setq rest (substring rest w32-pipe-limit)))
 		    (ad-set-arg 1 rest)
-		    ad-do-it)
-		(set-process-coding-system proc
-					   (car org-coding-system)
-					   (cdr org-coding-system))
-		))))
+		    ad-do-it
+		)))
 	)
       ;; fakecygpty
       ;; gcc -o fakecygpty.exe fakecygpty.c

@@ -47,14 +47,13 @@ CONDS 内では PRED の評価結果を `it' で参照出来る."
      (if (and it ,@conds)
 	 it)))
 
-(defmacro ini:system-path (path &optional base)
-  "PATH をシステムで認識可能なパスに変換する.
-PATH が相対パスの場合 `expand-file-name' で絶対パスに変換される.
-BASE が non-nil の場合は絶対パス変換時の基準ディレクトリと見なす.
+(defmacro ini:system-file-name (name &optional directory)
+  "NAME をシステムで認識可能なファイルパスに変換する.
+`expand-file-name' により DIRECTORY を基準にして絶対パスに変換される.
 環境変数などの Emacs 外のプログラムに参照される場合に用いる."
   (if (eq system-type 'windows-nt)
-      `(subst-char-in-string ?/ ?\\ (expand-file-name ,path ,base))
-    `(expand-file-name ,path ,base)))
+      `(subst-char-in-string ?/ ?\\ (expand-file-name ,name ,directory))
+    `(expand-file-name ,name ,directory)))
 
 (defmacro ini:concat-system-path (paths &optional base original)
   "PATHS をシステムで認識可能なパスの連結に変換する.
@@ -62,8 +61,8 @@ PATHS の各要素は自身と BASE を引数に `ini:system-path' で処理さ�
 セパレータには `path-separator' が用いられる.
 ORIGINAL が non-nil であれば最後に連結される."
   `(apply 'concat
-	  (mapconcat (lambda (p) (ini:system-path p ,base))
-		     ,paths path-separator)
+	  (mapconcat (lambda (name) (ini:system-file-name name ,directory))
+		     ,names path-separator)
 	  (if ,original
 	      (list path-separator ,original))))
 
@@ -1220,8 +1219,8 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
       (unless (getenv "GS_LIB")
 	(setenv "GS_LIB" (ini:concat-system-path '("lib" "kanji" "Resource/Init") gs-root)))
       (unless (getenv "GS_DLL")
-	(setenv "GS_DLL" (ini:system-path "bin/gsdll32.dll" gs-root)))
       (setenv "PATH" (ini:concat-system-path '("bin" "lib") gs-root (getenv "PATH")))
+	(setenv "GS_DLL" (ini:system-file-name "bin/gsdll32.dll" gs-root)))
 
       ;; lpr
       (with-eval-after-load "lpr"

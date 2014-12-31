@@ -1757,6 +1757,11 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
       (define-key isearch-mode-map [remap isearch-toggle-specified-input-method]
     	'undefined))
 
+    (defadvice isearch-lazy-highlight-update (around ini:suppress-error-isearch-regexp activate)
+      "正規表現検索時のエラー回避."
+      (ignore-errors
+	ad-do-it))
+
     ;; isearch 前後での LEIM 切り替えバグパッチ
     (defadvice isearch-mode (before migemo-search-ad activate)
       "adviced by migemo."

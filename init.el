@@ -70,9 +70,9 @@ ORIGINAL が non-nil であれば最後に連結される."
   "~/.emacs.d 以下の PATH を返す."
   `(eval-when-compile (locate-user-emacs-file ,path)))
 
-(defmacro ini:locate-path (path)
-  "PATH が存在するなら返す."
-  `(locate-file "." (list ,path) nil (lambda (p) (when (file-exists-p p) 'dir-ok))))
+(defmacro ini:locate-directory (directory)
+  "DIRECTORY が存在するなら返す."
+  `(locate-file "." (list ,directory) nil (lambda (p) (when (file-exists-p p) 'dir-ok))))
 
 (defmacro ini:find-path (paths)
   "PATHS に見付かったパスを返す."
@@ -161,7 +161,7 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 ;; データフォルダ等もあるので再帰的には追加しない
 (setq load-path
       (append
-       (ini:awhen (ini:locate-path (ini:emacs-d "lisp"))
+       (ini:awhen (ini:locate-directory (ini:emacs-d "lisp"))
 	 (cons it (cl-remove-if-not #'file-directory-p (directory-files it t "^[^.]"))))
        load-path))
 
@@ -367,7 +367,7 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 
       ;; cygwin で追加される Info
       (with-eval-after-load "info"
-	(ini:awhen (ini:locate-path "/usr/share/info")
+	(ini:awhen (ini:locate-directory "/usr/share/info")
 	  (add-to-list 'Info-additional-directory-list it)))
       
       ;; cygwin-mount / http://home.avvanta.com/~offby1/cygwin-mount/cygwin-mount.el
@@ -620,7 +620,7 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 
 ;; info
 (with-eval-after-load "info"
-  (ini:awhen (eval-when-compile (ini:locate-path (ini:emacs-d "info")))
+  (ini:awhen (eval-when-compile (ini:locate-directory (ini:emacs-d "info")))
     (add-to-list 'Info-additional-directory-list it)))
 
 ;; ispell

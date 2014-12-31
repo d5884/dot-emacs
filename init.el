@@ -1190,18 +1190,17 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 ;;  http://www.khotta.org/ghost/index.html
 ;;  http://w32tex.org/index-ja.html
 (when (eq system-type 'windows-nt)
-  (let ((gs-root  (ini:aif (executable-find "gswin32c")
-		      (expand-file-name ".." (file-name-directory it))
-		    (ini:find-directory '("c:/gs" "c:/gnupack/app/gs")))))
-    (when gs-root
-      (defvar gswin-command (expand-file-name "bin/gswin32c" gs-root)
+  (ini:awhen (ini:aif (executable-find "gswin32c")
+		 (expand-file-name ".." (file-name-directory it))
+	       (ini:find-directory '("c:/gs" "c:/gnupack/app/gs")))
+      (defvar gswin-command (expand-file-name "bin/gswin32c" it)
 	"ghostscript の実行プログラム.")
 
       (unless (getenv "GS_LIB")
-	(setenv "GS_LIB" (ini:concat-system-file-names '("lib" "kanji" "Resource/Init") gs-root)))
+	(setenv "GS_LIB" (ini:concat-system-file-names '("lib" "kanji" "Resource/Init") it)))
       (unless (getenv "GS_DLL")
-	(setenv "GS_DLL" (ini:system-file-name "bin/gsdll32.dll" gs-root)))
-      (setenv "PATH" (ini:concat-system-file-names '("bin" "lib") gs-root (getenv "PATH")))
+	(setenv "GS_DLL" (ini:system-file-name "bin/gsdll32.dll" it)))
+      (setenv "PATH" (ini:concat-system-file-names '("bin" "lib") it (getenv "PATH")))
 
       ;; lpr
       (with-eval-after-load "lpr"
@@ -1226,8 +1225,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 	(setq doc-view-ghostscript-program gswin-command)
 	(push "-dWINKANJI" doc-view-ghostscript-options)
 	)
-      )))
-
+      ))
 
 ;; calendar
 (with-eval-after-load "calendar"

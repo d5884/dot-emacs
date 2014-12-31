@@ -74,9 +74,9 @@ ORIGINAL が non-nil であれば最後に連結される."
   "DIRECTORY が存在するなら返す."
   `(locate-file "." (list ,directory) nil (lambda (p) (when (file-exists-p p) 'dir-ok))))
 
-(defmacro ini:find-path (paths)
-  "PATHS に見付かったパスを返す."
-  `(locate-file "." ,paths nil (lambda (p) (when (file-exists-p p) 'dir-ok))))
+(defmacro ini:find-directory (directories)
+  "DIRECTORIES のうち最初に見付かったディレクトリを返す."
+  `(locate-file "." ,directories nil (lambda (p) (when (file-exists-p p) 'dir-ok))))
 
 (defmacro ini:library-within (lib file &optional exists)
   "ライブラリ LIB と同じディレクトリに配置されている FILE へのパスを返す.
@@ -293,7 +293,7 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
   (ini:awhen (eval-when-compile
 	       (or (ini:aand1 (getenv "CYGWIN_DIR")
 			      (file-exists-p it))
-		   (ini:find-path
+		   (ini:find-directory
 		    (mapcar (lambda (p) (expand-file-name "cygwin" p))
 			    (list (getenv "LOCALAPPDATA")
 				  (getenv "APPDATA")
@@ -1211,7 +1211,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 (ini:when-when-compile (eq system-type 'windows-nt)
   (let ((gs-root (eval-when-compile (ini:aif (executable-find "gswin32c")
 					(expand-file-name ".." (file-name-directory it))
-				      (ini:find-path '("c:/gs" "c:/gnupack/app/gs"))))))
+				      (ini:find-directory '("c:/gs" "c:/gnupack/app/gs"))))))
     (when gs-root
       (defvar gswin-command (expand-file-name "bin/gswin32c" gs-root)
 	"ghostscript の実行プログラム.")

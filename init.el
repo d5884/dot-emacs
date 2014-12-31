@@ -1747,7 +1747,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 			  ini:org-isearch-lazy-highlight-search))
 		 ad-do-it
 		 ))))
-    
+
     (with-eval-after-load "isearch"
       ;; isearch 中に leim を使用しない
       (define-key isearch-mode-map [remap toggle-input-method] 'undefined)

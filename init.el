@@ -99,21 +99,6 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
        (with-current-buffer ,buffer
 	 (local-set-key ,(or key "q") 'bury-buffer)))))
 
-(defmacro ini:when-when-compile (pred &rest form)
-  "展開時に PRED を評価し、 non-nil の場合に FORM を展開する.
-`system-type' や実行ファイルの有無などの変化があまりない箇所での最適化に用いる."
-  (when (eval pred)
-    `(progn ,@form)))
-
-(defmacro ini:cond-when-compile (&rest clauses)
-  "展開時に CLAUSES の評価部を評価し、実行部を展開する. `cond' を参照.
-`system-type' や実行ファイルの有無などの変化があまりない箇所での最適化に用いる."
-  (if (null clauses)
-      nil
-    (if (eval (caar clauses))
-	(cons 'progn (cdar clauses))
-      `(ini:cond-when-compile ,@(cdr clauses)))))
-
 (defmacro ini:make-silently-loading (func)
   "FUNC 内の `load' のメッセージ出力を強制的に抑制する."
   `(defadvice ,func (around
@@ -142,12 +127,9 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 ;; マクロのインデント設定
 (put 'ini:aif 'lisp-indent-function 2)
 (put 'ini:awhen 'lisp-indent-function 1)
-(put 'ini:when-when-compile 'lisp-indent-function 1)
 
 (font-lock-add-keywords 'emacs-lisp-mode
-			`((,(regexp-opt '("ini:aif" "ini:awhen"
-					  "ini:when-when-compile"
-					  "ini:cond-when-compile"))
+			`((,(regexp-opt '("ini:aif" "ini:awhen"))
 			   . 'font-lock-keyword-face)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -179,7 +161,7 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 言語設定
 (set-language-environment 'Japanese)
-(ini:cond-when-compile
+(cond
  ((eq system-type 'windows-nt)
   (prefer-coding-system 'utf-8-dos)
   (set-file-name-coding-system 'cp932)
@@ -282,27 +264,26 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Cygwin 連携
-(ini:when-when-compile (eq system-type 'windows-nt)
+(when (eq system-type 'windows-nt)
   ;; cygwin へのパス等が通されていない前提で emacs 内で諸々を設定する
 
   ;; パイプ間の待ち時間を減らす
   (setq w32-pipe-read-delay 5)
 
   ;; インストールルート検索
-  (ini:awhen (eval-when-compile
-	       (or (ini:aand1 (getenv "CYGWIN_DIR")
-			      (file-exists-p it))
-		   (ini:find-directory
-		    (mapcar (lambda (p) (expand-file-name "cygwin" p))
-			    (list (getenv "LOCALAPPDATA")
-				  (getenv "APPDATA")
-				  (getenv "USERPROFILE")
-				  (getenv "HOME")
-				  (getenv "ProgramW6432")
-				  (getenv "ProgramFiles")
-				  "c:/"
-				  "c:/gnupack/app/cygwin")))))
-    (let ((cygwin-exec-path		; cygwin のルートパスからの相対パスとして追加
+  (ini:awhen (or (ini:aand1 (getenv "CYGWIN_DIR")
+			    (file-exists-p it))
+		 (ini:find-directory
+		  (mapcar (lambda (p) (expand-file-name "cygwin" p))
+			  (list (getenv "LOCALAPPDATA")
+				(getenv "APPDATA")
+				(getenv "USERPROFILE")
+				(getenv "HOME")
+				(getenv "ProgramW6432")
+				(getenv "ProgramFiles")
+				"c:/"
+				"c:/gnupack/app/cygwin"))))
+    (let ((cygwin-exec-path ; cygwin のルートパスからの相対パスとして追加
 	   (mapcar (lambda (path)
 		     (expand-file-name (if (and (> (length path) 0) (eq (aref path 0) ?/))
 					   (substring path 1)
@@ -317,7 +298,7 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
       (setq null-device "/dev/null")
 
       ;; shell
-      (ini:when-when-compile (executable-find "bash")
+      (when (executable-find "bash")
 	(setq shell-file-name "bash")
 	(setq shell-command-switch "-c")
 	(setq system-uses-terminfo nil)
@@ -405,13 +386,13 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 		   (rest (encode-coding-string (ad-get-arg 1)
 					       (cdr (process-coding-system proc))))
 		   (inhibit-eol-conversion t))
-		    (while (> (length rest) w32-pipe-limit)
-		      (ad-set-arg 1 (substring rest 0 w32-pipe-limit))
-		      ad-do-it
-		      (setq rest (substring rest w32-pipe-limit)))
-		    (ad-set-arg 1 rest)
-		    ad-do-it
-		)))
+	      (while (> (length rest) w32-pipe-limit)
+		(ad-set-arg 1 (substring rest 0 w32-pipe-limit))
+		ad-do-it
+		(setq rest (substring rest w32-pipe-limit)))
+	      (ad-set-arg 1 rest)
+	      ad-do-it
+	      )))
 	)
       ;; fakecygpty
       ;; gcc -o fakecygpty.exe fakecygpty.c
@@ -419,7 +400,7 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
       ;; git clone https://github.com/d5884/fakecygpty
       (when (require 'fakecygpty nil t)
 	(fakecygpty-activate))
-	)))
+      )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; キーバインド変更
@@ -622,17 +603,17 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 
 ;; info
 (with-eval-after-load "info"
-  (ini:awhen (eval-when-compile (ini:locate-directory (ini:emacs-d "info")))
+  (ini:awhen (ini:locate-directory (ini:emacs-d "info"))
     (add-to-list 'Info-additional-directory-list it)))
 
 ;; ispell
 (with-eval-after-load "ispell"
   ;; from http://www.an.econ.kobe-u.ac.jp/~namba/meadow/words.lzh
-  (ini:awhen (eval-when-compile (locate-file "words"
-					     `("/usr/dict"
-					       "/usr/share/dict"
-					       ,(ini:emacs-d "etc")
-					       ,user-emacs-directory)))
+  (ini:awhen (locate-file "words"
+			  `(,(ini:emacs-d "etc")
+			    ,user-emacs-directory
+			    "/usr/dict"
+			    "/usr/share/dict"))
     (setq ispell-alternate-dictionary it)))
 
 ;; windmove
@@ -772,7 +753,7 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
 
   (grep-apply-setting 'grep-find-use-xargs 'exec-plus)
 
-  (ini:when-when-compile (executable-find "lgrep")
+  (when (executable-find "lgrep")
     ;; lv 付属の多国語化 grep
     (setq grep-program "lgrep")
     (grep-apply-setting 'grep-command "lgrep -n -Au8 -Ia ")
@@ -795,11 +776,11 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
   (server-start))
 
 ;; スクリプトファイルの自動 +x
-(ini:when-when-compile (fboundp 'executable-make-buffer-file-executable-if-script-p)
+(when (fboundp 'executable-make-buffer-file-executable-if-script-p)
   (add-hook 'after-save-hook 'executable-make-buffer-file-executable-if-script-p))
 
 ;; ssh-agent
-(ini:when-when-compile (locate-library "ssh-agent")
+(when (locate-library "ssh-agent")
   (autoload 'ssh-agent-add-key "ssh-agent" nil t)
 
   (with-eval-after-load "magit"
@@ -887,7 +868,7 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
   )
 
 ;; magit
-(ini:when-when-compile (locate-library "magit")
+(when (locate-library "magit")
   (autoload 'magit-status "magit" nil t)
   (global-set-key (kbd "C-z C-m") 'magit-status)
 
@@ -1111,13 +1092,13 @@ COMMAND が存在しない場合は定義を行なわない."
     (ini:flymake-gen-simple-init ruby "\\.rb$" "ruby" "-c" local-file))
   )
 
-(ini:when-when-compile (executable-find "ruby")
+(when (executable-find "ruby")
   ;; rubydb
-  (ini:when-when-compile (locate-library "rubydb3x")
+  (when (locate-library "rubydb3x")
     (autoload 'rubydb "rubydb3x" nil t))
   
   ;; inf-ruby
-  (ini:when-when-compile (locate-library "inf-ruby")
+  (when (locate-library "inf-ruby")
     (autoload 'run-ruby "inf-ruby" nil t)
     (autoload 'inf-ruby-keys "inf-ruby" nil t)
     (with-eval-after-load "inf-ruby"
@@ -1139,7 +1120,7 @@ COMMAND が存在しない場合は定義を行なわない."
 ;;   )
 
 ;; zencoding / git clone https://github.com/smihica/zencoding
-(ini:when-when-compile (locate-library "zencoding-mode")
+(when (locate-library "zencoding-mode")
   (autoload 'zencoding-mode "zencoding-mode" nil t)
   
   (with-eval-after-load "zencoding-mode"
@@ -1161,7 +1142,7 @@ COMMAND が存在しない場合は定義を行なわない."
 ;; smart-compile
 ;;   from http://emacswiki.org/emacs/SmartCompile
 ;; ... or git clone https://github.com/emacsmirror/smart-compile.git
-(ini:when-when-compile (locate-library "smart-compile")
+(when (locate-library "smart-compile")
   (autoload 'smart-compile "smart-compile" nil t)
   (autoload 'recompile "compile" nil t)
 
@@ -1178,7 +1159,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
   )
 
 ;; nxml-mode
-(ini:when-when-compile (fboundp 'nxml-mode)
+(when (fboundp 'nxml-mode)
   (fset 'html-mode 'nxml-mode)
   (fset 'xml-mode 'nxml-mode)
 
@@ -1208,10 +1189,10 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 ;; gswin32
 ;;  http://www.khotta.org/ghost/index.html
 ;;  http://w32tex.org/index-ja.html
-(ini:when-when-compile (eq system-type 'windows-nt)
-  (let ((gs-root (eval-when-compile (ini:aif (executable-find "gswin32c")
-					(expand-file-name ".." (file-name-directory it))
-				      (ini:find-directory '("c:/gs" "c:/gnupack/app/gs"))))))
+(when (eq system-type 'windows-nt)
+  (let ((gs-root  (ini:aif (executable-find "gswin32c")
+		      (expand-file-name ".." (file-name-directory it))
+		    (ini:find-directory '("c:/gs" "c:/gnupack/app/gs")))))
     (when gs-root
       (defvar gswin-command (expand-file-name "bin/gswin32c" gs-root)
 	"ghostscript の実行プログラム.")
@@ -1344,13 +1325,13 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
   )
 
 ;; markdown-mode / git clone git://jblevins.org/git/markdown-mode.git
-(ini:when-when-compile (locate-library "markdown-mode")
+(when (locate-library "markdown-mode")
   (autoload 'markdown-mode "markdown-mode" nil t)
   (add-to-list 'auto-mode-alist '("\\.\\(md\\(wn\\|t\\)?\\|markdown\\|text\\)\\'" .
 				  markdown-mode)))
 
 ;; sdic / http://www.namazu.org/~tsuchiya/sdic/
-(ini:when-when-compile (locate-library "sdic")
+(when (locate-library "sdic")
   (autoload 'sdic-describe-word "sdic" nil t)
   (autoload 'sdic-describe-word-at-point "sdic" nil t)
   (global-set-key (kbd "C-c w") 'sdic-describe-word)
@@ -1408,7 +1389,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 
 ;; shell-pop / http://www.emacswiki.org/emacs/shell-pop.el
 ;; ... or git clone https://github.com/emacsmirror/shell-pop
-(ini:when-when-compile (locate-library "shell-pop")
+(when (locate-library "shell-pop")
   (autoload 'shell-pop "shell-pop" nil t)
   (global-set-key (kbd "C-z C-z") 'shell-pop)
   (with-eval-after-load "shell-pop"
@@ -1455,13 +1436,13 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
   )
 
 ;; stripe-buffer / git clone https://github.com/sabof/stripe-buffer
-(ini:when-when-compile (locate-library "stripe-buffer")
+(when (locate-library "stripe-buffer")
   (autoload 'turn-on-stripe-buffer-mode "stripe-buffer")
   (add-hook 'dired-mode-hook 'turn-on-stripe-buffer-mode)
   (add-hook 'tabulated-list-mode-hook 'turn-on-stripe-buffer-mode))
 
 ;; yascroll / git clone https://github.com/m2ym/yascroll-el yascroll
-(ini:when-when-compile (locate-library "yascroll")
+(when (locate-library "yascroll")
   (autoload 'yascroll:show-scroll-bar "yascroll" nil t)
   ;; 1行単位のスクロールにしているとちらつくので必要な時だけ表示にする
   (dolist (fn '(set-mark exchange-point-and-mark scroll-up scroll-down recenter))
@@ -1611,7 +1592,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 				      (set-input-method "japanese-skk"))))
   
   ;; 実験的拡張へのロードパス追加(あれば)
-  (ini:awhen (eval-when-compile (ini:library-within "skk" "experimental" t))
+  (ini:awhen (ini:library-within "skk" "experimental" t)
     (add-to-list 'load-path it))
 
   (add-hook 'skk-load-hook
@@ -1705,7 +1686,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 ;;        git clone https://github.com/emacs-jp/migemo
 ;; cmigemo / http://www.kaoriya.net/software/cmigemo
 ;;           https://github.com/koron/cmigemo
-(ini:when-when-compile (and (or (executable-find "cmigemo")
+(when (and (or (executable-find "cmigemo")
 				(executable-find "migemo"))
 			    (locate-library "migemo"))
   (defvar ini:org-isearch-lazy-highlight-search
@@ -1716,17 +1697,16 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
     (setq migemo-command (or (executable-find "cmigemo")
 			     (executable-find "migemo")))
 
-    (ini:when-when-compile (executable-find "cmigemo")
+    (when (executable-find "cmigemo")
       (setq migemo-options '("-q" "--emacs"))
       (setq migemo-user-dictionary nil)
       (setq migemo-regex-dictionary nil)
       (setq migemo-coding-system 'utf-8-dos)
-      (setq migemo-dictionary (eval-when-compile
-				(locate-file "utf-8/migemo-dict"
-					     `(,(ini:emacs-d "etc/migemo")
-					       "/usr/local/share/migemo"
-					       "/usr/share/migemo")
-					     )))
+      (setq migemo-dictionary (locate-file "utf-8/migemo-dict"
+					   `(,(ini:emacs-d "etc/migemo")
+					     "/usr/local/share/migemo"
+					     "/usr/share/migemo")
+					   ))
       )
     (setq migemo-use-pattern-alist t)
     (setq migemo-use-frequent-pattern-alist t)
@@ -1796,7 +1776,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
     ))
 
 ;; direx / git clone https://github.com/m2ym/direx-el
-(ini:when-when-compile (locate-library "direx")
+(when (locate-library "direx")
   (autoload 'direx:jump-to-directory-other-window "direx" nil t)
   (global-set-key (kbd "C-z C-d") 'direx:jump-to-directory-other-window)
 
@@ -1914,8 +1894,8 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
   (define-key popup-kill-ring-keymap (kbd "M-y") 'popup-kill-ring-next))
 
 ;; image+ / git clone https://github.com/mhayashi1120/Emacs-imagex
-(ini:when-when-compile (and (executable-find "convert")
-			    (locate-library "image+"))
+(when (and (executable-find "convert")
+	   (locate-library "image+"))
   (with-eval-after-load "image"
     (require 'image+ nil t)
     (imagex-auto-adjust-mode t)))
@@ -1940,14 +1920,14 @@ FULLBOTH が non-nil ならフルスクリーン表示にする."
     (interactive "P")
     (set-frame-parameter nil 'fullscreen
 			 (if fullboth 'fullboth 'maximized))
-    (ini:when-when-compile (fboundp 'w32-send-sys-command)
+    (when (fboundp 'w32-send-sys-command)
       (w32-send-sys-command #xf030)))
 
   (defun ini:frame-size-restore ()
     "フレームサイズを通常に戻す."
     (interactive)
     (set-frame-parameter nil 'fullscreen nil)
-    (ini:when-when-compile (fboundp 'w32-send-sys-command)
+    (when (fboundp 'w32-send-sys-command)
       (w32-send-sys-command #xf120)))
 
   (defun ini:toggle-frame-size-maxmized (&optional fullboth)

@@ -285,9 +285,8 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 				"c:/gnupack/app/cygwin"))))
     (let ((cygwin-exec-path ; cygwin のルートパスからの相対パスとして追加
 	   (mapcar (lambda (path)
-		     (expand-file-name (if (and (> (length path) 0) (eq (aref path 0) ?/))
-					   (substring path 1)
-					 path) it))
+		     (expand-file-name (if (eq (aref path 0) ?/)
+					   (substring path 1) path) it))
 		   `(,(ini:emacs-d "bin") "~/bin" "/usr/local/bin" "/usr/bin" "/bin"))))
       (setenv "PATH" (ini:concat-system-file-names cygwin-exec-path nil (getenv "PATH")))
       (setq exec-path (append cygwin-exec-path exec-path))
@@ -1159,17 +1158,16 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
   )
 
 ;; nxml-mode
-(when (fboundp 'nxml-mode)
-  (fset 'html-mode 'nxml-mode)
-  (fset 'xml-mode 'nxml-mode)
+(fset 'html-mode 'nxml-mode)
+(fset 'xml-mode 'nxml-mode)
 
-  (setq magic-mode-alist
-	(cons '("<\\?xml" . nxml-mode) magic-mode-alist))
-  (with-eval-after-load "smart-compile"
-    (setq smart-compile-alist (cons
-			       '(nxml-mode browse-url-of-buffer)
-			       smart-compile-alist)))
-  )
+(setq magic-mode-alist
+      (cons '("<\\?xml" . nxml-mode) magic-mode-alist))
+(with-eval-after-load "smart-compile"
+  (setq smart-compile-alist (cons
+			     '(nxml-mode browse-url-of-buffer)
+			     smart-compile-alist)))
+
 
 ;; flex-autopair / git clone https://github.com/uk-ar/flex-autopair.git
 (if (require 'flex-autopair nil t)

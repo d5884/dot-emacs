@@ -443,6 +443,10 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 				(interactive)
 				"`ansi-term' を実行する."
 				(ansi-term shell-file-name)))
+(global-set-key (kbd "<apps>") (defun ini:show-apps-menu ()
+				 "編集メニューを表示する."
+				 (interactive)
+				 (popup-menu menu-bar-edit-menu)))
 
 (when (display-mouse-p)
   ;; フレーム外/モードラインでのホイール回しでエラーを出さない
@@ -474,12 +478,6 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 		      "編集メニューを表示する."
 		      (interactive "@e")
 		      (popup-menu menu-bar-edit-menu event prefix))))
-
-  ;; アプリケーションキーも同様
-  (global-set-key (kbd "<apps>") (defun ini:show-apps-menu ()
-				   "編集メニューを表示する."
-				   (interactive)
-				   (popup-menu menu-bar-edit-menu)))
 
   ;; Ctrl+Wheel で文字サイズ変更
   (when (display-multi-font-p)

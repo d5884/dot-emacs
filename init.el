@@ -558,6 +558,11 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 (put 'upcase-region 'disabled nil)
 (put 'downcase-region 'disabled nil)
 
+;; outline-minor-mode
+(add-hook 'outline-minor-mode-hook
+	  (lambda ()
+	    (local-set-key (kbd "C-c C-o") outline-mode-prefix-map)))
+
 ;; transient-mark-mode
 (defadvice exchange-point-and-mark (after ini:exchange-point-and-mark-deactivate activate)
   "Function `transient-mark-mode' が有効な時にリージョンに色が付かないようにする."

@@ -55,9 +55,9 @@ CONDS 内では PRED の評価結果を `it' で参照出来る."
       `(subst-char-in-string ?/ ?\\ (expand-file-name ,name ,directory))
     `(expand-file-name ,name ,directory)))
 
-(defmacro ini:concat-system-path (paths &optional base original)
-  "PATHS をシステムで認識可能なパスの連結に変換する.
-PATHS の各要素は自身と BASE を引数に `ini:system-path' で処理される.
+(defmacro ini:concat-system-file-names (names &optional directory original)
+  "NAMES をシステムで認識可能なファイルパスの連結に変換する.
+NAMES の各要素は自身と DIRECTORY を引数に `ini:system-file-name' で処理される.
 セパレータには `path-separator' が用いられる.
 ORIGINAL が non-nil であれば最後に連結される."
   `(apply 'concat
@@ -309,7 +309,7 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 					   (substring path 1)
 					 path) it))
 		   `(,(ini:emacs-d "bin") "~/bin" "/usr/local/bin" "/usr/bin" "/bin"))))
-      (setenv "PATH" (ini:concat-system-path cygwin-exec-path nil (getenv "PATH")))
+      (setenv "PATH" (ini:concat-system-file-names cygwin-exec-path nil (getenv "PATH")))
       (setq exec-path (append cygwin-exec-path exec-path))
 
       (setenv "LANG" "ja_JP.UTF-8")
@@ -1217,10 +1217,10 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 	"ghostscript の実行プログラム.")
 
       (unless (getenv "GS_LIB")
-	(setenv "GS_LIB" (ini:concat-system-path '("lib" "kanji" "Resource/Init") gs-root)))
+	(setenv "GS_LIB" (ini:concat-system-file-names '("lib" "kanji" "Resource/Init") gs-root)))
       (unless (getenv "GS_DLL")
-      (setenv "PATH" (ini:concat-system-path '("bin" "lib") gs-root (getenv "PATH")))
 	(setenv "GS_DLL" (ini:system-file-name "bin/gsdll32.dll" gs-root)))
+      (setenv "PATH" (ini:concat-system-file-names '("bin" "lib") gs-root (getenv "PATH")))
 
       ;; lpr
       (with-eval-after-load "lpr"

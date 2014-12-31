@@ -170,12 +170,11 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Package 初期化
-(ini:when-when-compile (locate-library "package")
-  (package-initialize)
-  (setq package-enable-at-startup nil)
-  (setq package-archives (append
-			  '(("melpa" . "http://melpa.milkbox.net/packages/"))
-			  package-archives)))
+(package-initialize)
+(setq package-enable-at-startup nil)
+(setq package-archives (append
+			'(("melpa" . "http://melpa.milkbox.net/packages/"))
+			package-archives))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 言語設定
@@ -896,39 +895,37 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
     ))
 
 ;; flymake
-(ini:when-when-compile (locate-library "flymake")
-  (autoload 'flymake-find-file-hook "flymake" nil t)
-  (add-hook 'find-file-hook 'flymake-find-file-hook)
-  
-  (defmacro ini:flymake-gen-simple-init (type fmask command &rest options)
-    "`flymake-mode' で使う、TYPE 用の文法チェック関数を定義する.
+(autoload 'flymake-find-file-hook "flymake" nil t)
+(add-hook 'find-file-hook 'flymake-find-file-hook)
+
+(defmacro ini:flymake-gen-simple-init (type fmask command &rest options)
+  "`flymake-mode' で使う、TYPE 用の文法チェック関数を定義する.
 チェック関数は `flymake-TYPE-init' の形で定義される.
 `fmask' にマッチするファイルに対して適用される.
 チェック用のコマンドを COMMAND で、引数を OPTIONS で指定する.
 OPTIONS ではチェック用の一時ファイル名を `local-file' で参照できる.
 COMMAND が存在しない場合は定義を行なわない."
-    (when (executable-find command)
-      `(progn
-	 (defun ,(intern (format "flymake-%s-init" type)) ()
-	   (let* ((temp-file (flymake-init-create-temp-buffer-copy
-			      'flymake-create-temp-inplace))
-		  (local-dir (file-name-directory buffer-file-name))
-		  (local-file (file-relative-name temp-file local-dir)))
-	     (list ,command (list ,@options))))
-	 (push (list ,fmask ',(intern (format "flymake-%s-init" type)))
-	       flymake-allowed-file-name-masks)))
-    )
-  
-  (with-eval-after-load "flymake"
-    (setq flymake-start-syntax-check-on-newline nil)
-    (setq flymake-gui-warnings-enabled nil)
-    (unless (boundp 'flymake-warning-predicate)
-      (defvaralias 'flymake-warning-predicate 'flymake-warning-re))
+  (when (executable-find command)
+    `(progn
+       (defun ,(intern (format "flymake-%s-init" type)) ()
+	 (let* ((temp-file (flymake-init-create-temp-buffer-copy
+			    'flymake-create-temp-inplace))
+		(local-dir (file-name-directory buffer-file-name))
+		(local-file (file-relative-name temp-file local-dir)))
+	   (list ,command (list ,@options))))
+       (push (list ,fmask ',(intern (format "flymake-%s-init" type)))
+	     flymake-allowed-file-name-masks)))
+  )
 
-    ;; (defadvice flymake-post-syntax-check (before ini:flymake-force-interrupted-flag activate)
-    ;; 	 "`flymake-mode' でチェックが異常終了時に固まるのを防ぐ."
-    ;; 	 (setq flymake-check-was-interrupted t))
-    )
+(with-eval-after-load "flymake"
+  (setq flymake-start-syntax-check-on-newline nil)
+  (setq flymake-gui-warnings-enabled nil)
+  (unless (boundp 'flymake-warning-predicate)
+    (defvaralias 'flymake-warning-predicate 'flymake-warning-re))
+
+  ;; (defadvice flymake-post-syntax-check (before ini:flymake-force-interrupted-flag activate)
+  ;; 	 "`flymake-mode' でチェックが異常終了時に固まるのを防ぐ."
+  ;; 	 (setq flymake-check-was-interrupted t))
   )
 
 ;; elisps
@@ -1297,38 +1294,36 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
   )
 
 ;; gnus and mail (for gmail)
-(ini:when-when-compile (locate-library "gnus")
-  (setq mail-user-agent 'gnus-user-agent)
-  (setq read-mail-command 'gnus)
+(setq mail-user-agent 'gnus-user-agent)
+(setq read-mail-command 'gnus)
 
-  (with-eval-after-load "gnus"
-    (setq gnus-startup-file (ini:emacs-d "gnus/newsrc"))
-    (setq gnus-directory (ini:emacs-d "gnus/news"))
-    (setq gnus-save-newsrc-file nil)
+(with-eval-after-load "gnus"
+  (setq gnus-startup-file (ini:emacs-d "gnus/newsrc"))
+  (setq gnus-directory (ini:emacs-d "gnus/news"))
+  (setq gnus-save-newsrc-file nil)
 
 
-    (setq gnus-select-method '(nnimap "gmail"
-				      (nnimap-address "imap.gmail.com")
-				      (nnimap-server-port 993)
-				      (nnimap-stream ssl)))
-    (setq gnus-ignored-newsgroups "^to\\.\\|^[0-9. ]+\\( \\|$\\)\\|^[\"]\"[#'()]")
-    )
+  (setq gnus-select-method '(nnimap "gmail"
+				    (nnimap-address "imap.gmail.com")
+				    (nnimap-server-port 993)
+				    (nnimap-stream ssl)))
+  (setq gnus-ignored-newsgroups "^to\\.\\|^[0-9. ]+\\( \\|$\\)\\|^[\"]\"[#'()]")
+  )
 
-  (with-eval-after-load "message"
-    (setq message-send-mail-function 'smtpmail-send-it)
-    (setq message-auto-save-directory nil)
-    )
+(with-eval-after-load "message"
+  (setq message-send-mail-function 'smtpmail-send-it)
+  (setq message-auto-save-directory nil)
+  )
 
-  (with-eval-after-load "sendmail"
-    (setq send-mail-function 'smtpmail-send-it)
-    )
+(with-eval-after-load "sendmail"
+  (setq send-mail-function 'smtpmail-send-it)
+  )
 
-  (with-eval-after-load "smtpmail"
-    (setq smtpmail-smtp-server "smtp.gmail.com")
-    (setq smtpmail-smtp-service 465)
-    (setq smtpmail-stream-type 'tls)
-    (setq smtpmail-local-domain "gmail.com")
-    )
+(with-eval-after-load "smtpmail"
+  (setq smtpmail-smtp-server "smtp.gmail.com")
+  (setq smtpmail-smtp-service 465)
+  (setq smtpmail-stream-type 'tls)
+  (setq smtpmail-local-domain "gmail.com")
   )
 
 ;; eww

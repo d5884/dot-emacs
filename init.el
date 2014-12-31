@@ -1370,7 +1370,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
       ;; sdic-mode-map is defined in sdic-mode, not on loading.
       (add-hook 'sdic-mode-hook
 		(lambda ()
-		  (define-key sdic-mode-map (kbd "s") 'speak-at-point)
+		  (define-key sdic-mode-map (kbd "s") 'speak-line)
 		  (define-key sdic-mode-map (kbd "S") 'speak))))
 
     ;; popwin 対応

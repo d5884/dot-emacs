@@ -160,14 +160,13 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 言語設定
-(set-language-environment 'Japanese)
-(cond
- ((eq system-type 'windows-nt)
-  (prefer-coding-system 'utf-8-dos)
-  (set-file-name-coding-system 'cp932)
-  (modify-coding-system-alist 'process "[cC][mM][dD]" '(undecided . cp932)))
- (t
-  (prefer-coding-system 'utf-8-unix)))
+(when (or (equal (getenv "LANG") "JPN") ;; windows default
+	  (and (null (getenv "LANG")) (null (getenv "LC_ALL"))))
+  (set-locale-environment (setenv "LANG" "ja_JP.UTF-8")))
+
+(when (and (eq system-type 'windows-nt)
+	   (boundp 'w32-unicode-filenames))
+  (set-file-name-coding-system 'utf-8))
 
 ;; coding-system の優先度設定
 (set-coding-system-priority 'utf-8 'cp932) ; shift_jis より cp932 優先
@@ -291,7 +290,6 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
       (setenv "PATH" (ini:concat-system-file-names cygwin-exec-path nil (getenv "PATH")))
       (setq exec-path (append cygwin-exec-path exec-path))
 
-      (setenv "LANG" "ja_JP.UTF-8")
       (setenv "CYGWIN" "nodosfilewarning winsymlinks")
 
       (setq null-device "/dev/null")

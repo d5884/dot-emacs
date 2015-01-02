@@ -294,6 +294,21 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 
       (setq null-device "/dev/null")
 
+      ;; DOSコマンド混在のためプロセスでの出力のコードを未定に
+      (setq default-process-coding-system
+	    (cons (coding-system-change-text-conversion
+		   (car default-process-coding-system) 'undecided)
+		  (cdr default-process-coding-system)))
+
+      ;; comint での出力コード自動判別設定 (undefined なだけだと判定後変更されてしまう)
+      (defadvice comint-send-input (before ini:comint-send-detect-coding activate)
+	"出力時の文字コードを自動判断に毎回戻す."
+	(ini:awhen (get-buffer-process (current-buffer))
+	  (set-process-coding-system it
+				     (coding-system-change-text-conversion
+				      (car default-process-coding-system) 'undecided)
+				     (cdr (process-coding-system it)))))
+
       ;; shell
       (when (executable-find "bash")
 	(setq shell-file-name "bash")
@@ -301,20 +316,6 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 	(setq system-uses-terminfo nil)
 
 	(setenv "SHELL" shell-file-name)
-
-	;; DOSコマンド混在のためプロセスでの出力のコードを未定に
-	(setcar default-process-coding-system
-		(coding-system-change-text-conversion (car default-process-coding-system)
-						      'undecided))
-	;; shell-mode での出力コード自動判別設定 (undefined なだけだと判定後変更されてしまう)
-	(defadvice comint-send-input (before ini:comint-send-detect-coding activate)
-	  "出力時の文字コードを自動判断に毎回戻す."
-	  (ini:awhen (get-buffer-process (current-buffer))
-	    (set-process-coding-system it
-				       (coding-system-change-text-conversion
-					(car default-process-coding-system) 'undecided)
-				       (coding-system-change-text-conversion
-					(cdr default-process-coding-system) 'utf-8))))
 
 	(with-eval-after-load "term"
 	  (require 'shell)

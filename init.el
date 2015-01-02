@@ -965,10 +965,14 @@ COMMAND が存在しない場合は定義を行なわない."
   (setq dired-dwim-target t)
   (setq dired-isearch-filenames t)
   (setq dired-listing-switches "-lAF")
-  ;; (setq dired-listing-switches "-lAF --time-style=long-iso")
-  (setq ls-lisp-dirs-first t)
-  (setq ls-lisp-format-time-list '("%Y-%m-%d %H:%M" "%Y-%m-%d %H:%M"))
-  (setq ls-lisp-use-localized-time-format t)
+  (if (eq system-type 'windows-nt)
+      (with-eval-after-load "ls-lisp"
+	(setq ls-lisp-dirs-first t)
+	(setq ls-lisp-format-time-list '("%Y-%m-%d %H:%M" "%Y-%m-%d %H:%M"))
+	(setq ls-lisp-use-localized-time-format t))
+    (setq dired-listing-switches (concat "--time-style=long-iso "
+					 "--group-directories-first "
+					 dired-listing-switches)))
 
   (add-hook 'dired-mode-hook
 	    (lambda ()

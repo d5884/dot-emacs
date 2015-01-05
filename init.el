@@ -147,8 +147,6 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 	 (cons it (cl-remove-if-not #'file-directory-p (directory-files it t "^[^.]"))))
        load-path))
 
-;; locate-file のキャッシュ導入
-;; (require 'locate-file-cache nil t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Package 初期化

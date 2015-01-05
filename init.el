@@ -1867,14 +1867,6 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
   
   (when (require 'pos-tip nil t)
     (setq ac-quick-help-prefer-pos-tip t))
-
-  (with-eval-after-load "yasnippet"		; for >0.8.0(beta)
-    (if (and (fboundp 'yas--get-snippet-tables)
-	     (not (fboundp 'yas/get-snippet-tables)))
-	(progn
-	  (defalias 'yas/table-hash 'yas--table-hash)
-	  (defalias 'yas/get-snippet-tables 'yas--get-snippet-tables)
-	  (defalias 'yas/table-parent 'yas--table-parents))))
   )
 
 ;; popup-kill-ring / http://www.emacswiki.org/emacs/popup-kill-ring.el

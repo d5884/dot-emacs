@@ -72,11 +72,11 @@ ORIGINAL が non-nil であれば最後に連結される."
 
 (defmacro ini:locate-directory (directory)
   "DIRECTORY が存在するなら返す."
-  `(locate-file "." (list ,directory) nil (lambda (p) (when (file-exists-p p) 'dir-ok))))
+  `(locate-file "." (delq nil (list ,directory)) nil (lambda (p) (when (file-exists-p p) 'dir-ok))))
 
 (defmacro ini:find-directory (directories)
   "DIRECTORIES のうち最初に見付かったディレクトリを返す."
-  `(locate-file "." ,directories nil (lambda (p) (when (file-exists-p p) 'dir-ok))))
+  `(locate-file "." (delq nil (copy-sequence ,directories)) nil (lambda (p) (when (file-exists-p p) 'dir-ok))))
 
 (defmacro ini:library-within (lib file &optional exists)
   "ライブラリ LIB と同じディレクトリに配置されている FILE へのパスを返す.

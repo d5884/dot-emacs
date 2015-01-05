@@ -1690,13 +1690,20 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
       (setq migemo-options '("-q" "--emacs"))
       (setq migemo-user-dictionary nil)
       (setq migemo-regex-dictionary nil)
-      (setq migemo-coding-system 'utf-8-dos)
+      (setq migemo-coding-system 'utf-8)
       (setq migemo-dictionary (locate-file "utf-8/migemo-dict"
 					   `(,(ini:emacs-d "share/migemo")
 					     "/usr/local/share/migemo"
 					     "/usr/share/migemo")
 					   ))
+      (when (eq system-type 'cygwin)
+	(setq migemo-dictionary
+	      (replace-regexp-in-string
+	       "\r?\n" "" (shell-command-to-string
+			   (format "cygpath -w \"%s\""
+				   (shell-quote-argument migemo-dictionary))))))
       )
+
     (setq migemo-use-pattern-alist t)
     (setq migemo-use-frequent-pattern-alist t)
     (setq migemo-pattern-alist-length 1024)

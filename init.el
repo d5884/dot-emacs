@@ -1624,12 +1624,8 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 		      (cl-remove-if (lambda (prog)
 				      (eq (car prog) 'skk-search-cdb-jisyo))
 				    skk-search-prog-list))
+		)
 
-		;; チュートリアルファイル
-		(ini:awhen (locate-file "SKK.tut" (list dict-dir
-							(ini:library-within "skk" "etc")))
-		  (setq skk-tut-file it)))
-	      
 	      (when (require 'skk-study nil t)
 		(setq skk-study-backup-file nil))
 	      (when (require 'skk-tankan nil t) ; Tan@ or /10@ or /@@

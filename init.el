@@ -1891,7 +1891,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 (when (display-multi-frame-p)
   (defun ini:close-or-exit-emacs (&optional arg)
     "フレームが一つなら emacs を終了、それ以外はフレームを閉じる.
-ARG が non-nil の場合はフレームの数に関係なく emasc を終了する."
+ARG が non-nil の場合はフレームの数に関係なく emacs を終了する."
     (interactive "P")
     (if (or arg (eq 1 (length (frame-list))))
 	(save-buffers-kill-terminal)

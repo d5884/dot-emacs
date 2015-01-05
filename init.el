@@ -40,13 +40,6 @@ THEN、ELSE 内では PRED の評価結果を `it' で参照出来る."
 BODY 内では PRED の評価結果を `it' で参照出来る."
   `(ini:aif ,pred (progn ,@body)))
 
-(defmacro ini:aand1 (pred &rest conds)
-  "PRED および CONDS を評価し、結果が全て non-nil ならば PRED の結果を返す.
-CONDS 内では PRED の評価結果を `it' で参照出来る."
-  `(let ((it ,pred))
-     (if (and it ,@conds)
-	 it)))
-
 (defmacro ini:system-file-name (name &optional directory)
   "NAME をシステムで認識可能なファイルパスに変換する.
 `expand-file-name' により DIRECTORY を基準にして絶対パスに変換される.
@@ -268,18 +261,17 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
   (setq w32-pipe-read-delay 5)
 
   ;; インストールルート検索
-  (ini:awhen (or (ini:aand1 (getenv "CYGWIN_DIR")
-			    (file-exists-p it))
-		 (ini:find-directory
-		  (mapcar (lambda (p) (expand-file-name "cygwin" p))
-			  (list (getenv "LOCALAPPDATA")
-				(getenv "APPDATA")
-				(getenv "USERPROFILE")
-				(getenv "HOME")
-				(getenv "ProgramW6432")
-				(getenv "ProgramFiles")
-				"c:/"
-				"c:/gnupack/app/cygwin"))))
+  (ini:awhen (ini:find-directory
+	      (cons (getenv "CYGWIN_DIR")
+		    (mapcar (lambda (p) (expand-file-name "cygwin" p))
+			    (list (getenv "LOCALAPPDATA")
+				  (getenv "APPDATA")
+				  (getenv "USERPROFILE")
+				  (getenv "HOME")
+				  (getenv "ProgramW6432")
+				  (getenv "ProgramFiles")
+				  "c:/"
+				  "c:/gnupack/app/cygwin"))))
     (let ((cygwin-exec-path ; cygwin のルートパスからの相対パスとして追加
 	   (mapcar (lambda (path)
 		     (expand-file-name (if (eq (aref path 0) ?/)

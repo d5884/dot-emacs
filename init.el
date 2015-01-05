@@ -602,7 +602,7 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 (with-eval-after-load "ispell"
   ;; from http://www.an.econ.kobe-u.ac.jp/~namba/meadow/words.lzh
   (ini:awhen (locate-file "words"
-			  `(,(ini:emacs-d "etc")
+			  `(,(ini:emacs-d "share")
 			    ,user-emacs-directory
 			    "/usr/dict"
 			    "/usr/share/dict"))
@@ -1332,9 +1332,9 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 
   (with-eval-after-load "sdic"
     (setq sdic-default-coding-system 'utf-8-unix)
-    (setq sdic-eiwa-dictionary-list `((sdicf-client ,(ini:emacs-d "etc/sdic/gene-u.sdic")
+    (setq sdic-eiwa-dictionary-list `((sdicf-client ,(ini:emacs-d "share/sdic/gene-u.sdic")
 						    (strategy direct))))
-    (setq sdic-waei-dictionary-list `((sdicf-client ,(ini:emacs-d "etc/sdic/jedict-u.sdic")
+    (setq sdic-waei-dictionary-list `((sdicf-client ,(ini:emacs-d "share/sdic/jedict-u.sdic")
 						    (add-keys-to-headword t)
 						    (strategy direct))))
 
@@ -1591,7 +1591,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
   (add-hook 'skk-load-hook
 	    (lambda ()
 	      ;; ローカルの辞書設定
-	      (let ((dict-dir (ini:emacs-d "etc/skk")))
+	      (let ((dict-dir (ini:emacs-d "share/skk")))
 		(ini:awhen (locate-file "SKK-JISYO.L" (list dict-dir))
 		  (setq skk-large-jisyo it
 			skk-aux-large-jisyo it))

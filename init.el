@@ -1907,31 +1907,34 @@ ARG が non-nil の場合はフレームの数に関係なく emasc を終了す
 
   (global-set-key [remap save-buffers-kill-terminal] 'ini:close-or-exit-emacs)
 
-  (defun ini:frame-size-maximize (&optional fullboth)
-    "フレームサイズを最大化.
+  (unless (fboundp 'toggle-frame-maximized)
+    (defun ini:frame-size-maximize (&optional fullboth)
+      "フレームサイズを最大化.
 FULLBOTH が non-nil ならフルスクリーン表示にする."
-    (interactive "P")
-    (set-frame-parameter nil 'fullscreen
-			 (if fullboth 'fullboth 'maximized))
-    (when (fboundp 'w32-send-sys-command)
-      (w32-send-sys-command #xf030)))
+      (interactive "P")
+      (set-frame-parameter nil 'fullscreen
+			   (if fullboth 'fullboth 'maximized))
+      (when (fboundp 'w32-send-sys-command)
+	(w32-send-sys-command #xf030)))
 
-  (defun ini:frame-size-restore ()
-    "フレームサイズを通常に戻す."
-    (interactive)
-    (set-frame-parameter nil 'fullscreen nil)
-    (when (fboundp 'w32-send-sys-command)
-      (w32-send-sys-command #xf120)))
+    (defun ini:frame-size-restore ()
+      "フレームサイズを通常に戻す."
+      (interactive)
+      (set-frame-parameter nil 'fullscreen nil)
+      (when (fboundp 'w32-send-sys-command)
+	(w32-send-sys-command #xf120)))
 
-  (defun ini:toggle-frame-size-maxmized (&optional fullboth)
-    "フレームの最大化状態を切り替える.
+    (defun ini:toggle-frame-size-maxmized (&optional fullboth)
+      "フレームの最大化状態を切り替える.
 FULLBOTH が non-nil なら最大化時にフルスクリーン表示にする."
-    (interactive "P")
-    (if (frame-parameter nil 'fullscreen)
-	(ini:frame-size-restore)
-      (ini:frame-size-maximize fullboth)))
+      (interactive "P")
+      (if (frame-parameter nil 'fullscreen)
+	  (ini:frame-size-restore)
+	(ini:frame-size-maximize fullboth)))
+
+    (defalias 'toggle-frame-maximized 'ini:toggle-frame-size-maxmized))
   
-  (global-set-key (kbd "C-z C-:") 'ini:toggle-frame-size-maxmized)
+  (global-set-key (kbd "C-z C-:") 'toggle-frame-maximized)
   (global-set-key (kbd "C-z C-;") 'iconify-or-deiconify-frame))
 
 ;;;;;;;;;;;;;;;;;;;

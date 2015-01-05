@@ -1474,7 +1474,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 	   (require 'mozc nil t))
   (setq default-input-method "japanese-mozc")
 
-  (when (eq system-type 'windows-nt)
+  (when (memq system-type '(windows-nt cygwin))
     (defadvice mozc-session-execute-command (after ini:mozc-session-execute-command activate)
       "`mozc' を有効化した際に自動的にひらがな入力モードに変更する."
       (if (eq (ad-get-arg 0) 'CreateSession)
@@ -1507,7 +1507,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
     "`mozc-mode' の状態を表す alist.")
 
   (defconst ini:mozc-status-default-mode
-    (if (eq system-type 'windows-nt) 'direct 'hiragana)
+    (if (memq system-type '(windows-nt cygwin)) 'direct 'hiragana)
     "`mozc-mode' の初期変換モード.")
 
   (defadvice mozc-mode (after ini:mozc-status-init activate)

@@ -1834,7 +1834,8 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
       (yas-expand-snippet (buffer-string) (point-min) (point-max)))
 
     (defadvice auto-insert (before ini:auto-insert-update-template activate)
-      "`auto-insert' 前にテンプレート一覧を更新する."
+      "`auto-insert' 前にテンプレート一覧を更新する.
+モード名と拡張子を除いたファイル名が一致する場合テンプレートと見做す."
       (let ((modtime (file-attributes auto-insert-directory)))
 	(unless (equal modtime ini:auto-insert-template-modtime)
 	  (setq ini:auto-insert-template-modtime modtime)

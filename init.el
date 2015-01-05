@@ -1696,7 +1696,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
       (setq migemo-regex-dictionary nil)
       (setq migemo-coding-system 'utf-8-dos)
       (setq migemo-dictionary (locate-file "utf-8/migemo-dict"
-					   `(,(ini:emacs-d "etc/migemo")
+					   `(,(ini:emacs-d "share/migemo")
 					     "/usr/local/share/migemo"
 					     "/usr/share/migemo")
 					   ))

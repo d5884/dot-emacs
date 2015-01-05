@@ -1676,8 +1676,8 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 ;; cmigemo / http://www.kaoriya.net/software/cmigemo
 ;;           https://github.com/koron/cmigemo
 (when (and (or (executable-find "cmigemo")
-				(executable-find "migemo"))
-			    (locate-library "migemo"))
+	       (executable-find "migemo"))
+	   (locate-library "migemo"))
   (defvar ini:org-isearch-lazy-highlight-search
     (symbol-function 'isearch-lazy-highlight-search)
     "migemo に置き換えられる前の `isearch-lazy-highlight-search'.")

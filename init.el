@@ -1533,13 +1533,9 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 			      (t
 			       'empty)))))))
 
-  ;; ;; mozc-el-extensions / git clone https://github.com/iRi-E/mozc-el-extensions
-  ;; (setq mozc-isearch-use-workaround nil)
-  ;; (require 'mozc-isearch nil t)
-
-  (setq mozc-leim-title "[あ]")
-
+  ;; mozc-el-extensions / git clone https://github.com/iRi-E/mozc-el-extensions
   (when (require 'mozc-mode-line-indicator nil t)
+    (setq mozc-leim-title "[あ]")
     (setq mozc-mode-line-indicator-title-format "[%s]"))
 
   ;; mozc-popup / git clone https://github.com/d5884/mozc-popup

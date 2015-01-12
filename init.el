@@ -1151,16 +1151,6 @@ COMMAND が存在しない場合は定義を行なわない."
       (inf-ruby-keys))
     ))
 ;; zencoding / (package-install 'zencoding-mode)
-
-;; ;; w32-symlinks
-;; (when (and (eq system-type 'windows-nt)
-;; 	   (require 'w32-symlinks nil t))
-;;   (custom-set-variables '(w32-symlinks-handle-shortcuts t))
-;;   (defadvice w32-symlinks-parse-shortcut (around emacs23-fix activate)
-;;     (let ((default-enable-multibyte-characters nil))
-;;       ad-do-it))
-;;   )
-
 (when (package-installed-p 'zencoding-mode)
   (with-eval-after-load "zencoding-mode"
     (define-key zencoding-mode-keymap (kbd "<C-return>") nil)

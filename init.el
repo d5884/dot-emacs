@@ -1537,28 +1537,6 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
   ;; (setq mozc-isearch-use-workaround nil)
   ;; (require 'mozc-isearch nil t)
 
-  ;; ccc がある場合(= skk と共存する場合)は ccc でカーソルカラー変更
-  (if (require 'ccc nil t)
-      (progn
-	(add-hook 'input-method-activate-hook
-		  (lambda () (set-buffer-local-cursor-color "dark red")))
-	(add-hook 'input-method-deactivate-hook
-		  (lambda () (set-cursor-color-buffer-local nil))))
-    (when (require 'mozc-cursor-color nil t)
-      (let ((normal (if (and (eq (frame-parameter nil 'background-mode) 'dark)
-			     (string= (frame-parameter nil 'cursor-color) "black"))
-			"white" "black"))
-	    (ime "dark red"))
-	(setq mozc-cursor-color-alist
-	      `((direct . ,normal)
-		(read-only . ,normal)
-		(hiragana . ,ime)
-		(full-katakana . ,ime)
-		(half-ascii . ,ime)
-		(full-ascii . ,ime)
-		(half-katakana . ,ime)))))
-    )
-
   (setq mozc-leim-title "[あ]")
 
   (when (require 'mozc-mode-line-indicator nil t)
@@ -2010,10 +1988,6 @@ RENEW が non-nil の場合は新しい状態を作る.
 (cl-flet ((color-candidate (&rest colors)
 			   (cl-find-if #'color-defined-p colors)))
   (require 'color)
-  (when (and (eq (frame-parameter nil 'background-mode) 'dark)
-	     (string= (frame-parameter nil 'cursor-color) "black"))
-    (set-cursor-color "white"))
-
   (set-face-attribute 'region nil
 		      :foreground (color-candidate "SystemHilightText" "White")
 		      :background (color-candidate "SystemHilight" "Royal Blue"))
@@ -2069,6 +2043,39 @@ RENEW が non-nil の場合は新しい状態を作る.
   (with-eval-after-load "mozc-popup"
     (set-face-attribute 'mozc-cand-overlay-description-face nil
 			:foreground "gray46"))
+
+  ;; カーソルカラー
+  (let ((normal (if (eq (frame-parameter nil 'background-mode) 'dark)
+		    "white" "black"))
+	(ime "dark red"))
+
+    (set-cursor-color normal)
+
+    ;; input method 全般
+    ;; ccc / (package-install 'ddskk)
+    (when (require 'ccc nil t)
+      (add-hook 'input-method-activate-hook
+		(eval `(lambda () (set-buffer-local-cursor-color ,ime))))
+      (add-hook 'input-method-deactivate-hook
+		(lambda () (set-cursor-color-buffer-local nil))))
+
+    ;; skk
+    (when (package-installed-p 'ddskk)
+      (eval `(with-eval-after-load "skk"
+	       (setq skk-cursor-hiragana-color ,ime))))
+
+    ;; mozc-el-extensions / git clone https://github.com/iRi-E/mozc-el-extensions
+    (when (and (not (featurep 'ccc))
+	       (require 'mozc-cursor-color nil t))
+	(setq mozc-cursor-color-alist
+	      `((direct        . ,normal)
+		(read-only     . ,normal)
+		(hiragana      . ,ime)
+		(full-katakana . ,ime)
+		(half-ascii    . ,ime)
+		(full-ascii    . ,ime)
+		(half-katakana . ,ime))))
+    )
   )
 
 

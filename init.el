@@ -781,8 +781,6 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
   (eval-when-compile
     (declare-function grep-apply-setting "grep"))
 
-  (grep-apply-setting 'grep-find-use-xargs 'exec-plus)
-
   (when (executable-find "lgrep")
     ;; lv 付属の多国語化 grep
     (setq grep-program "lgrep")

@@ -807,8 +807,7 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
   (server-start))
 
 ;; スクリプトファイルの自動 +x
-(when (fboundp 'executable-make-buffer-file-executable-if-script-p)
-  (add-hook 'after-save-hook 'executable-make-buffer-file-executable-if-script-p))
+(add-hook 'after-save-hook 'executable-make-buffer-file-executable-if-script-p)
 
 ;; ssh-agent / git clone https://github.com/d5884/ssh-agent
 (when (locate-library "ssh-agent")

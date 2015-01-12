@@ -525,6 +525,10 @@ ARG が non-nil の場合はフレームの数に関係なく emacs を終了す
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; パッケージ別機能設定
 
+;; diminish / (package-install 'diminish)
+(unless (package-installed-p 'diminish)
+  (defalias 'diminish 'ignore))
+
 (tool-bar-mode -1)
 (menu-bar-mode -1)
 (when (fboundp 'scroll-bar-mode)
@@ -839,6 +843,8 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
 
 ;; hideshow
 (with-eval-after-load "hideshow"
+  (diminish 'hs-minor-mode)
+
   (defvar ini:hs-fringe-mark 'right-arrow
     "隠れた行の fringe に表示する bitmap 名.
 `fringe-bitmaps' 内に設定されているシンボル名から選ぶ.")
@@ -966,6 +972,10 @@ COMMAND が存在しない場合は定義を行なわない."
 			nil t)
 	      ))
   )
+
+;; eldoc
+(with-eval-after-load "eldoc"
+  (diminish 'eldoc-mode))
 
 ;; occur
 (define-key occur-mode-map (kbd "n") 'occur-next)
@@ -1203,6 +1213,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 ;; flex-autopair / (package-install 'flex-autopair)
 (if (require 'flex-autopair nil t)
     (progn
+      (diminish 'flex-autopair-mode)
       (setq flex-autopair-echo-actionp nil)
       (flex-autopair-mode))
   ;; or skeleton
@@ -1835,6 +1846,8 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 
 ;; yasnippet / (package-install 'yasnippet)
 (when (require 'yasnippet nil t)
+  (diminish 'yas-minor-mode)
+
   (setq yas-verbosity 1)
   (setq yas-prompt-functions (delq 'yas-x-prompt yas-prompt-functions))
   (setq yas-expand-only-for-last-commands '(self-insert-command ac-expand))
@@ -1877,6 +1890,8 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 
 ;; auto-complete-mode / (package-install 'auto-complete)
 (when (require 'auto-complete-config nil t)
+  (diminish 'auto-complete-mode)
+
   (ini:awhen (ini:library-within "auto-complete-config" "dict" t)
     (add-to-list 'ac-dictionary-directories it))
 

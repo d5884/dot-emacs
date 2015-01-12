@@ -352,7 +352,7 @@ LIB が存在しない場合は nil を返す."
 	  "Windows でのパイプバッファサイズ.")
 
 	(defadvice process-send-string (around ini:workaround-for-process-send-string activate)
-	  "4096 バイト以上を一度に送信すると cygwin の select が停止する問題への対処."
+	  "4096 バイト超を一度に送信すると cygwin の select が停止する問題への対処."
 	  (if (not (eq (process-type (ad-get-arg 0)) 'real))
 	      ad-do-it
 	    (let* ((proc (get-process (or (ad-get-arg 0)

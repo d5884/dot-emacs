@@ -248,16 +248,19 @@ LIB が存在しない場合は nil を返す."
 
   ;; インストールルート検索
   (ini:awhen (ini:find-directory
-	      (cons (getenv "CYGWIN_DIR")
-		    (mapcar (lambda (p) (expand-file-name "cygwin" p))
-			    (list (getenv "LOCALAPPDATA")
-				  (getenv "APPDATA")
-				  (getenv "USERPROFILE")
-				  (getenv "HOME")
-				  (getenv "ProgramW6432")
-				  (getenv "ProgramFiles")
-				  "c:/"
-				  "c:/gnupack/app/cygwin"))))
+	      (apply 'append
+		     (mapcar (lambda (p)
+			       (list (expand-file-name "cygwin64" p)
+				     (expand-file-name "cygwin" p)))
+			     (list "c:/"
+				   "c:/gnupack/app/cygwin"
+				   (getenv "LOCALAPPDATA")
+				   (getenv "APPDATA")
+				   (getenv "USERPROFILE")
+				   (getenv "HOME")
+				   (getenv "ProgramW6432")
+				   (getenv "ProgramFiles")
+				   ))))
     (let ((cygwin-exec-path ; cygwin のルートパスからの相対パスとして追加
 	   (mapcar (lambda (path)
 		     (expand-file-name (if (eq (aref path 0) ?/)

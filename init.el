@@ -1021,10 +1021,13 @@ COMMAND が存在しない場合は定義を行なわない."
 
   (when (eq system-type 'windows-nt)
     (define-key dired-mode-map (kbd "E")
-      (defun ini:dired-execute ()
-	"ファイルを関連付けされたプログラムで開く."
-	(interactive)
-	(w32-shell-execute nil (dired-get-file-for-visit)))))
+      (defun ini:dired-execute (arg)
+	"ファイルを関連付けされたプログラムで開く.
+プリフィクスキーが入力されている場合はカレントディレクトリをエクスプローラで開く."
+	(interactive "P")
+	(if arg
+	    (w32-shell-execute nil ".")
+	  (w32-shell-execute nil (dired-get-file-for-visit))))))
 
   (define-key dired-mode-map (kbd "v")
     (defun ini:dired-view-other-window ()

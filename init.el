@@ -260,123 +260,127 @@ LIB が存在しない場合は nil を返す."
 				   (getenv "APPDATA")
 				   (getenv "ProgramFiles")
 				   ))))
-    (let ((cygwin-exec-path ; cygwin のルートパスからの相対パスとして追加
-	   (mapcar (lambda (path)
-		     (expand-file-name (if (eq (aref path 0) ?/)
-					   (substring path 1) path) it))
-		   `(,(ini:emacs-d "bin") "~/bin" "/usr/local/bin" "/usr/bin" "/bin"))))
-      (setenv "PATH" (ini:concat-system-file-names cygwin-exec-path nil (getenv "PATH")))
-      (setq exec-path (append cygwin-exec-path exec-path))
+    ;; パスが通ってなければ通す
+    (unless (executable-find "cygcheck")
+      (let ((cygwin-exec-path
+	     (mapcar (lambda (path)
+		       ;; cygwin ルートからのパスに変換
+		       (expand-file-name (if (eq (aref path 0) ?/)
+					     (substring path 1) path) it))
+		     `(,(ini:emacs-d "bin") "~/bin" "/usr/local/bin" "/usr/bin" "/bin"))))
+	(setenv "PATH" (ini:concat-system-file-names cygwin-exec-path nil (getenv "PATH")))
+	(setq exec-path (append cygwin-exec-path exec-path))))
 
-      (setenv "CYGWIN" "nodosfilewarning winsymlinks")
+    (setenv "CYGWIN" "nodosfilewarning winsymlinks")
 
-      (setq null-device "/dev/null")
+    (setq null-device "/dev/null")
 
-      ;; DOSコマンド混在のためプロセスでの出力のコードを未定に
-      (setq default-process-coding-system
-	    (cons (coding-system-change-text-conversion
-		   (car default-process-coding-system) 'undecided)
-		  (cdr default-process-coding-system)))
+    ;; DOSコマンド混在のためプロセスでの出力のコードを未定に
+    (setq default-process-coding-system
+	  (cons (coding-system-change-text-conversion
+		 (car default-process-coding-system) 'undecided)
+		(cdr default-process-coding-system)))
 
-      ;; comint での出力コード自動判別設定 (undefined なだけだと判定後変更されてしまう)
-      (defadvice comint-send-input (before ini:comint-send-detect-coding activate)
-	"出力時の文字コードを自動判断に毎回戻す."
-	(ini:awhen (get-buffer-process (current-buffer))
-	  (set-process-coding-system it
-				     (coding-system-change-text-conversion
-				      (car default-process-coding-system) 'undecided)
-				     (cdr (process-coding-system it)))))
+    ;; comint での出力コード自動判別設定 (undefined なだけだと判定後変更されてしまう)
+    (defadvice comint-send-input (before ini:comint-send-detect-coding activate)
+      "出力時の文字コードを自動判断に毎回戻す."
+      (ini:awhen (get-buffer-process (current-buffer))
+	(set-process-coding-system it
+				   (coding-system-change-text-conversion
+				    (car default-process-coding-system) 'undecided)
+				   (cdr (process-coding-system it)))))
 
-      ;; ファイル名のエンコーディングを実態とあわせる
-      (when (boundp 'w32-unicode-filenames)
-	(set-file-name-coding-system 'utf-8))
+    ;; ファイル名のエンコーディングを実態とあわせる
+    (when (boundp 'w32-unicode-filenames)
+      (set-file-name-coding-system 'utf-8))
 
-      ;; shell
-      (setq shell-file-name "bash")
-      (setq shell-command-switch "-c")
-      (setq system-uses-terminfo nil)
+    ;; shell
+    (setq shell-file-name "bash")
+    (setq shell-command-switch "-c")
+    (setq system-uses-terminfo nil)
 
-      (setenv "SHELL" shell-file-name)
+    (setenv "SHELL" shell-file-name)
 
-      (with-eval-after-load "term"
-	(require 'shell)
-	(defadvice cd (around ini:cd-accept-multibyte activate)
-	  "`term' で/proc等に移動時の強制終了を防ぐ."
-	  (unless (ignore-errors ad-do-it)
-	    (ad-set-arg 0 "~/")
-	    ad-do-it))
+    (with-eval-after-load "term"
+      (require 'shell)
+      (defadvice cd (around ini:cd-accept-multibyte activate)
+	"`term' で/proc等に移動時の強制終了を防ぐ."
+	(unless (ignore-errors ad-do-it)
+	  (ad-set-arg 0 "~/")
+	  ad-do-it))
 
-	(defadvice term-emulate-terminal (around ini:terminal-detect-coding activate)
-	  "`term' で複数のコーディング出力を受け付ける."
-	  (let ((locale-coding-system 'undecided))
-	    ad-do-it)))
+      (defadvice term-emulate-terminal (around ini:terminal-detect-coding activate)
+	"`term' で複数のコーディング出力を受け付ける."
+	(let ((locale-coding-system 'undecided))
+	  ad-do-it)))
 
-      (with-eval-after-load "tramp"
-	(setq tramp-encoding-shell "bash"))
+    (with-eval-after-load "tramp"
+      (setq tramp-encoding-shell "bash"))
       
-      ;; gdb 使用時のエラー回避
-      (with-eval-after-load "gdb-mi"
-	(eval-when-compile
-	  (declare-function gdb-input "gdb-mi"))
-	(add-hook 'gdb-mode-hook
-		  (lambda ()
-		    (gdb-input "-gdb-set interactive-mode auto" 'ignore))))
+    ;; gdb 使用時のエラー回避
+    (with-eval-after-load "gdb-mi"
+      (eval-when-compile
+	(declare-function gdb-input "gdb-mi"))
+      (add-hook 'gdb-mode-hook
+		(lambda ()
+		  (gdb-input "-gdb-set interactive-mode auto" 'ignore))))
 
-      ;; cygwin で追加される Info
-      (with-eval-after-load "info"
-	(ini:awhen (ini:locate-directory "/usr/share/info")
-	  (add-to-list 'Info-additional-directory-list it)))
+    ;; cygwin で追加される Info
+    (with-eval-after-load "info"
+      (ini:awhen (ini:locate-directory "/usr/share/info")
+	(add-to-list 'Info-additional-directory-list it)))
       
-      ;; cygwin-mount / (package-install 'cygwin-mount)
-      (when (require 'cygwin-mount nil t)
-      	(cygwin-mount-activate))
+    ;; cygwin-mount / (package-install 'cygwin-mount)
+    (when (require 'cygwin-mount nil t)
+      (cygwin-mount-activate))
 
-      ;; NTEmacs の場合、プロセスの引数は起動した環境のコードページに依存するため
-      ;; プロセス呼び出し時に引数のみ cp932 へ強制変換する
-      (dolist (pair '((call-process-region . 6)
-      		      (call-process . 4)
-      		      (start-process . 3)))
-      	(let ((f (car pair))
-      	      (p (cdr pair)))
-      	  (eval `(defadvice ,f (before ,(intern (format "ini:%s-encode-setup" f))
-      				       activate)
-      		   ,(format "実行時に%d番目以降の引数を cp932 でエンコードする." p)
-      		   (ad-set-args ,p
-      				(mapcar (lambda (arg)
-      					  (if (multibyte-string-p arg)
-      					      (encode-coding-string arg 'cp932)
-      					    arg))
-      					(ad-get-args ,p)))))))
+    ;; NTEmacs の場合、プロセスの引数は起動した環境のコードページに依存するため
+    ;; プロセス呼び出し時に引数のみ cp932 へ強制変換する
+    (dolist (pair '((call-process-region . 6)
+		    (call-process . 4)
+		    (start-process . 3)))
+      (let ((f (car pair))
+	    (p (cdr pair)))
+	(eval `(defadvice ,f (before ,(intern (format "ini:%s-encode-setup" f))
+				     activate)
+		 ,(format "実行時に%d番目以降の引数を cp932 でエンコードする." p)
+		 (ad-set-args ,p
+			      (mapcar (lambda (arg)
+					(if (multibyte-string-p arg)
+					    (encode-coding-string arg 'cp932)
+					  arg))
+				      (ad-get-args ,p)))))))
 
-      (when (and (= emacs-major-version 24)
-		 (= emacs-minor-version 4)) ;; 24.5 以降はどうなるかわからんので
-	(defconst w32-pipe-limit 4096
-	  "Windows でのパイプバッファサイズ.")
+    (when (and (= emacs-major-version 24)
+	       (= emacs-minor-version 4)) ;; 24.5 以降はどうなるかわからんので
+      (defconst w32-pipe-limit 4096
+	"Windows でのパイプバッファサイズ.")
 
-	(defadvice process-send-string (around ini:workaround-for-process-send-string activate)
-	  "4096 バイト超を一度に送信すると cygwin の select が停止する問題への対処."
-	  (if (not (eq (process-type (ad-get-arg 0)) 'real))
+      (defadvice process-send-string (around ini:workaround-for-process-send-string activate)
+	"4096 バイト超を一度に送信すると cygwin の select が停止する問題への対処."
+	(if (not (eq (process-type (ad-get-arg 0)) 'real))
+	    ad-do-it
+	  (let* ((proc (get-process (or (ad-get-arg 0)
+					(get-buffer-process (current-buffer)))))
+		 (rest (encode-coding-string (ad-get-arg 1)
+					     (cdr (process-coding-system proc))))
+		 (inhibit-eol-conversion t))
+	    (while (> (length rest) w32-pipe-limit)
+	      (ad-set-arg 1 (substring rest 0 w32-pipe-limit))
 	      ad-do-it
-	    (let* ((proc (get-process (or (ad-get-arg 0)
-					  (get-buffer-process (current-buffer)))))
-		   (rest (encode-coding-string (ad-get-arg 1)
-					       (cdr (process-coding-system proc))))
-		   (inhibit-eol-conversion t))
-	      (while (> (length rest) w32-pipe-limit)
-		(ad-set-arg 1 (substring rest 0 w32-pipe-limit))
-		ad-do-it
-		(setq rest (substring rest w32-pipe-limit)))
-	      (ad-set-arg 1 rest)
-	      ad-do-it
-	      )))
-	)
-      ;; fakecygpty
-      ;; gcc -o fakecygpty.exe fakecygpty.c
-      ;; gcc -o qkill.exe qkill.c
-      ;; git clone https://github.com/d5884/fakecygpty
-      (when (require 'fakecygpty nil t)
-	(fakecygpty-activate))
-      )))
+	      (setq rest (substring rest w32-pipe-limit)))
+	    (ad-set-arg 1 rest)
+	    ad-do-it
+	    )))
+      )
+
+    ;; fakecygpty
+    ;; gcc -o fakecygpty.exe fakecygpty.c
+    ;; gcc -o qkill.exe qkill.c
+    ;; git clone https://github.com/d5884/fakecygpty
+    (when (require 'fakecygpty nil t)
+      (fakecygpty-activate))
+    ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; パス追加

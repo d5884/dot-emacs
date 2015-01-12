@@ -1618,22 +1618,12 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 		      (cl-remove-if-not #'file-exists-p
 					(mapcar
 					 (lambda (f)
-					   (expand-file-name f dict-dir))
-					 '("SKK-JISYO.JIS2"
-					   "SKK-JISYO.JIS2004"
-					   "SKK-JISYO.JIS3_4"
-					   "SKK-JISYO.assoc"
-					   "SKK-JISYO.geo"
-					   "SKK-JISYO.jinmei"
-					   "SKK-JISYO.station"
-					   "SKK-JISYO.law"
-					   "SKK-JISYO.fullname"
-					   "SKK-JISYO.propernoun"
-					   "SKK-JISYO.okinawa"
-					   "SKK-JISYO.pubdic+"
-					   "SKK-JISYO.edict"
-					   "zipcode/SKK-JISYO.zipcode"
-					   "zipcode/SKK-JISYO.office.zipcode")
+					   (expand-file-name
+					    (concat "SKK-JISYO." f) dict-dir))
+					 '("JIS2" "JIS2004" "JIS3_4"
+					   "assoc" "geo" "jinmei" "station"
+					   "law" "fullname" "propernoun"
+					   "okinawa" "edict")
 					 )))
 		)
 

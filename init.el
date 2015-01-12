@@ -290,30 +290,27 @@ LIB が存在しない場合は nil を返す."
 	(set-file-name-coding-system 'utf-8))
 
       ;; shell
-      (when (executable-find "bash")
-	(setq shell-file-name "bash")
-	(setq shell-command-switch "-c")
-	(setq system-uses-terminfo nil)
+      (setq shell-file-name "bash")
+      (setq shell-command-switch "-c")
+      (setq system-uses-terminfo nil)
 
-	(setenv "SHELL" shell-file-name)
+      (setenv "SHELL" shell-file-name)
 
-	(with-eval-after-load "term"
-	  (require 'shell)
-	  (defadvice cd (around ini:cd-accept-multibyte activate)
-	    "`term' でマルチバイトのディレクトリや/proc等に移動時の強制終了を防ぐ."
-	    (let ((dir (decode-coding-string dir 'undecided)))
-	      (unless (ignore-errors ad-do-it)
-		(ad-set-arg 0 "~/")
-		ad-do-it)))
+      (with-eval-after-load "term"
+	(require 'shell)
+	(defadvice cd (around ini:cd-accept-multibyte activate)
+	  "`term' で/proc等に移動時の強制終了を防ぐ."
+	  (unless (ignore-errors ad-do-it)
+	    (ad-set-arg 0 "~/")
+	    ad-do-it))
 
-	  (defadvice term-emulate-terminal (around ini:terminal-detect-coding activate)
-	    "`term' で複数のコーディング出力を受け付ける."
-	    (let ((locale-coding-system 'undecided))
-	      ad-do-it)))	
-	
-	(with-eval-after-load "tramp"
-	  (setq tramp-encoding-shell "bash"))
-	)
+	(defadvice term-emulate-terminal (around ini:terminal-detect-coding activate)
+	  "`term' で複数のコーディング出力を受け付ける."
+	  (let ((locale-coding-system 'undecided))
+	    ad-do-it)))
+
+      (with-eval-after-load "tramp"
+	(setq tramp-encoding-shell "bash"))
       
       ;; gdb 使用時のエラー回避
       (with-eval-after-load "gdb-mi"

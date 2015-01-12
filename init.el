@@ -1650,7 +1650,6 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 	      (setq skk-dcomp-activate t)
 	      (setq skk-show-annotation t)
 	      (setq skk-show-tooltip t)
-	      (setq skk-use-jisx0201-input-method t)
 
 	      (when (require 'pos-tip nil t)
 		(setq skk-tooltip-function 'pos-tip-show))

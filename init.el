@@ -2056,10 +2056,11 @@ RENEW が non-nil の場合は新しい状態を作る.
     ;; input method 全般
     ;; ccc / (package-install 'ddskk)
     (when (require 'ccc nil t)
+      (ccc-setup)
       (add-hook 'input-method-activate-hook
-		(eval `(lambda () (set-buffer-local-cursor-color ,ime))))
+    		(eval `(lambda () (ccc-set-buffer-local-cursor-color ,ime))))
       (add-hook 'input-method-deactivate-hook
-		(lambda () (set-cursor-color-buffer-local nil))))
+    		(lambda () (ccc-set-cursor-color-buffer-local nil))))
 
     ;; skk
     (when (package-installed-p 'ddskk)

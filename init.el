@@ -452,6 +452,32 @@ LIB が存在しない場合は nil を返す."
 					  (text-scale-set 0)))
     ))
 
+(when (display-multi-frame-p)
+  (defun ini:close-or-exit-emacs (&optional arg)
+    "フレームが一つなら emacs を終了、それ以外はフレームを閉じる.
+ARG が non-nil の場合はフレームの数に関係なく emacs を終了する."
+    (interactive "P")
+    (if (or arg (eq 1 (length (frame-list))))
+	(save-buffers-kill-terminal)
+      (delete-frame)))
+
+  (global-set-key [remap save-buffers-kill-terminal] 'ini:close-or-exit-emacs)
+
+  (unless (fboundp 'toggle-frame-maximized)
+    (defun toggle-frame-maximized ()
+      "フレームサイズの最大化状態を切り替える."
+      (if (frame-parameter nil 'fullscreen)
+	  (progn
+	    (and (fboundp 'w32-send-sys-command)
+		 (w32-send-sys-command #xf030))
+	    (set-frame-parameter nil 'fullscreen 'maximized))
+	(and (fboundp 'w32-send-sys-command)
+	     (w32-send-sys-command #xf120))
+	(set-frame-parameter nil 'fullscreen nil))))
+
+  (global-set-key (kbd "C-z C-:") 'toggle-frame-maximized)
+  (global-set-key (kbd "C-z C-;") 'iconify-or-deiconify-frame))
+
 ;; IME関連キーの無効化
 (global-set-key (kbd "<enlw>") 'toggle-input-method) ; 半角/全角
 (global-set-key (kbd "<auto>") 'toggle-input-method) ; 半角/全角
@@ -1876,47 +1902,6 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 追加関数定義
-
-(when (display-multi-frame-p)
-  (defun ini:close-or-exit-emacs (&optional arg)
-    "フレームが一つなら emacs を終了、それ以外はフレームを閉じる.
-ARG が non-nil の場合はフレームの数に関係なく emacs を終了する."
-    (interactive "P")
-    (if (or arg (eq 1 (length (frame-list))))
-	(save-buffers-kill-terminal)
-      (delete-frame)))
-
-  (global-set-key [remap save-buffers-kill-terminal] 'ini:close-or-exit-emacs)
-
-  (unless (fboundp 'toggle-frame-maximized)
-    (defun ini:frame-size-maximize (&optional fullboth)
-      "フレームサイズを最大化.
-FULLBOTH が non-nil ならフルスクリーン表示にする."
-      (interactive "P")
-      (set-frame-parameter nil 'fullscreen
-			   (if fullboth 'fullboth 'maximized))
-      (when (fboundp 'w32-send-sys-command)
-	(w32-send-sys-command #xf030)))
-
-    (defun ini:frame-size-restore ()
-      "フレームサイズを通常に戻す."
-      (interactive)
-      (set-frame-parameter nil 'fullscreen nil)
-      (when (fboundp 'w32-send-sys-command)
-	(w32-send-sys-command #xf120)))
-
-    (defun ini:toggle-frame-size-maxmized (&optional fullboth)
-      "フレームの最大化状態を切り替える.
-FULLBOTH が non-nil なら最大化時にフルスクリーン表示にする."
-      (interactive "P")
-      (if (frame-parameter nil 'fullscreen)
-	  (ini:frame-size-restore)
-	(ini:frame-size-maximize fullboth)))
-
-    (defalias 'toggle-frame-maximized 'ini:toggle-frame-size-maxmized))
-  
-  (global-set-key (kbd "C-z C-:") 'toggle-frame-maximized)
-  (global-set-key (kbd "C-z C-;") 'iconify-or-deiconify-frame))
 
 ;;;;;;;;;;;;;;;;;;;
 ;; バッファの永続化

@@ -531,9 +531,8 @@ ARG が non-nil の場合はフレームの数に関係なく emacs を終了す
 
 (tool-bar-mode -1)
 (menu-bar-mode -1)
-(when (fboundp 'scroll-bar-mode)
+(when (featurep 'scroll-bar)
   (scroll-bar-mode -1))
-;; (set-scroll-bar-mode 'right)
 (blink-cursor-mode -1)
 (column-number-mode t)
 (show-paren-mode t)

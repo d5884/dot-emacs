@@ -1635,12 +1635,6 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 					   "zipcode/SKK-JISYO.zipcode"
 					   "zipcode/SKK-JISYO.office.zipcode")
 					 )))
-		
-		;; cdb は使わない
-		(setq skk-search-prog-list
-		      (cl-remove-if (lambda (prog)
-				      (eq (car prog) 'skk-search-cdb-jisyo))
-				    skk-search-prog-list))
 		)
 
 	      (when (require 'skk-study nil t)

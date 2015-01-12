@@ -59,9 +59,9 @@ ORIGINAL が non-nil であれば最後に連結される."
 	  (if ,original
 	      (list path-separator ,original))))
 
-(defmacro ini:emacs-d (path)
-  "~/.emacs.d 以下の PATH を返す."
-  `(eval-when-compile (locate-user-emacs-file ,path)))
+(defmacro ini:emacs-d (file)
+  "~/.emacs.d 以下の FILE を返す."
+  `(eval-when-compile (locate-user-emacs-file ,file)))
 
 (defmacro ini:locate-directory (directory)
   "DIRECTORY が存在するなら返す."
@@ -72,7 +72,7 @@ ORIGINAL が non-nil であれば最後に連結される."
   `(locate-file "." (delq nil (copy-sequence ,directories)) nil (lambda (p) (when (file-exists-p p) 'dir-ok))))
 
 (defmacro ini:library-within (lib file &optional exists)
-  "ライブラリ LIB と同じディレクトリに配置されている FILE へのパスを返す.
+  "ライブラリ LIB と同じディレクトリに配置されている FILE 名を返す.
 EXISTS が t の場合かつ FILE が存在しない場合は nil を返す.
 LIB が存在しない場合は nil を返す."
   `(ini:awhen (locate-library ,lib)

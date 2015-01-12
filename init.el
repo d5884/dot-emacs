@@ -546,6 +546,32 @@ ARG が non-nil の場合はフレームの数に関係なく emacs を終了す
 (put 'upcase-region 'disabled nil)
 (put 'downcase-region 'disabled nil)
 
+;; yank/undo highlighting
+;;   from http://www.fan.gr.jp/~ring/Meadow/meadow.html#ys:highlight-string
+(defadvice insert-for-yank (after ini:yank-highlight-string activate)
+  "文字列ヤンク時にハイライト表示する."
+  (let ((ol (make-overlay (mark t) (point))))
+    (unwind-protect
+	(progn (overlay-put ol 'face 'highlight)
+	       (sit-for 0.5))
+      (delete-overlay ol))))
+
+(defadvice undo (after ini:undo-highlight-string activate)
+  "アンドゥで再挿入された文字列をハイライト表示する."
+  (dolist (c buffer-undo-list)
+    (let ((beg (car c))
+	  (end (cdr c)))
+      (cond ((and (integerp beg)
+		  (integerp end))
+	     (let ((ol (make-overlay beg end)))
+	       (unwind-protect
+		   (progn (overlay-put ol 'face 'highlight)
+			  (sit-for 0.5))
+		 (delete-overlay ol)
+		 (return))))
+	    ((stringp beg)
+	     (return))))))
+
 ;; outline-minor-mode
 (add-hook 'outline-minor-mode-hook
 	  (lambda ()
@@ -2043,31 +2069,6 @@ SCRAP が non-nil の場合、`ini:scratch-scrap-directory' 内に
 	    (run-with-idle-timer ini:scratch-buffer-save-interval t 'ini:save-scratch-buffer)
 	    (add-hook 'kill-emacs-hook 'ini:save-scratch-buffer)
 	    ))
-
-;; from http://www.fan.gr.jp/~ring/Meadow/meadow.html#ys:highlight-string
-(defadvice insert-for-yank (after ini:yank-highlight-string activate)
-  "文字列ヤンク時にハイライト表示する."
-  (let ((ol (make-overlay (mark t) (point))))
-    (unwind-protect
-	(progn (overlay-put ol 'face 'highlight)
-	       (sit-for 0.5))
-      (delete-overlay ol))))
-
-(defadvice undo (after ini:undo-highlight-string activate)
-  "アンドゥで再挿入された文字列をハイライト表示する."
-  (dolist (c buffer-undo-list)
-    (let ((beg (car c))
-	  (end (cdr c)))
-      (cond ((and (integerp beg)
-		  (integerp end))
-	     (let ((ol (make-overlay beg end)))
-	       (unwind-protect
-		   (progn (overlay-put ol 'face 'highlight)
-			  (sit-for 0.5))
-		 (delete-overlay ol)
-		 (return))))
-	    ((stringp beg)
-	     (return))))))
 
 (defun ini:flip-window-state (&optional renew)
   "ウィンドウ分割状態を切り替える.

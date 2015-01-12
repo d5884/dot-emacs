@@ -330,10 +330,6 @@ LIB が存在しない場合は nil を返す."
       (ini:awhen (ini:locate-directory "/usr/share/info")
 	(add-to-list 'Info-additional-directory-list it)))
       
-    ;; cygwin-mount / (package-install 'cygwin-mount)
-    (when (require 'cygwin-mount nil t)
-      (cygwin-mount-activate))
-
     ;; NTEmacs の場合、プロセスの引数は起動した環境のコードページに依存するため
     ;; プロセス呼び出し時に引数のみ cp932 へ強制変換する
     (dolist (pair '((call-process-region . 6)
@@ -373,6 +369,10 @@ LIB が存在しない場合は nil を返す."
 	    ad-do-it
 	    )))
       )
+
+    ;; cygwin-mount / (package-install 'cygwin-mount)
+    (when (require 'cygwin-mount nil t)
+      (cygwin-mount-activate))
 
     ;; fakecygpty
     ;; gcc -o fakecygpty.exe fakecygpty.c

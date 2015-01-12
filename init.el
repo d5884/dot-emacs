@@ -1716,18 +1716,6 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
       "正規表現検索時のエラー回避."
       (ignore-errors
 	ad-do-it))
-
-    ;; 小菊 / http://sourceforge.jp/projects/kogiku/
-    ;; ... or cvs -d:pserver:anonymous@cvs.sourceforge.jp:/cvsroot/kogiku login
-    ;;        cvs -d:pserver:anonymous@cvs.sourceforge.jp:/cvsroot/kogiku co kogiku
-    (when (require 'kogiku nil t)
-      (setq kogiku-minibuffer-prompt-string "")
-      (setq kogiku-minibuffer-indicator-strings '("J" "E"))
-      (setq kogiku-enable-once nil)
-      (setq kogiku-use-advocate nil)
-      ;; emacs-23 以降の partial-completion に非対応
-      ;; initial-completionもダメっぽい
-      (setq completion-styles (delq 'partial-completion completion-styles)))
     ))
 
 ;; direx / (package-install 'direx)

@@ -1886,7 +1886,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
   (define-key ac-completing-map (kbd "C-g") 'ac-stop)
 
   (setq ac-use-menu-map t)
-  
+
   (when (require 'pos-tip nil t)
     (setq ac-quick-help-prefer-pos-tip t))
   )
@@ -2079,7 +2079,7 @@ RENEW が non-nil の場合は新しい状態を作る.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 色設定
 (cl-flet ((color-candidate (&rest colors)
-			       (cl-find-if #'color-defined-p colors)))
+			   (cl-find-if #'color-defined-p colors)))
   (require 'color)
   (when (and (eq (frame-parameter nil 'background-mode) 'dark)
 	     (string= (frame-parameter nil 'cursor-color) "black"))

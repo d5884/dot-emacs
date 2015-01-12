@@ -1162,9 +1162,7 @@ COMMAND が存在しない場合は定義を行なわない."
 ;;       ad-do-it))
 ;;   )
 
-(when (locate-library "zencoding-mode")
-  (autoload 'zencoding-mode "zencoding-mode" nil t)
-  
+(when (package-installed-p 'zencoding-mode)
   (with-eval-after-load "zencoding-mode"
     (define-key zencoding-mode-keymap (kbd "<C-return>") nil)
     (define-key zencoding-mode-keymap (kbd "C-j") nil)
@@ -1173,7 +1171,7 @@ COMMAND が存在しない場合は定義を行なわない."
       (define-key zencoding-mode-keymap [remap zencoding-expand-line] 'zencoding-expand-yas))
     (setq zencoding-indentation 2)
     )
-  
+
   (with-eval-after-load "nxml-mode"
     (add-hook 'nxml-mode-hook 'zencoding-mode))
 
@@ -1181,9 +1179,8 @@ COMMAND が存在しない場合は定義を行なわない."
     (add-hook 'css-mode-hook 'zencoding-mode))
   )
 
-(when (locate-library "smart-compile")
-  (autoload 'smart-compile "smart-compile" nil t)
 ;; smart-compile / (package-install 'smart-compile)
+(when (package-installed-p 'smart-compile)
   (autoload 'recompile "compile" nil t)
 
   (defun ini:smart-recompile (arg)
@@ -1356,9 +1353,8 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
       ad-do-it))
   )
 
-(when (locate-library "markdown-mode")
-  (autoload 'markdown-mode "markdown-mode" nil t)
 ;; markdown-mode / (package-install 'markdown-mode)
+(when (package-installed-p 'markdown-mode)
   (add-to-list 'auto-mode-alist '("\\.\\(md\\(wn\\|t\\)?\\|markdown\\|text\\)\\'" .
 				  markdown-mode)))
 
@@ -1418,9 +1414,8 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
       )
     ))
 
-(when (locate-library "shell-pop")
-  (autoload 'shell-pop "shell-pop" nil t)
 ;; shell-pop / (package-install 'shell-pop)
+(when (package-installed-p 'shell-pop)
   (global-set-key (kbd "C-z C-z") 'shell-pop)
   (with-eval-after-load "shell-pop"
     (setq shell-pop-internal-mode "ansi-term")
@@ -1465,15 +1460,13 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
   (popwin-mode 1)
   )
 
-(when (locate-library "stripe-buffer")
-  (autoload 'turn-on-stripe-buffer-mode "stripe-buffer")
 ;; stripe-buffer / (package-install 'stripe-buffer)
+(when (package-installed-p 'stripe-buffer)
   (add-hook 'dired-mode-hook 'turn-on-stripe-buffer-mode)
   (add-hook 'tabulated-list-mode-hook 'turn-on-stripe-buffer-mode))
 
-(when (locate-library "yascroll")
-  (autoload 'yascroll:show-scroll-bar "yascroll" nil t)
 ;; yascroll / (package-install 'yascroll)
+(when (package-installed-p 'yascroll)
   ;; 1行単位のスクロールにしているとちらつくので必要な時だけ表示にする
   (dolist (fn '(set-mark exchange-point-and-mark scroll-up scroll-down recenter))
     (eval `(defadvice ,fn (after ,(intern (format "ini:show-yascroll-on-%s" fn)) activate)
@@ -1708,7 +1701,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 ;; cmigemo / http://www.kaoriya.net/software/cmigemo
 (when (and (or (executable-find "cmigemo")
 	       (executable-find "migemo"))
-	   (locate-library "migemo"))
+	   (package-installed-p 'migemo))
   (defvar ini:org-isearch-lazy-highlight-search
     (symbol-function 'isearch-lazy-highlight-search)
     "migemo に置き換えられる前の `isearch-lazy-highlight-search'.")
@@ -1802,9 +1795,8 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
       (setq completion-styles (delq 'partial-completion completion-styles)))
     ))
 
-(when (locate-library "direx")
-  (autoload 'direx:jump-to-directory-other-window "direx" nil t)
 ;; direx / (package-install 'direx)
+(when (package-installed-p 'direx)
   (global-set-key (kbd "C-z C-d") 'direx:jump-to-directory-other-window)
 
   (with-eval-after-load "direx"
@@ -1906,18 +1898,17 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
     (setq ac-quick-help-prefer-pos-tip t))
   )
 
-(when (ignore-errors (require 'popup-kill-ring)) ;require popup and pos-tip
 ;; popup-kill-ring / (package-install 'popup-kill-ring)
+(when (require 'popup-kill-ring nil t)
   (setq popup-kill-ring-interactive-insert t)
   (global-set-key (kbd "M-y") 'popup-kill-ring)
   (define-key popup-kill-ring-keymap (kbd "TAB") 'popup-kill-ring-next)
   (define-key popup-kill-ring-keymap (kbd "M-y") 'popup-kill-ring-next))
 
-(when (and (executable-find "convert")
-	   (locate-library "image+"))
-  (with-eval-after-load "image"
-    (require 'image+ nil t)
 ;; image+ / (package-install 'image+)
+(with-eval-after-load "image"
+  (when (and (executable-find "convert")
+	     (require 'image+ nil t))
     (imagex-auto-adjust-mode t)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -231,6 +231,7 @@ LIB が存在しない場合は nil を返す."
 	)))
 
   ;; ウィンドウサイズ
+  ;; w32-resume-frame / git clone https://github.com/d5884/w32-resume-frame
   (if (require 'w32-resume-frame nil t)
       (w32-resume-activate)
     (setq initial-frame-alist `((top . 60) (left . 120) ,@initial-frame-alist)))
@@ -327,8 +328,7 @@ LIB が存在しない場合は nil を返す."
 	(ini:awhen (ini:locate-directory "/usr/share/info")
 	  (add-to-list 'Info-additional-directory-list it)))
       
-      ;; cygwin-mount / http://home.avvanta.com/~offby1/cygwin-mount/cygwin-mount.el
-      ;; ... or git clone https://github.com/emacsmirror/cygwin-mount
+      ;; cygwin-mount / (package-install 'cygwin-mount)
       (when (require 'cygwin-mount nil t)
       	(cygwin-mount-activate))
 
@@ -812,7 +812,7 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
 (when (fboundp 'executable-make-buffer-file-executable-if-script-p)
   (add-hook 'after-save-hook 'executable-make-buffer-file-executable-if-script-p))
 
-;; ssh-agent
+;; ssh-agent / git clone https://github.com/d5884/ssh-agent
 (when (locate-library "ssh-agent")
   (autoload 'ssh-agent-add-key "ssh-agent" nil t)
 
@@ -900,9 +900,8 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
 	      (set-window-configuration ini:ediff-window-configuration-stash)))
   )
 
-;; magit
-(when (locate-library "magit")
-  (autoload 'magit-status "magit" nil t)
+;; magit / (package-install 'magit)
+(when (package-installed-p 'magit)
   (global-set-key (kbd "C-z C-m") 'magit-status)
 
   (with-eval-after-load "session"
@@ -1099,8 +1098,9 @@ COMMAND が存在しない場合は定義を行なわない."
     )
   )
 
-;; ruby-mode / http://svn.ruby-lang.org/cgi-bin/viewvc.cgi/trunk/misc/
-;; ... or svn co http://svn.ruby-lang.org/repos/ruby/trunk/misc ruby
+;; ruby-mode
+;; rubydb, etc... / (package-install 'ruby-additional)
+;; inf-ruby / (package-install 'inf-ruby)
 (with-eval-after-load "ruby-mode"
   (when (require 'ruby-electric nil t)
     (add-hook 'ruby-mode-hook 'ruby-electric-mode))
@@ -1146,6 +1146,7 @@ COMMAND が存在しない場合は定義を行なわない."
     (with-eval-after-load "ruby-mode"
       (inf-ruby-keys))
     ))
+;; zencoding / (package-install 'zencoding-mode)
 
 ;; ;; w32-symlinks
 ;; (when (and (eq system-type 'windows-nt)
@@ -1156,7 +1157,6 @@ COMMAND が存在しない場合は定義を行なわない."
 ;;       ad-do-it))
 ;;   )
 
-;; zencoding / git clone https://github.com/smihica/zencoding
 (when (locate-library "zencoding-mode")
   (autoload 'zencoding-mode "zencoding-mode" nil t)
   
@@ -1176,11 +1176,9 @@ COMMAND が存在しない場合は定義を行なわない."
     (add-hook 'css-mode-hook 'zencoding-mode))
   )
 
-;; smart-compile
-;;   from http://emacswiki.org/emacs/SmartCompile
-;; ... or git clone https://github.com/emacsmirror/smart-compile.git
 (when (locate-library "smart-compile")
   (autoload 'smart-compile "smart-compile" nil t)
+;; smart-compile / (package-install 'smart-compile)
   (autoload 'recompile "compile" nil t)
 
   (defun ini:smart-recompile (arg)
@@ -1207,7 +1205,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 			     smart-compile-alist)))
 
 
-;; flex-autopair / git clone https://github.com/uk-ar/flex-autopair.git
+;; flex-autopair / (package-install 'flex-autopair)
 (if (require 'flex-autopair nil t)
     (progn
       (setq flex-autopair-echo-actionp nil)
@@ -1290,9 +1288,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
   (with-eval-after-load "lunar"
     (setq lunar-phase-names '("新月" "上弦" "満月""下弦")))
 
-  ;; 日本の祝日表示
-  ;;   from http://www.meadowy.org/meadow/netinstall/browser/branches/3.00/pkginfo
-  ;; ... or git clone https://github.com/emacs-jp/japanese-holidays.git
+  ;; 日本の祝日表示 / (package-install 'japanese-holidays)
   (when (require 'japanese-holidays nil t)
     (setq calendar-holidays
 	  (append japanese-holidays holiday-local-holidays holiday-other-holidays))
@@ -1354,9 +1350,9 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
       ad-do-it))
   )
 
-;; markdown-mode / git clone git://jblevins.org/git/markdown-mode.git
 (when (locate-library "markdown-mode")
   (autoload 'markdown-mode "markdown-mode" nil t)
+;; markdown-mode / (package-install 'markdown-mode)
   (add-to-list 'auto-mode-alist '("\\.\\(md\\(wn\\|t\\)?\\|markdown\\|text\\)\\'" .
 				  markdown-mode)))
 
@@ -1375,8 +1371,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 						    (add-keys-to-headword t)
 						    (strategy direct))))
 
-    ;; speak
-    ;; git clone https://github.com/d5884/speak
+    ;; speak / git clone https://github.com/d5884/speak
     (when (require 'speak nil t)
       ;; sdic-mode-map is defined in sdic-mode, not on loading.
       (add-hook 'sdic-mode-hook
@@ -1417,10 +1412,9 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
       )
     ))
 
-;; shell-pop / http://www.emacswiki.org/emacs/shell-pop.el
-;; ... or git clone https://github.com/emacsmirror/shell-pop
 (when (locate-library "shell-pop")
   (autoload 'shell-pop "shell-pop" nil t)
+;; shell-pop / (package-install 'shell-pop)
   (global-set-key (kbd "C-z C-z") 'shell-pop)
   (with-eval-after-load "shell-pop"
     (setq shell-pop-internal-mode "ansi-term")
@@ -1437,7 +1431,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 	  (delete-window))))
     ))
 
-;; popwin / git clone https://github.com/m2ym/popwin-el
+;; popwin / (package-install 'popwin)
 (when (require 'popwin nil t)
   (global-set-key (kbd "C-z C-s") 'popwin:stick-popup-window)
   (setq popwin:special-display-config
@@ -1465,15 +1459,15 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
   (popwin-mode 1)
   )
 
-;; stripe-buffer / git clone https://github.com/sabof/stripe-buffer
 (when (locate-library "stripe-buffer")
   (autoload 'turn-on-stripe-buffer-mode "stripe-buffer")
+;; stripe-buffer / (package-install 'stripe-buffer)
   (add-hook 'dired-mode-hook 'turn-on-stripe-buffer-mode)
   (add-hook 'tabulated-list-mode-hook 'turn-on-stripe-buffer-mode))
 
-;; yascroll / git clone https://github.com/m2ym/yascroll-el yascroll
 (when (locate-library "yascroll")
   (autoload 'yascroll:show-scroll-bar "yascroll" nil t)
+;; yascroll / (package-install 'yascroll)
   ;; 1行単位のスクロールにしているとちらつくので必要な時だけ表示にする
   (dolist (fn '(set-mark exchange-point-and-mark scroll-up scroll-down recenter))
     (eval `(defadvice ,fn (after ,(intern (format "ini:show-yascroll-on-%s" fn)) activate)
@@ -1484,9 +1478,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
     (add-hook 'isearch-update-post-hook 'yascroll:show-scroll-bar))
   )
 
-;; session
-;;   from http://emacs-session.sourceforge.net/
-;; ... or git clone  https://github.com/emacsmirror/session.git
+;; session / (package-install 'session)
 (when (require 'session nil t)
   (add-hook 'after-init-hook 'session-initialize)
   (setq session-initialize '(de-saveplace session places menus))
@@ -1599,14 +1591,14 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
   (when (require 'mozc-mode-line-indicator nil t)
     (setq mozc-mode-line-indicator-title-format "[%s]"))
 
-  ;; git clone https://github.com/d5884/mozc-popup
+  ;; mozc-popup / git clone https://github.com/d5884/mozc-popup
   (when (and (require 'popup nil t)
 	     (require 'mozc-popup nil t))
     (setq mozc-candidate-style 'popup)))
 
-;; Daredevil SKK / http://openlab.ring.gr.jp/skk/
-;; ... or cvs -d:pserver:guest@openlab.jp:/circus/cvsroot login [guest]
-;;        cvs -d:pserver:guest@openlab.jp:/circus/cvsroot co -d skk skk/main
+;; Daredevil SKK / (package-install 'ddskk)
+;; 辞書 / cvs -d:pserver:guest@openlab.jp:/circus/cvsroot login [guest]
+;;        cvs -d:pserver:guest@openlab.jp:/circus/cvsroot co -d ~/.emacs.d/share/skk skk/dic
 (when (and (load "ddskk-autoloads" t t)
 	   (require 'skk-leim nil t))
   (setq skk-user-directory user-emacs-directory)
@@ -1706,12 +1698,8 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 		(setq skk-tooltip-function 'pos-tip-show))
 	      )))
 
-;; migemo / http://0xcc.net/migemo/
-;; ... or cvs -d:pserver:anonymous@migemo.cvs.sourceforge.net:/cvsroot/migemo login
-;;        cvs -d:pserver:anonymous@migemo.cvs.sourceforge.net:/cvsroot/migemo co migemo
-;;        git clone https://github.com/emacs-jp/migemo
+;; migemo / (package-install 'migemo)
 ;; cmigemo / http://www.kaoriya.net/software/cmigemo
-;;           https://github.com/koron/cmigemo
 (when (and (or (executable-find "cmigemo")
 	       (executable-find "migemo"))
 	   (locate-library "migemo"))
@@ -1808,9 +1796,9 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
       (setq completion-styles (delq 'partial-completion completion-styles)))
     ))
 
-;; direx / git clone https://github.com/m2ym/direx-el
 (when (locate-library "direx")
   (autoload 'direx:jump-to-directory-other-window "direx" nil t)
+;; direx / (package-install 'direx)
   (global-set-key (kbd "C-z C-d") 'direx:jump-to-directory-other-window)
 
   (with-eval-after-load "direx"
@@ -1850,7 +1838,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 		 '(direx:direx-mode :position left :width 25 :dedicated t)))
   )
 
-;; yasnippet / git clone --recursive https://github.com/capitaomorte/yasnippet
+;; yasnippet / (package-install 'yasnippet)
 (when (require 'yasnippet nil t)
   (setq yas-verbosity 1)
   (setq yas-prompt-functions (delq 'yas-x-prompt yas-prompt-functions))
@@ -1892,9 +1880,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
     )
   )
 
-;; auto-complete-mode / https://github.com/auto-complete/auto-complete
-;; https://github.com/auto-complete/popup-el
-;; https://github.com/auto-complete/fuzzy-el
+;; auto-complete-mode / (package-install 'auto-complete)
 (when (require 'auto-complete-config nil t)
   (ini:awhen (ini:library-within "auto-complete-config" "dict" t)
     (add-to-list 'ac-dictionary-directories it))
@@ -1910,20 +1896,18 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
     (setq ac-quick-help-prefer-pos-tip t))
   )
 
-;; popup-kill-ring / http://www.emacswiki.org/emacs/popup-kill-ring.el
-;; ... or bzr branch https://code.launchpad.net/~khiker/+junk/popup-kill-ring
-;; ... or git clone https://github.com/emacsmirror/popup-kill-ring
 (when (ignore-errors (require 'popup-kill-ring)) ;require popup and pos-tip
+;; popup-kill-ring / (package-install 'popup-kill-ring)
   (setq popup-kill-ring-interactive-insert t)
   (global-set-key (kbd "M-y") 'popup-kill-ring)
   (define-key popup-kill-ring-keymap (kbd "TAB") 'popup-kill-ring-next)
   (define-key popup-kill-ring-keymap (kbd "M-y") 'popup-kill-ring-next))
 
-;; image+ / git clone https://github.com/mhayashi1120/Emacs-imagex
 (when (and (executable-find "convert")
 	   (locate-library "image+"))
   (with-eval-after-load "image"
     (require 'image+ nil t)
+;; image+ / (package-install 'image+)
     (imagex-auto-adjust-mode t)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

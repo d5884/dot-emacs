@@ -1136,23 +1136,6 @@ COMMAND が存在しない場合は定義を行なわない."
     (ini:flymake-gen-simple-init ruby "\\.rb$" "ruby" "-c" local-file))
   )
 
-(when (executable-find "ruby")
-  ;; rubydb
-  (when (locate-library "rubydb3x")
-    (autoload 'rubydb "rubydb3x" nil t))
-  
-  ;; inf-ruby
-  (when (locate-library "inf-ruby")
-    (autoload 'run-ruby "inf-ruby" nil t)
-    (autoload 'inf-ruby-keys "inf-ruby" nil t)
-    (with-eval-after-load "inf-ruby"
-      ;; inf-ruby-completion
-      ;;   from http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-core/20892
-      ;; ... or git clone git://gist.github.com/1543904.git inf-ruby-completion
-      (require 'inf-ruby-completion nil t))
-    (with-eval-after-load "ruby-mode"
-      (inf-ruby-keys))
-    ))
 ;; zencoding / (package-install 'zencoding-mode)
 (when (package-installed-p 'zencoding-mode)
   (with-eval-after-load "zencoding-mode"

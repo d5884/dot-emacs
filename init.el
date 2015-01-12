@@ -804,7 +804,7 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
 
 ;; サーバ機能
 (when (and (require 'server nil t)
-	   (not (server-running-p)))
+	   (memq (server-running-p) '(nil :other)))
   (server-start))
 
 ;; スクリプトファイルの自動 +x

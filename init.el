@@ -155,10 +155,6 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 	  (and (null (getenv "LANG")) (null (getenv "LC_ALL"))))
   (set-locale-environment (setenv "LANG" "ja_JP.UTF-8")))
 
-(when (and (eq system-type 'windows-nt)
-	   (boundp 'w32-unicode-filenames))
-  (set-file-name-coding-system 'utf-8))
-
 ;; coding-system の優先度設定
 (set-coding-system-priority 'utf-8 'cp932) ; shift_jis より cp932 優先
 
@@ -298,6 +294,10 @@ KEY が non-nil の場合は KEY に、nil の場合は q にバインドされ�
 				     (coding-system-change-text-conversion
 				      (car default-process-coding-system) 'undecided)
 				     (cdr (process-coding-system it)))))
+
+      ;; ファイル名のエンコーディングを実態とあわせる
+      (when (boundp 'w32-unicode-filenames)
+	(set-file-name-coding-system 'utf-8))
 
       ;; shell
       (when (executable-find "bash")

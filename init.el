@@ -254,11 +254,10 @@ LIB が存在しない場合は nil を返す."
 				     (expand-file-name "cygwin" p)))
 			     (list "c:/"
 				   "c:/gnupack/app/cygwin"
+				   (getenv "HOME")
+				   (getenv "USERPROFILE")
 				   (getenv "LOCALAPPDATA")
 				   (getenv "APPDATA")
-				   (getenv "USERPROFILE")
-				   (getenv "HOME")
-				   (getenv "ProgramW6432")
 				   (getenv "ProgramFiles")
 				   ))))
     (let ((cygwin-exec-path ; cygwin のルートパスからの相対パスとして追加

@@ -731,14 +731,14 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
   (require 'ansi-color nil t)
   (when (eq 'light (frame-parameter nil 'background-mode))
     (setq ansi-color-names-vector
-	  ["black"		; black
-	   "dark red"		; red
-	   "dark gree"       	; green
-	   "dark goldenrod"	; yellow
-	   "dark blue"	; blue
-	   "dark magenta"     ; magenta
-	   "dark cyan"	; cyan
-	   "white"])		; white
+	  ["black"          ; black
+	   "dark red"       ; red
+	   "dark green"     ; green
+	   "dark goldenrod" ; yellow
+	   "dark blue"      ; blue
+	   "dark magenta"   ; magenta
+	   "dark cyan"      ; cyan
+	   "white"])        ; white
     (setq ansi-color-map (ansi-color-make-color-map)))
   (ansi-color-for-comint-mode-on))
 

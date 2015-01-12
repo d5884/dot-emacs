@@ -716,7 +716,7 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
   ;; C-c に C-x を取り込まない
   (set-keymap-parent term-raw-escape-map nil)
   ;; char-mode で使いたいキーを開放して C-c に移動
-  (dolist (key '("M-x" "M-:" "C-z" "C-u"))
+  (dolist (key '("M-x" "M-:" "C-z" "C-u" "C-\\"))
     (define-key term-raw-map (kbd key) nil)
     (define-key term-raw-map (kbd (concat "C-c " key))
       (if (string-match-p "^M-" key)

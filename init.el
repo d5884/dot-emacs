@@ -81,17 +81,6 @@ LIB が存在しない場合は nil を返す."
 	       (file-exists-p name))
 	   name))))
 
-(defmacro ini:define-quit-key (trigger-function buffer &optional key)
-  "TRIGGER-FUNCTION で作成される BUFFER に `bury-buffer' の呼び出しを定義する.
-KEY が non-nil の場合は KEY に、nil の場合は q にバインドされる.
-特定のモードが存在しないバッファに対して用いる."
-  `(defadvice ,trigger-function (after ,(intern (format "ini:%s-define-quit-key"
-							trigger-function)) activate)
-     "実行時に `bury-buffer' 呼び出し用のキー設定を行なう."
-     (ignore-errors
-       (with-current-buffer ,buffer
-	 (local-set-key ,(or key "q") 'bury-buffer)))))
-
 (defmacro ini:make-silently-loading (func)
   "FUNC 内の `load' のメッセージ出力を強制的に抑制する."
   `(defadvice ,func (around
@@ -1245,10 +1234,6 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
   (define-key calendar-mode-map (kbd "C-j") 'diary-view-entries)
   (define-key calendar-mode-map (kbd "<RET>") 'diary-view-entries)
   
-  (ini:define-quit-key calendar-list-holidays "*Holidays*")
-  (ini:define-quit-key calendar-sunrise-sunset-month "*Sunrise/Sunset Times*")
-  (ini:define-quit-key calendar-lunar-phases "*Phases of Moon*")
-
   ;; 月の満ち欠けの日本語化
   (with-eval-after-load "lunar"
     (setq lunar-phase-names '("新月" "上弦" "満月""下弦")))

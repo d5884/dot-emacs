@@ -1179,10 +1179,15 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 
 (setq magic-mode-alist
       (cons '("<\\?xml" . nxml-mode) magic-mode-alist))
-(with-eval-after-load "smart-compile"
-  (setq smart-compile-alist (cons
-			     '(nxml-mode browse-url-of-buffer)
-			     smart-compile-alist)))
+
+(with-eval-after-load "nxml-mode"
+  ;; auto-complete-nxml / (package-install 'auto-complete-nxml)
+  (require 'auto-complete-nxml nil t)
+
+  (with-eval-after-load "smart-compile"
+    (setq smart-compile-alist (cons
+			       '(nxml-mode browse-url-of-buffer)
+			       smart-compile-alist))))
 
 
 ;; flex-autopair / (package-install 'flex-autopair)

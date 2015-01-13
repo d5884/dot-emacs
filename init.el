@@ -32,13 +32,19 @@
 (defmacro ini:aif (pred then &rest else)
   "PRED を評価し、結果が non-nil ならば THEN、nil ならば ELSE の評価結果を返す.
 THEN、ELSE 内では PRED の評価結果を `it' で参照出来る."
+  (declare (indent 2))
   `(let ((it ,pred))
      (if it ,then ,@else)))
 
 (defmacro ini:awhen (pred &rest body)
   "PRED を評価し、結果が non-nil ならば BODY を評価し、最後の式の結果を返す.
 BODY 内では PRED の評価結果を `it' で参照出来る."
+  (declare (indent 1))
   `(ini:aif ,pred (progn ,@body)))
+
+(font-lock-add-keywords 'emacs-lisp-mode
+			`((,(regexp-opt '("ini:aif" "ini:awhen"))
+			   . 'font-lock-keyword-face)))
 
 (defmacro ini:system-file-name (name &optional directory)
   "NAME をシステムで認識可能なファイルパスに変換する.
@@ -98,21 +104,13 @@ LIB が存在しない場合は nil を返す."
 (unless (fboundp 'with-eval-after-load)
   (defmacro with-eval-after-load (file &rest body)
     "FILE をロード後に BODY を評価する."
+    (declare (indent 1))
     `(eval-after-load ,file
        `(funcall ,(lambda () ,@body))))
-  
-  (put 'with-eval-after-load 'lisp-indent-function 1)
+
   (font-lock-add-keywords 'emacs-lisp-mode
 			  '(("with-eval-after-load" . 'font-lock-keyword-face)))
   )
-
-;; マクロのインデント設定
-(put 'ini:aif 'lisp-indent-function 2)
-(put 'ini:awhen 'lisp-indent-function 1)
-
-(font-lock-add-keywords 'emacs-lisp-mode
-			`((,(regexp-opt '("ini:aif" "ini:awhen"))
-			   . 'font-lock-keyword-face)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; ロードパス追加

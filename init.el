@@ -562,19 +562,21 @@ ARG が non-nil の場合はフレームの数に関係なく emacs を終了す
 
 (defadvice undo (after ini:undo-highlight-string activate)
   "アンドゥで再挿入された文字列をハイライト表示する."
-  (dolist (c buffer-undo-list)
-    (let ((beg (car c))
-	  (end (cdr c)))
-      (cond ((and (integerp beg)
-		  (integerp end))
-	     (let ((ol (make-overlay beg end)))
-	       (unwind-protect
-		   (progn (overlay-put ol 'face 'highlight)
-			  (sit-for 0.5))
-		 (delete-overlay ol)
-		 (return))))
-	    ((stringp beg)
-	     (return))))))
+  (catch 'return
+    (dolist (entry buffer-undo-list)
+      (let ((beg (car entry))
+	    (end (cdr entry)))
+	(cond
+	 ((null entry)) ;; boundary. skip it.
+	 ((and (integerp beg)
+	       (integerp end))
+	  (let ((ol (make-overlay beg end)))
+	    (unwind-protect
+		(progn (overlay-put ol 'face 'highlight)
+		       (sit-for 0.5))
+	      (delete-overlay ol)
+	      (throw 'return nil))))
+	 (t (throw 'return nil)))))))
 
 ;; outline-minor-mode
 (add-hook 'outline-minor-mode-hook

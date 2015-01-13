@@ -488,23 +488,32 @@ ARG が non-nil の場合はフレームの数に関係なく emacs を終了す
 (global-set-key (kbd "<copy>") 'ignore)	             ; カタカナ/ひらがな/ローマ字
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; 標準の変数設定
+;; 各種機能/パッケージ別
 
-;; 色々
-(setq frame-title-format "%b")
+;; diminish / (package-install 'diminish)
+(unless (package-installed-p 'diminish)
+  (defalias 'diminish 'ignore))
+
+;; 編集系色々
+(setq comment-style 'multi-line)
 (setq kill-do-not-save-duplicates t)
 (setq require-final-newline t)
 (setq search-invisible t)
 (setq truncate-partial-width-windows nil)
-(setq view-read-only t)
 (setq visible-bell t)
-(setq comment-style 'multi-line)
-(setq recenter-positions '(middle top))
-;; (setq-default cursor-in-non-selected-windows nil)
 
-;; 起動画面
+;; モードライン関係
+(column-number-mode t)
+
+;; 起動画面関係
 (setq inhibit-startup-screen t)
 (setq initial-scratch-message nil)
+
+(defadvice display-startup-echo-area-message (around ini:shut-up-echo-message activate)
+  "起動時のエコーエリアのメッセージを表示しない.
+`inhibit-startup-echo-area-message' はユーザ名をリテラルで書く必要があるので
+Daemon 起動時以外は表示関数を直接潰す"
+  (when (daemonp) ad-do-it))
 
 ;; スクロール関係
 (setq scroll-preserve-screen-position t)
@@ -513,40 +522,27 @@ ARG が non-nil の場合はフレームの数に関係なく emacs を終了す
 (setq scroll-step 1)
 (setq next-screen-context-lines 1)
 (setq mouse-wheel-scroll-amount '(1 ((shift) . 5)))
+(setq recenter-positions '(middle top))
 
 ;; バックアップ関係
 (setq make-backup-files nil)
 (setq auto-save-default nil)
 (setq auto-save-list-file-prefix nil)
 
-;; 起動時のエコーエリアメッセージを黙らせる
-;; inhibit-startup-echo-area-message はユーザ名をリテラルで書く必要があるので
-;; Daemon 起動時以外は表示関数を直接潰す
-(defadvice display-startup-echo-area-message (around ini:shut-up-echo-message activate)
-  "起動時のエコーエリアのメッセージを表示しない."
-  (if (daemonp) ad-do-it))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; パッケージ別機能設定
-
-;; diminish / (package-install 'diminish)
-(unless (package-installed-p 'diminish)
-  (defalias 'diminish 'ignore))
-
+;; フレーム/カーソル関連
+(setq frame-title-format "%b")
+(blink-cursor-mode -1)
 (tool-bar-mode -1)
 (menu-bar-mode -1)
 (when (featurep 'scroll-bar)
   (scroll-bar-mode -1))
-(blink-cursor-mode -1)
-(column-number-mode t)
-(show-paren-mode t)
-(delete-selection-mode t)
-(temp-buffer-resize-mode t)
 (mouse-avoidance-mode 'exile)
 
-;; (put 'set-goal-column 'disabled nil)
+;; narrowing
 (put 'narrow-to-region 'disabled nil)
 (put 'narrow-to-page 'disabled nil)
+
+;; upcase/downcase
 (put 'upcase-region 'disabled nil)
 (put 'downcase-region 'disabled nil)
 
@@ -631,13 +627,21 @@ ARG が non-nil の場合はフレームの数に関係なく emacs を終了す
     )
   )
 
+;; show-paren
+(show-paren-mode t)
+
+;; temp-buffer-resize
+(temp-buffer-resize-mode t)
 
 ;; gnutls
-(with-eval-after-load "gnutls"
-  (setq gnutls-trustfiles (mapcar 'expand-file-name gnutls-trustfiles)))
+(when (eq system-type 'windows-nt)
+  (with-eval-after-load "gnutls"
+    ;; gnutls の dll が dos 形式のパスを要求するため.
+    (setq gnutls-trustfiles (mapcar 'expand-file-name gnutls-trustfiles))))
 
 ;; recentf
-(with-eval-after-load "recentf" ;; 基本的に使わないがファイルをホームに作らないよう設定
+(with-eval-after-load "recentf"
+  ;; 基本的に使わないがファイルをホームに作らないよう設定
   (setq recentf-save-file (ini:emacs-d "recentf")))
 
 ;; info
@@ -987,19 +991,14 @@ COMMAND が存在しない場合は定義を行なわない."
 (add-hook 'occur-mode-hook 'next-error-follow-minor-mode)
 
 ;; view-mode
+(setq view-read-only t)
 (with-eval-after-load "view"
   (define-key view-mode-map "j" 'next-line)
   (define-key view-mode-map "k" 'previous-line)
-  ;; (defadvice view-mode-exit (before ini:view-mode-exit activate)
-  ;;   "`hl-line-mode' を無効にする."
-  ;;   (when view-mode
-  ;;     (hl-line-mode -1)))
-  ;; (add-hook 'view-mode-hook (lambda () (hl-line-mode t)))
   )
 
 ;; dired
 (global-set-key (kbd "C-x C-d") 'dired-other-window)
-
 
 (with-eval-after-load "dired"
   (eval-when-compile
@@ -1081,16 +1080,6 @@ COMMAND が存在しない場合は定義を行なわない."
     (when (require 'dired-x nil t)
       (global-set-key (kbd "C-x C-j") cxcj)))
   )
-
-
-;; ;; flyspell
-;; (when (and (or (executable-find "ispell")
-;; 	       (executable-find "aspell"))
-;; 	   (fboundp 'flyspell-prog-mode))
-;;   (with-eval-after-load "flyspell"
-;;        (custom-set-variables '(flyspell-use-meta-tab nil)))
-;;   (add-hook 'prog-mode-hook
-;; 	    'flyspell-prog-mode))
 
 ;; cc-mode
 (with-eval-after-load "cc-mode"

@@ -2085,3 +2085,8 @@ RENEW が non-nil の場合は新しい状態を作る.
 (ini:awhen (getenv "HOME") (cd it))
 
 ;;; init.el ends here
+
+;; Local Variables:
+;; indent-tabs-mode: nil
+;; eval: (add-hook 'before-save-hook 'delete-trailing-whitespace nil t)
+;; End:

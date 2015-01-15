@@ -1318,6 +1318,9 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 (with-eval-after-load "eww"
   (setq eww-search-prefix "http://www.google.co.jp/search?q=")
 
+  ;; x-euc-jp は ddskk-ml の過去ログ等で使われているので…
+  (define-coding-system-alias 'x-euc-jp 'euc-jp)
+
   (defadvice eww-display-html (after ini:eww-change-buffer-coding-system activate)
     (set-buffer-file-coding-system (ad-get-arg 0)))
 

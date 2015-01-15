@@ -207,6 +207,11 @@ LIB が存在しない場合は nil を返す."
         ;;   (set-fontset-font fontset 'unicode
         ;;                  `(,it . "iso10646-1") nil 'append))
 
+        ;; fallback font
+        (ini:awhen (font-candidate "Arial Unicode MS")
+          (set-fontset-font fontset 'unicode
+                            `(,it . "iso10646-1") nil 'append))
+
         ;; ;; サイズ調整
         ;; (setq face-font-rescale-alist (append '(("MeiryoKe_Console" . 1.2)
         ;;                                      ("Consolas" . 1.0))

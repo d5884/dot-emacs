@@ -77,16 +77,6 @@ ORIGINAL が non-nil であれば最後に連結される."
   "DIRECTORIES のうち最初に見付かったディレクトリを返す."
   `(locate-file "." (delq nil (copy-sequence ,directories)) nil (lambda (p) (when (file-exists-p p) 'dir-ok))))
 
-(defmacro ini:library-within (lib file &optional exists)
-  "ライブラリ LIB と同じディレクトリに配置されている FILE 名を返す.
-EXISTS が t の場合かつ FILE が存在しない場合は nil を返す.
-LIB が存在しない場合は nil を返す."
-  `(ini:awhen (locate-library ,lib)
-     (let ((name (expand-file-name ,file (file-name-directory it))))
-       (if (or (not ,exists)
-               (file-exists-p name))
-           name))))
-
 (defmacro ini:make-silently-loading (func)
   "FUNC 内の `load' のメッセージ出力を強制的に抑制する."
   `(defadvice ,func (around
@@ -1565,10 +1555,6 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
                                         (deactivate-input-method))
                                       (set-input-method "japanese-skk"))))
 
-  ;; 実験的拡張へのロードパス追加(あれば)
-  (ini:awhen (ini:library-within "skk" "experimental" t)
-    (add-to-list 'load-path it))
-
   (add-hook 'skk-load-hook
             (lambda ()
               ;; ローカルの辞書設定
@@ -1783,9 +1769,6 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 ;; auto-complete-mode / (package-install 'auto-complete)
 (when (require 'auto-complete-config nil t)
   (diminish 'auto-complete-mode)
-
-  (ini:awhen (ini:library-within "auto-complete-config" "dict" t)
-    (add-to-list 'ac-dictionary-directories it))
 
   (ac-config-default)
 

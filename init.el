@@ -185,27 +185,10 @@ ORIGINAL が non-nil であれば最後に連結される."
           (set-fontset-font fontset 'unicode
                             `(,it . "iso10646-1") nil 'append))
 
-        ;; ;; Burmese ビルマ語 / Padauk.ttf
-        ;; ;; http://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=padauk
-        ;; (ini:awhen (font-candidate "Padauk")
-        ;;   (set-fontset-font fontset 'unicode
-        ;;                  `(,it . "iso10646-1") nil 'append))
-
-        ;; ;; Oriya オリヤー語 / ori1UniMed.ttf
-        ;; ;; http://www.exnet.btinternet.co.uk/
-        ;; (ini:awhen (font-candidate "ori1Uni")
-        ;;   (set-fontset-font fontset 'unicode
-        ;;                  `(,it . "iso10646-1") nil 'append))
-
         ;; fallback font
         (ini:awhen (font-candidate "Arial Unicode MS")
           (set-fontset-font fontset 'unicode
                             `(,it . "iso10646-1") nil 'append))
-
-        ;; ;; サイズ調整
-        ;; (setq face-font-rescale-alist (append '(("MeiryoKe_Console" . 1.2)
-        ;;                                      ("Consolas" . 1.0))
-        ;;                                    face-font-rescale-alist))
 
         ;; 文字幅調整
         (when width1-charset-list

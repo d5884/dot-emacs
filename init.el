@@ -1394,6 +1394,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 (when (require 'popwin nil t)
   (global-set-key (kbd "C-z C-s") 'popwin:stick-popup-window)
   (global-set-key [remap view-echo-area-messages] 'popwin:messages)
+  (setq popwin:reuse-window nil)
   (setq popwin:special-display-config
         (append
          '("*Process List*"

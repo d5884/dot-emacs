@@ -381,8 +381,8 @@ ORIGINAL が non-nil であれば最後に連結される."
 (global-set-key (kbd "<pause>") 'toggle-debug-on-error)
 (global-set-key [remap list-buffers] 'bs-show)
 (global-set-key (kbd "C-z z") (defun ini:ansi-term ()
-                                (interactive)
                                 "`ansi-term' を実行する."
+                                (interactive)
                                 (ansi-term shell-file-name)))
 (global-set-key (kbd "<apps>") (defun ini:show-apps-menu ()
                                  "編集メニューを表示する."

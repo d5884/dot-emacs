@@ -1781,55 +1781,12 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 ;; 追加関数定義
 
 ;;;;;;;;;;;;;;;;;;;
-;; バッファの永続化
-(defvar-local ini:permanent-buffer nil
-  "non-nil の場合、バッファが kill 不可になる.")
-(put 'ini:permanent-buffer 'permanent-local t)
-
-(defun ini:make-buffer-permanently (buffer &optional flag)
-  "バッファを kill 出来なくする.
-flag が clear の場合は kill 時にバッファの中身を空にする.
-flag が関数の場合は対象関数を呼び出す.
-その際、関数の戻り値が non-nil の場合バッファは kill される.
-flag が -1 の場合は kill 可能に戻す.
-flag が上記以外の non-nil の場合は削除不可にする."
-  (with-current-buffer buffer
-    (setq ini:permanent-buffer (if (eq flag -1)
-                                   nil
-                                 (or flag t)))))
-
-(add-hook 'kill-buffer-query-functions
-          (lambda ()
-            (cond
-             ((null ini:permanent-buffer)
-              t)
-             ((eq ini:permanent-buffer 'clear)
-              (widen)
-              (erase-buffer)
-              (message "Buffer was cleared.")
-              nil)
-             ((functionp ini:permanent-buffer)
-              (funcall ini:permanent-buffer))
-             (t
-              (message "This buffer is flagged to permanent buffer.")
-              nil))))
-
-(add-hook 'after-init-hook
-          (lambda ()
-            (ini:make-buffer-permanently "*scratch*"
-                                         (lambda ()
-                                           (ini:refresh-scratch-buffer t)))
-            (ini:make-buffer-permanently "*Messages*" 'clear)
-            ))
-
-
-;;;;;;;;;;;;;;;;;;;
-;; scratch 自動保存
+;; scratch 自動保存/永続化
 (defvar ini:scratch-save-file (ini:emacs-d "scratch")
   "`*scratch*' バッファの自動保存先ファイル名.")
 
-(defvar ini:scratch-scrap-directory (ini:emacs-d "snap")
-  "`*scratch*' バッファのスクラップ先ディレクトリ名")
+(defvar ini:scratch-snapshot-directory (ini:emacs-d "snap")
+  "`*scratch*' バッファのスナップショット先ディレクトリ名")
 
 (defvar ini:scratch-buffer-save-interval 1
   "`*scratch*' バッファの自動保存間隔.")
@@ -1837,15 +1794,14 @@ flag が上記以外の non-nil の場合は削除不可にする."
 (defvar ini:prev-scratch-modified-tick 0
   "`*scratch*' バッファの前回保存時の更新状態.")
 
-(defun ini:refresh-scratch-buffer (&optional scrap)
+(defun ini:refresh-scratch-buffer ()
   "`*scratch*' バッファを初期状態に戻す.
 削除されていた場合はバッファを新規作成し、存在している場合は内容をクリアする.
-SCRAP が non-nil の場合、`ini:scratch-scrap-directory' 内に
-現在の `*scratch*' バッファの内容を保存する."
+また、`ini:scratch-snapshot-directory' 内に現在の `*scratch*' バッファの内容を保存する."
   (interactive)
   (let ((exists-p (get-buffer "*scratch*")))
-    (when (and exists-p scrap)
-      (ini:scratch-buffer-scrap))
+    (when exists-p
+      (ini:scratch-buffer-snapshot))
     (with-current-buffer (or exists-p (get-buffer-create "*scratch*"))
       (unless (eq major-mode initial-major-mode)
         (funcall initial-major-mode))
@@ -1858,20 +1814,19 @@ SCRAP が non-nil の場合、`ini:scratch-scrap-directory' 内に
     (if exists-p
         (message "*scratch* is cleaned up.")
       (message "another *scratch* is created."))
-    )
-  nil) ; for kill-buffer-query-functions
+    ))
 
-(defun ini:scratch-buffer-scrap ()
-  "`*scratch*' バッファの内容を `ini:scratch-scrap-directory' 内に保存する."
+(defun ini:scratch-buffer-snapshot ()
+  "`*scratch*' バッファの内容を `ini:scratch-snapshot-directory' 内に保存する."
   (interactive)
   (ini:awhen (get-buffer "*scratch*")
-    (make-directory ini:scratch-scrap-directory t)
+    (make-directory ini:scratch-snapshot-directory t)
     (let ((name-base (format "scratch-%s%%02d.el" (format-time-string "%Y%m%d-%H%M%S")))
           (serial 0)
-          scrap-name)
+          snapshot-name)
       (while (file-exists-p
-              (setq scrap-name (expand-file-name
-                                (format name-base serial) ini:scratch-scrap-directory)))
+              (setq snapshot-name (expand-file-name
+                                (format name-base serial) ini:scratch-snapshot-directory)))
         (setq serial (1+ serial)))
       (with-current-buffer it
         (save-match-data
@@ -1879,7 +1834,7 @@ SCRAP が non-nil の場合、`ini:scratch-scrap-directory' 内に
             (widen)
             (goto-char (point-min))
             (unless (re-search-forward "\\`[ \r\n\t]*\\'" nil t)
-              (write-region (point-min) (point-max) scrap-name nil 'silent))))))
+              (write-region (point-min) (point-max) snapshot-name nil 'silent))))))
     ))
 
 (defun ini:resume-scratch-buffer ()
@@ -1919,6 +1874,12 @@ SCRAP が non-nil の場合、`ini:scratch-scrap-directory' 内に
             ;; 読み込みに成功したら自動保存を有効化
             (run-with-idle-timer ini:scratch-buffer-save-interval t 'ini:save-scratch-buffer)
             (add-hook 'kill-emacs-hook 'ini:save-scratch-buffer)
+
+            ;; 永続化
+            (add-hook 'kill-buffer-query-functions
+                      (lambda ()
+                        (if (equal (buffer-name) "*scratch*")
+                            (progn (ini:refresh-scratch-buffer) nil) t)))
             ))
 
 (defun ini:flip-window-state (&optional renew)

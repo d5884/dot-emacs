@@ -841,7 +841,7 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
         (overlay-put ovr 'display hiding-text))))
 
   (setq hs-set-up-overlay 'ini:hs-mark-fringe)
-  (define-key hs-minor-mode-map (kbd "C-c <C-SPC>") 'hs-toggle-hiding))
+  (define-key hs-minor-mode-map (kbd "C-z <C-SPC>") 'hs-toggle-hiding))
 
 ;; gdb
 (with-eval-after-load "gdb-mi"
@@ -1316,8 +1316,8 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 (when (locate-library "sdic")
   (autoload 'sdic-describe-word "sdic" nil t)
   (autoload 'sdic-describe-word-at-point "sdic" nil t)
-  (global-set-key (kbd "C-c w") 'sdic-describe-word)
-  (global-set-key (kbd "C-c C-w") 'sdic-describe-word-at-point)
+  (global-set-key (kbd "C-z w") 'sdic-describe-word)
+  (global-set-key (kbd "C-z C-w") 'sdic-describe-word-at-point)
 
   (with-eval-after-load "sdic"
     (setq sdic-default-coding-system 'utf-8-unix)

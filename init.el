@@ -609,7 +609,18 @@ Daemon 起動時以外は表示関数を直接潰す"
 (show-paren-mode t)
 
 ;; temp-buffer-resize
-(temp-buffer-resize-mode t)
+(if (not (package-installed-p 'popwin))
+    (temp-buffer-resize-mode t)
+  ;; popwin でも temp-buffer-resize
+  (with-eval-after-load "popwin"
+    (add-hook 'popwin:after-popup-hook
+              (lambda ()
+                (when (and (popwin:popup-window-live-p)
+                           (with-current-buffer popwin:popup-buffer
+                             (not (derived-mode-p 'compilation-mode))))
+                  (let ((max-height (plist-get (cdr popwin:popup-last-config)
+                                               :height)))
+                    (fit-window-to-buffer popwin:popup-window max-height)))))))
 
 ;; gnutls
 (when (eq system-type 'windows-nt)

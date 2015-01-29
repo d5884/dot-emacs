@@ -1449,6 +1449,15 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
   (setq session-undo-check -1)
   (setq history-length t)
 
+  ;; magit の commit log が emacsclient 経由で開かれるので exclude されない対策
+  (add-hook 'session-after-load-save-file-hook
+            (lambda ()
+              (setq file-name-history
+                    (cl-remove-if
+                     (lambda (f)
+                       (string-match-p session-set-file-name-exclude-regexp f))
+                     file-name-history))))
+
   (ini:make-silently-loading session-initialize-do))
 
 ;; quail-japanese

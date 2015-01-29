@@ -1435,7 +1435,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 ;; session / (package-install 'session)
 (when (require 'session nil t)
   (add-hook 'after-init-hook 'session-initialize)
-  (setq session-initialize '(de-saveplace session places menus))
+  (setq session-initialize '(de-saveplace session places))
   (setq session-save-file (ini:emacs-d "session-data"))
   (setq session-globals-include '((kill-ring 50)
                                   (read-expression-history 100)

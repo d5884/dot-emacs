@@ -887,6 +887,9 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
 (when (package-installed-p 'magit)
   (global-set-key (kbd "C-z C-m") 'magit-status)
 
+  (with-eval-after-load "magit"
+    (setq magit-auto-revert-mode-lighter ""))
+
   (with-eval-after-load "session"
     (setq session-set-file-name-exclude-regexp
           (concat session-set-file-name-exclude-regexp

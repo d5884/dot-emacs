@@ -445,6 +445,7 @@ ARG が non-nil の場合はフレームの数に関係なく emacs を終了す
   (unless (fboundp 'toggle-frame-maximized)
     (defun toggle-frame-maximized ()
       "フレームサイズの最大化状態を切り替える."
+      (interactive)
       (if (frame-parameter nil 'fullscreen)
           (progn
             (and (fboundp 'w32-send-sys-command)

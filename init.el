@@ -457,13 +457,16 @@ ARG が non-nil の場合はフレームの数に関係なく emacs を終了す
   (global-set-key (kbd "C-z C-:") 'toggle-frame-maximized)
   (global-set-key (kbd "C-z C-;") 'iconify-or-deiconify-frame))
 
-;; IME関連キーの無効化
-(global-set-key (kbd "<enlw>") 'toggle-input-method) ; 半角/全角
-(global-set-key (kbd "<auto>") 'toggle-input-method) ; 半角/全角
-(global-set-key (kbd "<M-kanji>") 'ignore)           ; Alt+半角/全角
-(global-set-key (kbd "<convert>") 'ignore)           ; 無変換
-(global-set-key (kbd "<non-convert>") 'ignore)       ; 変換
-(global-set-key (kbd "<copy>") 'ignore)              ; カタカナ/ひらがな/ローマ字
+;; IME関連キーの整理
+(global-set-key (kbd "<enlw>") 'toggle-input-method)  ; 半角/全角
+(global-set-key (kbd "<auto>") 'toggle-input-method)  ; 半角/全角
+(global-set-key (kbd "<kanji>") 'toggle-input-method) ; 半角/全角
+(global-set-key (kbd "<M-kanji>") 'ignore)            ; Alt+半角/全角
+(global-set-key (kbd "<convert>") 'ignore)            ; 無変換
+(global-set-key (kbd "<muhenkan>") 'ignore)           ; 無変換
+(global-set-key (kbd "<non-convert>") 'ignore)        ; 変換
+(global-set-key (kbd "<henkan>") 'ignore)             ; 変換
+(global-set-key (kbd "<copy>") 'ignore)               ; カタカナ/ひらがな/ローマ字
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 各種機能/パッケージ別

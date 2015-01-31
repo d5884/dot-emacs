@@ -1492,35 +1492,6 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
     (unless ad-return-value
       (setq ad-return-value (mozc-helper-process-recv-response))))
 
-  ;; mozc のステータス取得系
-  (defvar ini:mozc-status-alist nil
-    "`mozc-mode' の状態を表す alist.")
-
-  (defconst ini:mozc-status-default-mode
-    (if (memq system-type '(windows-nt cygwin)) 'direct 'hiragana)
-    "`mozc-mode' の初期変換モード.")
-
-  (defadvice mozc-mode (after ini:mozc-status-init activate)
-    "`mozc-status-alist' を初期化する."
-    (unless mozc-mode
-      (setq ini:mozc-status-alist nil)))
-
-  (defadvice mozc-session-recv-corresponding-response (after ini:mozc-status-update activate)
-    "`mozc-status-alist' を更新する."
-    (when ad-return-value
-      (setq ini:mozc-status-alist
-            `((session-id . ,(mozc-protobuf-get ad-return-value 'emacs-session-id))
-              (mode       . ,(or (mozc-protobuf-get ad-return-value 'output 'mode)
-                                 ini:mozc-status-default-mode
-                                 'direct))
-              (state      . ,(cond
-                              ((mozc-protobuf-get ad-return-value 'output 'preedit)
-                               'preedit)
-                              ((mozc-protobuf-get ad-return-value 'output 'result)
-                               'result)
-                              (t
-                               'empty)))))))
-
   ;; mozc-el-extensions / git clone https://github.com/iRi-E/mozc-el-extensions
   (when (require 'mozc-mode-line-indicator nil t)
     (setq mozc-leim-title "[あ]")

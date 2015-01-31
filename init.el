@@ -1695,47 +1695,6 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
         ad-do-it))
     ))
 
-;; direx / (package-install 'direx)
-(when (package-installed-p 'direx)
-  (global-set-key (kbd "C-z C-d") 'direx:jump-to-directory-other-window)
-
-  (with-eval-after-load "direx"
-    (define-key direx:direx-mode-map (kbd "[") 'direx:expand-item)
-    (define-key direx:direx-mode-map (kbd "]") 'direx:collapse-item)
-
-    (defvar direx:mask-dot t
-      "ドットファイルをマスクする.")
-
-    (define-key direx:direx-mode-map (kbd "a")
-      (defun direx:toggle-mask ()
-        "ドットファイルのマスクを切り替える."
-        (interactive)
-        (setq direx:mask-dot (not direx:mask-dot))
-        (call-interactively 'direx:refresh-whole-tree)))
-
-    (defadvice direx:node-children (around ini:sort-by-directory activate)
-      "direx でディレクトリを最初に表示する."
-      (let ((org-directory-files (symbol-function 'directory-files)))
-        (cl-letf (((symbol-function 'directory-files)
-                   (lambda (directory &optional full match nosort)
-                     (if nosort
-                         (funcall org-directory-files directory full match nosort)
-                       (sort (funcall org-directory-files directory full
-                                      (when direx:mask-dot "^[^.]"))
-                             (lambda (a b)
-                               (let ((dir-a (file-directory-p a))
-                                     (dir-b (file-directory-p b)))
-                                 (if (eq dir-a dir-b)
-                                     (string-lessp a b)
-                                   (if dir-a t)))))))))
-          ad-do-it)))
-    )
-
-  (with-eval-after-load "popwin"
-    (add-to-list 'popwin:special-display-config
-                 '(direx:direx-mode :position left :width 25 :dedicated t)))
-  )
-
 ;; yasnippet / (package-install 'yasnippet)
 (when (require 'yasnippet nil t)
   (diminish 'yas-minor-mode)

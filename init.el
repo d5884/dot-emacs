@@ -1125,24 +1125,6 @@ COMMAND が存在しない場合は定義を行なわない."
     (ini:flymake-gen-simple-init ruby "\\.rb$" "ruby" "-c" local-file))
   )
 
-;; zencoding / (package-install 'zencoding-mode)
-(when (package-installed-p 'zencoding-mode)
-  (with-eval-after-load "zencoding-mode"
-    (define-key zencoding-mode-keymap (kbd "<C-return>") nil)
-    (define-key zencoding-mode-keymap (kbd "C-j") nil)
-    (define-key zencoding-mode-keymap (kbd "C-M-/") 'zencoding-expand-line)
-    (when (require 'yasnippet nil t)
-      (define-key zencoding-mode-keymap [remap zencoding-expand-line] 'zencoding-expand-yas))
-    (setq zencoding-indentation 2)
-    )
-
-  (with-eval-after-load "nxml-mode"
-    (add-hook 'nxml-mode-hook 'zencoding-mode))
-
-  (with-eval-after-load "css-mode"
-    (add-hook 'css-mode-hook 'zencoding-mode))
-  )
-
 ;; smart-compile / (package-install 'smart-compile)
 (when (package-installed-p 'smart-compile)
   (autoload 'recompile "compile" nil t)

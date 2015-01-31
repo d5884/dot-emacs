@@ -223,9 +223,9 @@ ORIGINAL が non-nil であれば最後に連結される."
   (setq w32-pipe-read-delay 5)
 
   ;; インストールルート検索
-  (let* ((cygcheck (executable-find "cygcheck"))
-         (root-dir (or (and cygcheck
-                            (expand-file-name ".." (file-name-directory cygcheck)))
+  (let* ((cygdll (locate-file "cygwin1.dll" exec-path))
+         (root-dir (or (and cygdll
+                            (expand-file-name ".." (file-name-directory cygdll)))
                        (ini:find-directory
                         (apply 'append
                                (mapcar (lambda (p)
@@ -241,12 +241,15 @@ ORIGINAL が non-nil であれば最後に連結される."
                                              )))))))
     (when root-dir
       ;; パスが通ってなければ通す
-      (unless cygcheck
+      (unless cygdll
         (let ((cygwin-exec-path
                (mapcar (lambda (path) (expand-file-name path root-dir))
-                       `(,(ini:emacs-d "bin") "~/bin" "usr/local/bin" "usr/bin" "bin"))))
+                       '("~/bin" "usr/local/bin" "usr/bin" "bin"))))
           (setenv "PATH" (ini:concat-system-file-names cygwin-exec-path nil (getenv "PATH")))
           (setq exec-path (append cygwin-exec-path exec-path))))
+
+      ;; emacs のみで使用
+      (add-to-list 'exec-path (expand-file-name (ini:emacs-d "bin")))
 
       (unless (getenv "CYGWIN")
         (setenv "CYGWIN" "nodosfilewarning winsymlinks"))

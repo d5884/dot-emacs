@@ -609,6 +609,16 @@ Daemon 起動時以外は表示関数を直接潰す"
     )
   )
 
+;; cc-mode
+(with-eval-after-load "cc-mode"
+  (add-hook 'c-mode-common-hook
+            (lambda ()
+              (hs-minor-mode t)
+              (hide-ifdef-mode t)))
+  ;; flycheck
+  (when (package-installed-p 'flycheck)
+    (add-hook 'c-mode-common-hook 'flycheck-mode)))
+
 ;; completion
 (setq completion-show-help nil)
 (define-key completion-list-mode-map (kbd "<tab>") 'next-completion)
@@ -768,39 +778,6 @@ Daemon 起動時以外は表示関数を直接潰す"
               (set-window-configuration ini:ediff-window-configuration-stash)))
   )
 
-;; flymake
-(autoload 'flymake-find-file-hook "flymake" nil t)
-(add-hook 'find-file-hook 'flymake-find-file-hook)
-
-(defmacro ini:flymake-gen-simple-init (type fmask command &rest options)
-  "`flymake-mode' で使う、TYPE 用の文法チェック関数を定義する.
-チェック関数は `flymake-TYPE-init' の形で定義される.
-`fmask' にマッチするファイルに対して適用される.
-チェック用のコマンドを COMMAND で、引数を OPTIONS で指定する.
-OPTIONS ではチェック用の一時ファイル名を `local-file' で参照できる.
-COMMAND が存在しない場合は定義を行なわない."
-  (when (executable-find command)
-    `(progn
-       (defun ,(intern (format "flymake-%s-init" type)) ()
-         (let* ((temp-file (flymake-init-create-temp-buffer-copy
-                            'flymake-create-temp-inplace))
-                (local-dir (file-name-directory buffer-file-name))
-                (local-file (file-relative-name temp-file local-dir)))
-           (list ,command (list ,@options))))
-       (push (list ,fmask ',(intern (format "flymake-%s-init" type)))
-             flymake-allowed-file-name-masks)))
-  )
-
-(with-eval-after-load "flymake"
-  (setq flymake-start-syntax-check-on-newline nil)
-  (setq flymake-gui-warnings-enabled nil)
-  (unless (boundp 'flymake-warning-predicate)
-    (defvaralias 'flymake-warning-predicate 'flymake-warning-re))
-
-  ;; (defadvice flymake-post-syntax-check (before ini:flymake-force-interrupted-flag activate)
-  ;;     "`flymake-mode' でチェックが異常終了時に固まるのを防ぐ."
-  ;;     (setq flymake-check-was-interrupted t))
-  )
 ;; eldoc
 (with-eval-after-load "eldoc"
   (diminish 'eldoc-mode))
@@ -873,7 +850,18 @@ COMMAND が存在しない場合は定義を行なわない."
     (global-set-key (kbd "\"") 'skeleton-pair-insert-maybe)
     ))
 
+;; flycheck / (package-install 'flycheck)
+(when (package-installed-p 'flycheck)
+  (with-eval-after-load "flycheck"
+    (defadvice flycheck-start-command-checker (around ini:flycheck-de-localize activate)
+      "認識されないのでローカライズを解除する."
+      (let ((process-environment process-environment))
+        (setenv "LC_ALL" "C")
+        ad-do-it))
 
+    ;; flycheck-pos-tip / (package-install 'flycheck-pos-tip)
+    (when (package-installed-p 'flycheck-pos-tip)
+      (setq flycheck-display-errors-function 'flycheck-pos-tip-error-messages))))
 
 ;; gdb
 (with-eval-after-load "gdb-mi"
@@ -893,22 +881,6 @@ COMMAND が存在しない場合は定義を行なわない."
   (setq gnus-save-newsrc-file nil)
 
 
-;; cc-mode
-(with-eval-after-load "cc-mode"
-  (add-hook 'c-mode-common-hook
-            (lambda ()
-              (hs-minor-mode t)
-              (hide-ifdef-mode t)
-              (setq-local flymake-warning-predicate "^[Ww]arning\\|警告")))
-
-  (when (require 'flymake nil t)
-    ;; c
-    (ini:flymake-gen-simple-init cc "\\.c$"
-                                 "gcc" "-Wall" "-fsyntax-only" local-file)
-    ;; c++
-    (ini:flymake-gen-simple-init c++ "\\.cpp\\|\\.CC"
-                                 "g++" "-Wall" "-fsyntax-only" local-file)
-    )
   (setq gnus-select-method '(nnimap "gmail"
                                     (nnimap-address "imap.gmail.com")
                                     (nnimap-server-port 993)
@@ -916,35 +888,6 @@ COMMAND が存在しない場合は定義を行なわない."
   (setq gnus-ignored-newsgroups "^to\\.\\|^[0-9. ]+\\( \\|$\\)\\|^[\"]\"[#'()]")
   )
 
-;; ruby-mode
-;; rubydb, etc... / (package-install 'ruby-additional)
-;; inf-ruby / (package-install 'inf-ruby)
-(with-eval-after-load "ruby-mode"
-  (when (require 'ruby-electric nil t)
-    (add-hook 'ruby-mode-hook 'ruby-electric-mode))
-
-  (when (and (require 'yasnippet nil t)
-             (require 'auto-complete nil t))
-    (defun ac-ruby-mode-setup ()
-      (setq ac-sources (cons 'ac-source-yasnippet ac-sources))))
-
-  (when (require 'hideshow nil t)
-    (add-to-list 'hs-special-modes-alist
-                 `(ruby-mode
-                   ,(concat "\\<"
-                            (regexp-opt '("class" "module" "def" "if" "unless" "loop"
-                                          "case" "while" "until" "for" "begin" "do"))
-                            "\\>\\|{")
-                   "\\<end\\>\\|}"
-                   "#"
-                   ruby-move-to-block
-                   nil))
-    )
-
-  (add-hook 'ruby-mode-hook 'hs-minor-mode)
-
-  (when (require 'flymake nil t)
-    (ini:flymake-gen-simple-init ruby "\\.rb$" "ruby" "-c" local-file))
 (with-eval-after-load "message"
   (setq message-send-mail-function 'smtpmail-send-it)
   (setq message-auto-save-directory nil)
@@ -1300,6 +1243,12 @@ COMMAND が存在しない場合は定義を行なわない."
   ;; 基本的に使わないがファイルをホームに作らないよう設定
   (setq recentf-save-file (ini:emacs-d "recentf")))
 
+;; ruby-mode
+;; rubydb, etc... / (package-install 'ruby-additional)
+;; inf-ruby / (package-install 'inf-ruby)
+(with-eval-after-load "ruby-mode"
+  (when (require 'ruby-electric nil t)
+    (add-hook 'ruby-mode-hook 'ruby-electric-mode))
 
   (when (and (require 'yasnippet nil t)
              (require 'auto-complete nil t))

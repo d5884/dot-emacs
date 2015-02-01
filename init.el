@@ -526,211 +526,6 @@ Daemon 起動時以外は表示関数を直接潰す"
   (scroll-bar-mode -1))
 (mouse-avoidance-mode 'exile)
 
-;; narrowing
-(put 'narrow-to-region 'disabled nil)
-(put 'narrow-to-page 'disabled nil)
-
-;; upcase/downcase
-(put 'upcase-region 'disabled nil)
-(put 'downcase-region 'disabled nil)
-
-;; yank/undo highlighting
-;;   from http://www.fan.gr.jp/~ring/Meadow/meadow.html#ys:highlight-string
-(defadvice insert-for-yank (after ini:yank-highlight-string activate)
-  "文字列ヤンク時にハイライト表示する."
-  (let ((ol (make-overlay (mark t) (point))))
-    (unwind-protect
-        (progn (overlay-put ol 'face 'highlight)
-               (sit-for 0.5))
-      (delete-overlay ol))))
-
-(defadvice undo (after ini:undo-highlight-string activate)
-  "アンドゥで再挿入された文字列をハイライト表示する."
-  (catch 'return
-    (dolist (entry buffer-undo-list)
-      (let ((beg (car entry))
-            (end (cdr entry)))
-        (cond
-         ((null entry)) ;; boundary. skip it.
-         ((and (integerp beg)
-               (integerp end))
-          (let ((ol (make-overlay beg end)))
-            (unwind-protect
-                (progn (overlay-put ol 'face 'highlight)
-                       (sit-for 0.5))
-              (delete-overlay ol)
-              (throw 'return nil))))
-         (t (throw 'return nil)))))))
-
-;; outline-minor-mode
-(add-hook 'outline-minor-mode-hook
-          (lambda ()
-            (local-set-key (kbd "C-c C-o") outline-mode-prefix-map)))
-
-;; transient-mark-mode
-(defadvice exchange-point-and-mark (after ini:exchange-point-and-mark-deactivate activate)
-  "Function `transient-mark-mode' が有効な時にリージョンに色が付かないようにする."
-  (if (and (transient-mark-mode mark-active))
-      (deactivate-mark)))
-
-;; completion
-(setq completion-show-help nil)
-(define-key completion-list-mode-map (kbd "<tab>") 'next-completion)
-(define-key completion-list-mode-map (kbd "S-<tab>") 'previous-completion)
-(define-key completion-list-mode-map (kbd "n") 'next-completion)
-(define-key completion-list-mode-map (kbd "p") 'previous-completion)
-
-;; compile
-(with-eval-after-load "compile"
-  (setq compilation-scroll-output t)
-  (define-key compilation-mode-map (kbd "n") 'next-error)
-  (define-key compilation-mode-map (kbd "p") 'previous-error)
-
-  (dolist (func '(compile recompile))
-    (eval `(defadvice ,func (around ,(intern (format "ini:%s-silently" func)) activate)
-             "エラー発生時のみ *compilation* バッファ表示."
-             (cl-letf (((symbol-function 'display-buffer) 'ignore))
-               (let (compilation-start-hook)    ; compile/recompile から呼ばれたとき専用
-                 (add-hook 'compilation-start-hook
-                           (lambda (proc)
-                             (add-hook 'compilation-finish-functions
-                                       (lambda (buffer msg)
-                                         (with-current-buffer buffer
-                                           (font-lock-mode -1)
-                                           (font-lock-fontify-buffer)
-                                           (font-lock-mode 1)
-                                           (if (or (not (string-match "finished" msg))
-                                                   (text-property-not-all
-                                                    (point-min) (point-max)
-                                                    'compilation-message nil))
-                                               (display-buffer buffer)
-                                             (when (get-buffer-window buffer)
-                                               (delete-window (get-buffer-window buffer))))))
-                                       nil t)))
-                 ad-do-it))))
-    )
-  )
-
-;; show-paren
-(show-paren-mode t)
-
-;; temp-buffer-resize
-(if (not (package-installed-p 'popwin))
-    (temp-buffer-resize-mode t)
-  ;; popwin でも temp-buffer-resize
-  (with-eval-after-load "popwin"
-    (add-hook 'popwin:after-popup-hook
-              (lambda ()
-                (when (and (popwin:popup-window-live-p)
-                           (with-current-buffer popwin:popup-buffer
-                             (not (derived-mode-p 'compilation-mode))))
-                  (let ((max-height (plist-get (cdr popwin:popup-last-config)
-                                               :height)))
-                    (fit-window-to-buffer popwin:popup-window max-height)))))))
-
-;; gnutls
-(when (eq system-type 'windows-nt)
-  (with-eval-after-load "gnutls"
-    ;; gnutls の dll が dos 形式のパスを要求するため.
-    (setq gnutls-trustfiles (mapcar 'expand-file-name gnutls-trustfiles))))
-
-;; recentf
-(with-eval-after-load "recentf"
-  ;; 基本的に使わないがファイルをホームに作らないよう設定
-  (setq recentf-save-file (ini:emacs-d "recentf")))
-
-;; info
-(with-eval-after-load "info"
-  (ini:awhen (ini:locate-directory (ini:emacs-d "info"))
-    (add-to-list 'Info-additional-directory-list it)))
-
-;; ispell
-(with-eval-after-load "ispell"
-  ;; from http://www.an.econ.kobe-u.ac.jp/~namba/meadow/words.lzh
-  (ini:awhen (locate-file "words"
-                          `(,(ini:emacs-d "share")
-                            ,user-emacs-directory
-                            "/usr/dict"
-                            "/usr/share/dict"))
-    (setq ispell-alternate-dictionary it)))
-
-;; windmove
-(global-set-key (kbd "C-z C-n") 'windmove-down)
-(global-set-key (kbd "C-z C-p") 'windmove-up)
-(global-set-key (kbd "C-z C-f") 'windmove-right)
-(global-set-key (kbd "C-z C-b") 'windmove-left)
-
-;; man & woman
-(with-eval-after-load "woman"
-  (setq woman-fill-frame t
-        woman-cache-filename (ini:emacs-d "woman-cache")))
-
-;; bookmark
-(with-eval-after-load "bookmark"
-  (setq bookmark-default-file (ini:emacs-d "bookmark")))
-
-;; imenu
-(global-set-key (kbd "C-z C-j") 'imenu)
-(with-eval-after-load "imenu"
-  (setq imenu-auto-rescan t))
-
-;; shell and term utility
-(defun ini:add-process-sentinel (process sentinel)
-  "PROCESS に センチネル SENTINEL を追加する.
-SENTINEL は元々設定されていたセンチネルが実行されてから呼び出される."
-  (let ((org-sentinel (and (processp process)
-                           (process-sentinel process))))
-    (set-process-sentinel process
-                          (if org-sentinel
-                              `(lambda (proc msg)
-                                 (funcall (function ,org-sentinel) proc msg)
-                                 (funcall (function ,sentinel) proc msg))
-                            sentinel))
-    ))
-
-(defun ini:set-process-cleaner (&optional process)
-  "PROCESS 終了時にバッファとウィンドウを削除する.
-また Emacs 終了時にプロセスも終了させる.
-PROCESS が nil の場合はカレントバッファのプロセスに設定する."
-  (ini:awhen (or (and (processp process)
-                      process)
-                 (get-buffer-process (current-buffer)))
-    (set-process-query-on-exit-flag it nil)
-    ;; PROCESS のバッファを削除し、ウィンドウが開いていたら閉じる
-    (ini:add-process-sentinel it
-                              (lambda (process event)
-                                (let ((buf (process-buffer process)))
-                                  (dolist (win (get-buffer-window-list buf))
-                                    (unless (one-window-p)
-                                      (delete-window win)))
-                                  (kill-buffer buf))))
-    ))
-
-;; shell
-(with-eval-after-load "shell"
-  (setq comint-prompt-read-only t)
-
-  (add-hook 'shell-mode-hook 'ini:set-process-cleaner)
-  (define-key shell-mode-map (kbd "M-p") 'comint-previous-matching-input-from-input)
-  (define-key shell-mode-map (kbd "M-n") 'comint-next-matching-input-from-input))
-
-;; term
-(with-eval-after-load "term"
-  (add-hook 'term-exec-hook 'ini:set-process-cleaner)
-
-  ;; C-c に C-x を取り込まない
-  (set-keymap-parent term-raw-escape-map nil)
-  ;; char-mode で使いたいキーを開放して C-c に移動
-  (dolist (key '("M-x" "M-:" "C-z" "C-u" "C-\\"))
-    (define-key term-raw-map (kbd key) nil)
-    (define-key term-raw-map (kbd (concat "C-c " key))
-      (if (string-match-p "^M-" key)
-          'term-send-raw-meta
-        'term-send-raw)))
-
-  (define-key term-mode-map (kbd "C-c C-w") nil)
-  )
-
 ;; ansi-color
 (with-eval-after-load "comint"
   (require 'ansi-color nil t)
@@ -753,247 +548,109 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
   (define-key apropos-mode-map (kbd "n") 'forward-button)
   (define-key apropos-mode-map (kbd "p") 'backward-button))
 
-;; cua-mode
-(when (require 'cua-base nil t)
-  (cua-selection-mode t))
-
-;; ido
-(when (require 'ido nil t)
-  (setq ido-default-buffer-method 'selected-window)
-  (setq ido-save-directory-list-file nil)
-  (setcar (nthcdr 2 ido-decorations) ",")
-  (setcar (nthcdr 3 ido-decorations) ", ...")
-  (ido-mode 'buffer)
-
-  (add-hook 'ido-minibuffer-setup-hook
-            (lambda ()
-              ;; disable some keys
-              (dolist (key '("C-f" "C-b" "C-d" "C-x C-f" "C-x C-d"))
-                (define-key ido-buffer-completion-map (kbd key) nil))))
-
-  (defadvice ido-exhibit (after ini:ido-exhibit-display-buffer activate)
-    "選択しているバッファをウィンドウに表示する."
-    (when ido-matches
-      (let ((selected (get-buffer-window
-                       (cl-find-if-not #'minibufferp (buffer-list)))))
-        (when selected
-          (select-window selected)
-          (ido-visit-buffer
-           (get-buffer (car ido-matches)) t)
-          (select-window (minibuffer-window))))
-      ))
+;; auth-source
+(with-eval-after-load "auth-source"
+  (setq auth-sources (cons (ini:emacs-d "authinfo.gpg") auth-sources))
   )
 
-;; grep
-(with-eval-after-load "grep"
-  (eval-when-compile
-    (declare-function grep-apply-setting "grep"))
+;; auto-complete-mode / (package-install 'auto-complete)
+(when (require 'auto-complete-config nil t)
+  (diminish 'auto-complete-mode)
 
-  (when (executable-find "lgrep")
-    ;; lv 付属の多国語化 grep
-    (setq grep-program "lgrep")
-    (grep-apply-setting 'grep-command "lgrep -n -Au8 -Ia ")
-    (grep-apply-setting 'grep-template
-                        (format "%s <C> <R> - <F>" grep-command))
-    (grep-apply-setting 'grep-find-template
-                        (format "find . <X> -type f <F> -exec %s <C> <R> - <N> {} +"
-                                grep-command))
+  (ac-config-default)
+
+  (define-key ac-mode-map (kbd "M-TAB") 'auto-complete)
+  (define-key ac-completing-map (kbd "C-g") 'ac-stop)
+
+  (setq ac-use-menu-map t)
+
+  (when (require 'pos-tip nil t)
+    (setq ac-quick-help-prefer-pos-tip t))
+  )
+
+;; bookmark
+(with-eval-after-load "bookmark"
+  (setq bookmark-default-file (ini:emacs-d "bookmark")))
+
+;; calendar
+(with-eval-after-load "calendar"
+  ;; solor / geocode from http://api.knecht.jp/geocoding
+  (setq calendar-latitude 35.6894875)
+  (setq calendar-longitude 139.6917064)
+  (setq calendar-location-name "Tokyo, JP")
+  (setq calendar-time-display-form '((format "%2s:%2s%s" 12-hours minutes am-pm)))
+  (setq calendar-date-display-form '((format "%2s/%2s/%2s" year month day)))
+  (setq calendar-mark-holidays-flag t)
+  (add-hook 'calendar-today-visible-hook 'calendar-mark-today)
+
+  (setq diary-file (ini:emacs-d "diary"))
+  (setq diary-entry-marker 'link)
+  (setq diary-list-include-blanks t)
+  (setq calendar-mark-diary-entries-flag t)
+
+  (define-key calendar-mode-map (kbd "n") 'calendar-forward-week)
+  (define-key calendar-mode-map (kbd "p") 'calendar-backward-week)
+  (define-key calendar-mode-map (kbd "f") 'calendar-forward-day)
+  (define-key calendar-mode-map (kbd "b") 'calendar-backward-day)
+  (define-key calendar-mode-map (kbd "C-j") 'diary-view-entries)
+  (define-key calendar-mode-map (kbd "<RET>") 'diary-view-entries)
+
+  ;; 月の満ち欠けの日本語化
+  (with-eval-after-load "lunar"
+    (setq lunar-phase-names '("新月" "上弦" "満月""下弦")))
+
+  ;; 日本の祝日表示 / (package-install 'japanese-holidays)
+  (when (require 'japanese-holidays nil t)
+    (setq calendar-holidays
+          (append japanese-holidays holiday-local-holidays holiday-other-holidays))
+
+    (add-hook 'today-visible-calendar-hook 'japanese-holiday-mark-weekend)
+    (add-hook 'today-invisible-calendar-hook 'japanese-holiday-mark-weekend)
     )
   )
 
-;; バッファ名のユニーク化
-(when (require 'uniquify nil t)
-  (setq uniquify-buffer-name-style 'post-forward-angle-brackets)
-  (setq uniquify-ignore-buffers-re "*[^*]+*"))
+;; completion
+(setq completion-show-help nil)
+(define-key completion-list-mode-map (kbd "<tab>") 'next-completion)
+(define-key completion-list-mode-map (kbd "S-<tab>") 'previous-completion)
+(define-key completion-list-mode-map (kbd "n") 'next-completion)
+(define-key completion-list-mode-map (kbd "p") 'previous-completion)
 
-;; サーバ機能
-(when (and (require 'server nil t)
-           (memq (server-running-p) '(nil :other)))
-  (server-start))
+;; compile
+(with-eval-after-load "compile"
+  (setq compilation-scroll-output t)
+  (define-key compilation-mode-map (kbd "n") 'next-error)
+  (define-key compilation-mode-map (kbd "p") 'previous-error)
 
-;; スクリプトファイルの自動 +x
-(add-hook 'after-save-hook 'executable-make-buffer-file-executable-if-script-p)
-
-;; ssh-agent / git clone https://github.com/d5884/ssh-agent
-(when (locate-library "ssh-agent")
-  (autoload 'ssh-agent-add-key "ssh-agent" nil t)
-
-  (with-eval-after-load "magit"
-    (defadvice magit-push-dwim (before ini:ssh-agent-with-magit-push activate)
-      (ssh-agent-add-key))
-
-    (defadvice magit-fetch (before ini:ssh-agent-with-magit-fetch activate)
-      (ssh-agent-add-key)))
-
-  (with-eval-after-load "tramp-sh"
-    (defadvice tramp-send-command (before ini:ssh-agent-with-tramp activate)
-      (ssh-agent-add-key)))
+  (dolist (func '(compile recompile))
+    (eval `(defadvice ,func (around ,(intern (format "ini:%s-silently" func)) activate)
+             "エラー発生時のみ *compilation* バッファ表示."
+             (cl-letf (((symbol-function 'display-buffer) 'ignore))
+               (let ((compilation-start-hook
+                      compilation-start-hook))    ; compile/recompile から呼ばれたとき専用
+                 (add-hook 'compilation-start-hook
+                           (lambda (proc)
+                             (add-hook 'compilation-finish-functions
+                                       (lambda (buffer msg)
+                                         (with-current-buffer buffer
+                                           (font-lock-mode -1)
+                                           (font-lock-fontify-buffer)
+                                           (font-lock-mode 1)
+                                           (if (or (not (string-match "finished" msg))
+                                                   (text-property-not-all
+                                                    (point-min) (point-max)
+                                                    'compilation-message nil))
+                                               (display-buffer buffer)
+                                             (when (get-buffer-window buffer)
+                                               (delete-window (get-buffer-window buffer))))))
+                                       nil t)))
+                 ad-do-it))))
+    )
   )
 
-;; Tramp
-(with-eval-after-load "tramp"
-  (setq tramp-default-method "ssh")
-  (setq tramp-verbose 2))
-
-(with-eval-after-load "tramp-sh"
-  (let ((process-environment tramp-remote-process-environment))
-    (setenv "LC_ALL" nil)               ; リモートのロケールは接続先に準じる
-    (setq tramp-remote-process-environment process-environment)))
-
-;; ffap
-(when (require 'ffap nil t)
-  (ffap-bindings))
-
-;; hideshow
-(with-eval-after-load "hideshow"
-  (diminish 'hs-minor-mode)
-
-  (defvar ini:hs-fringe-mark 'right-arrow
-    "隠れた行の fringe に表示する bitmap 名.
-`fringe-bitmaps' 内に設定されているシンボル名から選ぶ.")
-
-  (defun ini:hs-mark-fringe (ovr)
-    "`hs-toggle-hiding'で隠された行の OVR を編集して fringe にマークを付ける."
-    (when (eq 'code (overlay-get ovr 'hs))
-      (let ((hiding-text "...")
-            (fringe-anchor (make-string 1 ?x)))
-        (put-text-property 0 1 'display (list 'left-fringe ini:hs-fringe-mark) fringe-anchor)
-        (overlay-put ovr 'before-string fringe-anchor)
-        (overlay-put ovr 'display hiding-text))))
-
-  (setq hs-set-up-overlay 'ini:hs-mark-fringe)
-  (define-key hs-minor-mode-map (kbd "C-z <C-SPC>") 'hs-toggle-hiding))
-
-;; gdb
-(with-eval-after-load "gdb-mi"
-  (eval-when-compile
-    (declare-function gdb-many-windows "gdb-mi"))
-  (add-hook 'gdb-mode-hook (lambda ()
-                             (gdb-many-windows)
-                             (gud-tooltip-mode))))
-
-;; ediff
-(with-eval-after-load "ediff"
-  (setq ediff-window-setup-function 'ediff-setup-windows-plain)
-  (setq ediff-split-window-function 'split-window-horizontally)
-
-  (defadvice ediff-find-file (around ini:ediff-mark-newly-opened activate)
-    "ediff が開いたファイルを quit 時に削除できるようフラグを付ける."
-    (let ((existing-p (and find-file-existing-other-name
-                           (find-buffer-visiting (symbol-value (ad-get-arg 0))))))
-      ad-do-it
-      (unless existing-p
-        (ediff-with-current-buffer (symbol-value (ad-get-arg 1))
-          (setq-local ini:ediff-kill-on-quit t)))))
-
-  (eval-when-compile (require 'ediff nil t))
-  (defvar ini:ediff-window-configuration-stash nil
-    "`ediff' 実行前のウィンドウ状態の一時保存先.")
-
-  (add-hook 'ediff-before-setup-hook
-            (lambda ()
-              (setq ini:ediff-window-configuration-stash
-                    (current-window-configuration))))
-  (add-hook 'ediff-quit-hook
-            (lambda ()
-              (dolist (buf (list ediff-buffer-A ediff-buffer-B ediff-ancestor-buffer))
-                (ediff-with-current-buffer buf
-                  (when (and (boundp 'ini:ediff-kill-on-quit)
-                             ini:ediff-kill-on-quit)
-                    (kill-buffer))))
-              (set-window-configuration ini:ediff-window-configuration-stash)))
-  )
-
-;; magit / (package-install 'magit)
-(when (package-installed-p 'magit)
-  (global-set-key (kbd "C-z C-m") 'magit-status)
-
-  (with-eval-after-load "magit"
-    (setq magit-auto-revert-mode-lighter ""))
-
-  (with-eval-after-load "session"
-    (setq session-set-file-name-exclude-regexp
-          (concat session-set-file-name-exclude-regexp
-                  "\\|" (regexp-opt '("COMMIT_EDITMSG"))))
-    ))
-
-;; flymake
-(autoload 'flymake-find-file-hook "flymake" nil t)
-(add-hook 'find-file-hook 'flymake-find-file-hook)
-
-(defmacro ini:flymake-gen-simple-init (type fmask command &rest options)
-  "`flymake-mode' で使う、TYPE 用の文法チェック関数を定義する.
-チェック関数は `flymake-TYPE-init' の形で定義される.
-`fmask' にマッチするファイルに対して適用される.
-チェック用のコマンドを COMMAND で、引数を OPTIONS で指定する.
-OPTIONS ではチェック用の一時ファイル名を `local-file' で参照できる.
-COMMAND が存在しない場合は定義を行なわない."
-  (when (executable-find command)
-    `(progn
-       (defun ,(intern (format "flymake-%s-init" type)) ()
-         (let* ((temp-file (flymake-init-create-temp-buffer-copy
-                            'flymake-create-temp-inplace))
-                (local-dir (file-name-directory buffer-file-name))
-                (local-file (file-relative-name temp-file local-dir)))
-           (list ,command (list ,@options))))
-       (push (list ,fmask ',(intern (format "flymake-%s-init" type)))
-             flymake-allowed-file-name-masks)))
-  )
-
-(with-eval-after-load "flymake"
-  (setq flymake-start-syntax-check-on-newline nil)
-  (setq flymake-gui-warnings-enabled nil)
-  (unless (boundp 'flymake-warning-predicate)
-    (defvaralias 'flymake-warning-predicate 'flymake-warning-re))
-
-  ;; (defadvice flymake-post-syntax-check (before ini:flymake-force-interrupted-flag activate)
-  ;;     "`flymake-mode' でチェックが異常終了時に固まるのを防ぐ."
-  ;;     (setq flymake-check-was-interrupted t))
-  )
-
-;; elisps
-(defun ini:byte-compile-current-file-if-necessary ()
-  "開いているファイルをバイトコンパイルする.
-既にコンパイル済みのファイルがあり、ソースファイルの方が新しい場合のみコンパイルする."
-  (interactive)
-  (require 'bytecomp)
-  (let* ((file (buffer-file-name))
-         (dest (byte-compile-dest-file file)))
-    (when (and (file-exists-p dest)
-               (file-writable-p dest)
-               (file-newer-than-file-p file dest))
-      (byte-compile-file file))))
-
-(with-eval-after-load "lisp-mode"
-  (define-key lisp-interaction-mode-map (kbd "C-m") 'newline-and-indent)
-  (define-key emacs-lisp-mode-map (kbd "C-m") 'newline-and-indent)
-  (define-key emacs-lisp-mode-map [remap compile] 'emacs-lisp-byte-compile)
-
-  (add-hook 'emacs-lisp-mode-hook
-            (lambda ()
-              (hs-minor-mode t)
-              (eldoc-mode t)
-              (add-hook 'after-save-hook
-                        'ini:byte-compile-current-file-if-necessary
-                        nil t)
-              ))
-  )
-
-;; eldoc
-(with-eval-after-load "eldoc"
-  (diminish 'eldoc-mode))
-
-;; occur
-(define-key occur-mode-map (kbd "n") 'occur-next)
-(define-key occur-mode-map (kbd "p") 'occur-prev)
-(add-hook 'occur-mode-hook 'next-error-follow-minor-mode)
-
-;; view-mode
-(setq view-read-only t)
-(with-eval-after-load "view"
-  (define-key view-mode-map "j" 'next-line)
-  (define-key view-mode-map "k" 'previous-line)
-  )
+;; cua-mode
+(when (require 'cua-base nil t)
+  (cua-selection-mode t))
 
 ;; dired
 (global-set-key (kbd "C-x C-d") 'dired-other-window)
@@ -1079,6 +736,163 @@ COMMAND が存在しない場合は定義を行なわない."
       (global-set-key (kbd "C-x C-j") cxcj)))
   )
 
+;; ediff
+(with-eval-after-load "ediff"
+  (setq ediff-window-setup-function 'ediff-setup-windows-plain)
+  (setq ediff-split-window-function 'split-window-horizontally)
+
+  (defadvice ediff-find-file (around ini:ediff-mark-newly-opened activate)
+    "ediff が開いたファイルを quit 時に削除できるようフラグを付ける."
+    (let ((existing-p (and find-file-existing-other-name
+                           (find-buffer-visiting (symbol-value (ad-get-arg 0))))))
+      ad-do-it
+      (unless existing-p
+        (ediff-with-current-buffer (symbol-value (ad-get-arg 1))
+          (setq-local ini:ediff-kill-on-quit t)))))
+
+  (eval-when-compile (require 'ediff nil t))
+  (defvar ini:ediff-window-configuration-stash nil
+    "`ediff' 実行前のウィンドウ状態の一時保存先.")
+
+  (add-hook 'ediff-before-setup-hook
+            (lambda ()
+              (setq ini:ediff-window-configuration-stash
+                    (current-window-configuration))))
+  (add-hook 'ediff-quit-hook
+            (lambda ()
+              (dolist (buf (list ediff-buffer-A ediff-buffer-B ediff-ancestor-buffer))
+                (ediff-with-current-buffer buf
+                  (when (and (boundp 'ini:ediff-kill-on-quit)
+                             ini:ediff-kill-on-quit)
+                    (kill-buffer))))
+              (set-window-configuration ini:ediff-window-configuration-stash)))
+  )
+
+;; flymake
+(autoload 'flymake-find-file-hook "flymake" nil t)
+(add-hook 'find-file-hook 'flymake-find-file-hook)
+
+(defmacro ini:flymake-gen-simple-init (type fmask command &rest options)
+  "`flymake-mode' で使う、TYPE 用の文法チェック関数を定義する.
+チェック関数は `flymake-TYPE-init' の形で定義される.
+`fmask' にマッチするファイルに対して適用される.
+チェック用のコマンドを COMMAND で、引数を OPTIONS で指定する.
+OPTIONS ではチェック用の一時ファイル名を `local-file' で参照できる.
+COMMAND が存在しない場合は定義を行なわない."
+  (when (executable-find command)
+    `(progn
+       (defun ,(intern (format "flymake-%s-init" type)) ()
+         (let* ((temp-file (flymake-init-create-temp-buffer-copy
+                            'flymake-create-temp-inplace))
+                (local-dir (file-name-directory buffer-file-name))
+                (local-file (file-relative-name temp-file local-dir)))
+           (list ,command (list ,@options))))
+       (push (list ,fmask ',(intern (format "flymake-%s-init" type)))
+             flymake-allowed-file-name-masks)))
+  )
+
+(with-eval-after-load "flymake"
+  (setq flymake-start-syntax-check-on-newline nil)
+  (setq flymake-gui-warnings-enabled nil)
+  (unless (boundp 'flymake-warning-predicate)
+    (defvaralias 'flymake-warning-predicate 'flymake-warning-re))
+
+  ;; (defadvice flymake-post-syntax-check (before ini:flymake-force-interrupted-flag activate)
+  ;;     "`flymake-mode' でチェックが異常終了時に固まるのを防ぐ."
+  ;;     (setq flymake-check-was-interrupted t))
+  )
+;; eldoc
+(with-eval-after-load "eldoc"
+  (diminish 'eldoc-mode))
+
+;; elisps
+(defun ini:byte-compile-current-file-if-necessary ()
+  "開いているファイルをバイトコンパイルする.
+既にコンパイル済みのファイルがあり、ソースファイルの方が新しい場合のみコンパイルする."
+  (interactive)
+  (require 'bytecomp)
+  (let* ((file (buffer-file-name))
+         (dest (byte-compile-dest-file file)))
+    (when (and (file-exists-p dest)
+               (file-writable-p dest)
+               (file-newer-than-file-p file dest))
+      (byte-compile-file file))))
+
+(with-eval-after-load "lisp-mode"
+  (define-key lisp-interaction-mode-map (kbd "C-m") 'newline-and-indent)
+  (define-key emacs-lisp-mode-map (kbd "C-m") 'newline-and-indent)
+  (define-key emacs-lisp-mode-map [remap compile] 'emacs-lisp-byte-compile)
+
+  (add-hook 'emacs-lisp-mode-hook
+            (lambda ()
+              (hs-minor-mode t)
+              (eldoc-mode t)
+              (add-hook 'after-save-hook
+                        'ini:byte-compile-current-file-if-necessary
+                        nil t)
+              ))
+  )
+
+;; eww
+(with-eval-after-load "eww"
+  (setq eww-search-prefix "http://www.google.co.jp/search?q=")
+
+  ;; x-euc-jp は ddskk-ml の過去ログ等で使われているので…
+  (define-coding-system-alias 'x-euc-jp 'euc-jp)
+
+  (defadvice eww-display-html (after ini:eww-change-buffer-coding-system activate)
+    (set-buffer-file-coding-system (ad-get-arg 0)))
+
+  (defadvice eww-submit (around ini:eww-override-find-coding-systems-string activate)
+    (cl-letf (((symbol-function 'find-coding-systems-string)
+               (lambda (string)
+                 (list buffer-file-coding-system))))
+      ad-do-it))
+  )
+
+;; executable-make-buffer-executable
+(add-hook 'after-save-hook 'executable-make-buffer-file-executable-if-script-p)
+
+;; ffap
+(when (require 'ffap nil t)
+  (ffap-bindings))
+
+;; flex-autopair / (package-install 'flex-autopair)
+(if (require 'flex-autopair nil t)
+    (progn
+      (diminish 'flex-autopair-mode)
+      (setq flex-autopair-echo-actionp nil)
+      (flex-autopair-mode))
+  ;; or skeleton
+  (when (require 'skeleton nil t)
+    (setq skeleton-pair t)
+    (global-set-key (kbd "(") 'skeleton-pair-insert-maybe)
+    (global-set-key (kbd "[") 'skeleton-pair-insert-maybe)
+    (global-set-key (kbd "{") 'skeleton-pair-insert-maybe)
+    ;; (global-set-key (kbd "`") 'skeleton-pair-insert-maybe)
+    (global-set-key (kbd "\"") 'skeleton-pair-insert-maybe)
+    ))
+
+
+
+;; gdb
+(with-eval-after-load "gdb-mi"
+  (eval-when-compile
+    (declare-function gdb-many-windows "gdb-mi"))
+  (add-hook 'gdb-mode-hook (lambda ()
+                             (gdb-many-windows)
+                             (gud-tooltip-mode))))
+
+;; gnus and mail (for gmail)
+(setq mail-user-agent 'gnus-user-agent)
+(setq read-mail-command 'gnus)
+
+(with-eval-after-load "gnus"
+  (setq gnus-startup-file (ini:emacs-d "gnus/newsrc"))
+  (setq gnus-directory (ini:emacs-d "gnus/news"))
+  (setq gnus-save-newsrc-file nil)
+
+
 ;; cc-mode
 (with-eval-after-load "cc-mode"
   (add-hook 'c-mode-common-hook
@@ -1095,6 +909,11 @@ COMMAND が存在しない場合は定義を行なわない."
     (ini:flymake-gen-simple-init c++ "\\.cpp\\|\\.CC"
                                  "g++" "-Wall" "-fsyntax-only" local-file)
     )
+  (setq gnus-select-method '(nnimap "gmail"
+                                    (nnimap-address "imap.gmail.com")
+                                    (nnimap-server-port 993)
+                                    (nnimap-stream ssl)))
+  (setq gnus-ignored-newsgroups "^to\\.\\|^[0-9. ]+\\( \\|$\\)\\|^[\"]\"[#'()]")
   )
 
 ;; ruby-mode
@@ -1126,53 +945,44 @@ COMMAND が存在しない場合は定義を行なわない."
 
   (when (require 'flymake nil t)
     (ini:flymake-gen-simple-init ruby "\\.rb$" "ruby" "-c" local-file))
+(with-eval-after-load "message"
+  (setq message-send-mail-function 'smtpmail-send-it)
+  (setq message-auto-save-directory nil)
   )
 
-;; smart-compile / (package-install 'smart-compile)
-(when (package-installed-p 'smart-compile)
-  (autoload 'recompile "compile" nil t)
-
-  (defun ini:smart-recompile (arg)
-    "一度目は `smart-compile'、二度目は `recompile' を呼び出す.
-ARG が non-nil の場合は `smart-compile' を呼び出す."
-    (interactive "P")
-    (if (or (not (local-variable-p 'compile-command))
-            arg)
-        (smart-compile 4)
-      (recompile)))
-
-  (global-set-key [remap compile] 'ini:smart-recompile)
+(with-eval-after-load "sendmail"
+  (setq send-mail-function 'smtpmail-send-it)
   )
 
-;; nxml-mode
-(fset 'html-mode 'nxml-mode)
-(fset 'xml-mode 'nxml-mode)
+(with-eval-after-load "smtpmail"
+  (setq smtpmail-smtp-server "smtp.gmail.com")
+  (setq smtpmail-smtp-service 465)
+  (setq smtpmail-stream-type 'tls)
+  (setq smtpmail-local-domain "gmail.com")
+  )
 
-(setq magic-mode-alist
-      (cons '("<\\?xml" . nxml-mode) magic-mode-alist))
+;; gnutls
+(when (eq system-type 'windows-nt)
+  (with-eval-after-load "gnutls"
+    ;; gnutls の dll が dos 形式のパスを要求するため.
+    (setq gnutls-trustfiles (mapcar 'expand-file-name gnutls-trustfiles))))
 
-(with-eval-after-load "nxml-mode"
-  (with-eval-after-load "smart-compile"
-    (setq smart-compile-alist (cons
-                               '(nxml-mode browse-url-of-buffer)
-                               smart-compile-alist))))
+;; grep
+(with-eval-after-load "grep"
+  (eval-when-compile
+    (declare-function grep-apply-setting "grep"))
 
-
-;; flex-autopair / (package-install 'flex-autopair)
-(if (require 'flex-autopair nil t)
-    (progn
-      (diminish 'flex-autopair-mode)
-      (setq flex-autopair-echo-actionp nil)
-      (flex-autopair-mode))
-  ;; or skeleton
-  (when (require 'skeleton nil t)
-    (setq skeleton-pair t)
-    (global-set-key (kbd "(") 'skeleton-pair-insert-maybe)
-    (global-set-key (kbd "[") 'skeleton-pair-insert-maybe)
-    (global-set-key (kbd "{") 'skeleton-pair-insert-maybe)
-    ;; (global-set-key (kbd "`") 'skeleton-pair-insert-maybe)
-    (global-set-key (kbd "\"") 'skeleton-pair-insert-maybe)
-    ))
+  (when (executable-find "lgrep")
+    ;; lv 付属の多国語化 grep
+    (setq grep-program "lgrep")
+    (grep-apply-setting 'grep-command "lgrep -n -Au8 -Ia ")
+    (grep-apply-setting 'grep-template
+                        (format "%s <C> <R> - <F>" grep-command))
+    (grep-apply-setting 'grep-find-template
+                        (format "find . <X> -type f <F> -exec %s <C> <R> - <N> {} +"
+                                grep-command))
+    )
+  )
 
 ;; gswin32
 ;;  http://www.khotta.org/ghost/index.html
@@ -1215,102 +1025,329 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
         )
       ))
 
-;; calendar
-(with-eval-after-load "calendar"
-  ;; solor / geocode from http://api.knecht.jp/geocoding
-  (setq calendar-latitude 35.6894875)
-  (setq calendar-longitude 139.6917064)
-  (setq calendar-location-name "Tokyo, JP")
-  (setq calendar-time-display-form '((format "%2s:%2s%s" 12-hours minutes am-pm)))
-  (setq calendar-date-display-form '((format "%2s/%2s/%2s" year month day)))
-  (setq calendar-mark-holidays-flag t)
-  (add-hook 'calendar-today-visible-hook 'calendar-mark-today)
+;; hideshow
+(with-eval-after-load "hideshow"
+  (diminish 'hs-minor-mode)
 
-  (setq diary-file (ini:emacs-d "diary"))
-  (setq diary-entry-marker 'link)
-  (setq diary-list-include-blanks t)
-  (setq calendar-mark-diary-entries-flag t)
+  (defvar ini:hs-fringe-mark 'right-arrow
+    "隠れた行の fringe に表示する bitmap 名.
+`fringe-bitmaps' 内に設定されているシンボル名から選ぶ.")
 
-  (define-key calendar-mode-map (kbd "n") 'calendar-forward-week)
-  (define-key calendar-mode-map (kbd "p") 'calendar-backward-week)
-  (define-key calendar-mode-map (kbd "f") 'calendar-forward-day)
-  (define-key calendar-mode-map (kbd "b") 'calendar-backward-day)
-  (define-key calendar-mode-map (kbd "C-j") 'diary-view-entries)
-  (define-key calendar-mode-map (kbd "<RET>") 'diary-view-entries)
+  (defun ini:hs-mark-fringe (ovr)
+    "`hs-toggle-hiding'で隠された行の OVR を編集して fringe にマークを付ける."
+    (when (eq 'code (overlay-get ovr 'hs))
+      (let ((hiding-text "...")
+            (fringe-anchor (make-string 1 ?x)))
+        (put-text-property 0 1 'display (list 'left-fringe ini:hs-fringe-mark) fringe-anchor)
+        (overlay-put ovr 'before-string fringe-anchor)
+        (overlay-put ovr 'display hiding-text))))
 
-  ;; 月の満ち欠けの日本語化
-  (with-eval-after-load "lunar"
-    (setq lunar-phase-names '("新月" "上弦" "満月""下弦")))
+  (setq hs-set-up-overlay 'ini:hs-mark-fringe)
+  (define-key hs-minor-mode-map (kbd "C-z <C-SPC>") 'hs-toggle-hiding))
 
-  ;; 日本の祝日表示 / (package-install 'japanese-holidays)
-  (when (require 'japanese-holidays nil t)
-    (setq calendar-holidays
-          (append japanese-holidays holiday-local-holidays holiday-other-holidays))
+;; ido
+(when (require 'ido nil t)
+  (setq ido-default-buffer-method 'selected-window)
+  (setq ido-save-directory-list-file nil)
+  (setcar (nthcdr 2 ido-decorations) ",")
+  (setcar (nthcdr 3 ido-decorations) ", ...")
+  (ido-mode 'buffer)
 
-    (add-hook 'today-visible-calendar-hook 'japanese-holiday-mark-weekend)
-    (add-hook 'today-invisible-calendar-hook 'japanese-holiday-mark-weekend)
-    )
+  (add-hook 'ido-minibuffer-setup-hook
+            (lambda ()
+              ;; disable some keys
+              (dolist (key '("C-f" "C-b" "C-d" "C-x C-f" "C-x C-d"))
+                (define-key ido-buffer-completion-map (kbd key) nil))))
+
+  (defadvice ido-exhibit (after ini:ido-exhibit-display-buffer activate)
+    "選択しているバッファをウィンドウに表示する."
+    (when ido-matches
+      (let ((selected (get-buffer-window
+                       (cl-find-if-not #'minibufferp (buffer-list)))))
+        (when selected
+          (select-window selected)
+          (ido-visit-buffer
+           (get-buffer (car ido-matches)) t)
+          (select-window (minibuffer-window))))
+      ))
   )
 
-;; auth-source
-(with-eval-after-load "auth-source"
-  (setq auth-sources (cons (ini:emacs-d "authinfo.gpg") auth-sources))
-  )
+;; image+ / (package-install 'image+)
+(with-eval-after-load "image"
+  (when (and (executable-find "convert")
+             (require 'image+ nil t))
+    (imagex-auto-adjust-mode t)))
 
-;; gnus and mail (for gmail)
-(setq mail-user-agent 'gnus-user-agent)
-(setq read-mail-command 'gnus)
+;; imenu
+(global-set-key (kbd "C-z C-j") 'imenu)
+(with-eval-after-load "imenu"
+  (setq imenu-auto-rescan t))
 
-(with-eval-after-load "gnus"
-  (setq gnus-startup-file (ini:emacs-d "gnus/newsrc"))
-  (setq gnus-directory (ini:emacs-d "gnus/news"))
-  (setq gnus-save-newsrc-file nil)
+;; info
+(with-eval-after-load "info"
+  (ini:awhen (ini:locate-directory (ini:emacs-d "info"))
+    (add-to-list 'Info-additional-directory-list it)))
 
+;; ispell
+(with-eval-after-load "ispell"
+  ;; from http://www.an.econ.kobe-u.ac.jp/~namba/meadow/words.lzh
+  (ini:awhen (locate-file "words"
+                          `(,(ini:emacs-d "share")
+                            ,user-emacs-directory
+                            "/usr/dict"
+                            "/usr/share/dict"))
+    (setq ispell-alternate-dictionary it)))
 
-  (setq gnus-select-method '(nnimap "gmail"
-                                    (nnimap-address "imap.gmail.com")
-                                    (nnimap-server-port 993)
-                                    (nnimap-stream ssl)))
-  (setq gnus-ignored-newsgroups "^to\\.\\|^[0-9. ]+\\( \\|$\\)\\|^[\"]\"[#'()]")
-  )
+;; magit / (package-install 'magit)
+(when (package-installed-p 'magit)
+  (global-set-key (kbd "C-z C-m") 'magit-status)
 
-(with-eval-after-load "message"
-  (setq message-send-mail-function 'smtpmail-send-it)
-  (setq message-auto-save-directory nil)
-  )
+  (with-eval-after-load "magit"
+    (setq magit-auto-revert-mode-lighter ""))
 
-(with-eval-after-load "sendmail"
-  (setq send-mail-function 'smtpmail-send-it)
-  )
+  (with-eval-after-load "session"
+    (setq session-set-file-name-exclude-regexp
+          (concat session-set-file-name-exclude-regexp
+                  "\\|" (regexp-opt '("COMMIT_EDITMSG"))))
+    ))
 
-(with-eval-after-load "smtpmail"
-  (setq smtpmail-smtp-server "smtp.gmail.com")
-  (setq smtpmail-smtp-service 465)
-  (setq smtpmail-stream-type 'tls)
-  (setq smtpmail-local-domain "gmail.com")
-  )
-
-;; eww
-(with-eval-after-load "eww"
-  (setq eww-search-prefix "http://www.google.co.jp/search?q=")
-
-  ;; x-euc-jp は ddskk-ml の過去ログ等で使われているので…
-  (define-coding-system-alias 'x-euc-jp 'euc-jp)
-
-  (defadvice eww-display-html (after ini:eww-change-buffer-coding-system activate)
-    (set-buffer-file-coding-system (ad-get-arg 0)))
-
-  (defadvice eww-submit (around ini:eww-override-find-coding-systems-string activate)
-    (cl-letf (((symbol-function 'find-coding-systems-string)
-               (lambda (string)
-                 (list buffer-file-coding-system))))
-      ad-do-it))
-  )
+;; man & woman
+(with-eval-after-load "woman"
+  (setq woman-fill-frame t
+        woman-cache-filename (ini:emacs-d "woman-cache")))
 
 ;; markdown-mode / (package-install 'markdown-mode)
 (when (package-installed-p 'markdown-mode)
   (add-to-list 'auto-mode-alist '("\\.\\(md\\(wn\\|t\\)?\\|markdown\\|text\\)\\'" .
                                   markdown-mode)))
+
+;; migemo / (package-install 'migemo)
+;; cmigemo / http://www.kaoriya.net/software/cmigemo
+(ini:awhen (or (executable-find "cmigemo")
+               (executable-find "migemo"))
+  (defvar ini:org-isearch-lazy-highlight-search
+    (symbol-function 'isearch-lazy-highlight-search)
+    "migemo に置き換えられる前の `isearch-lazy-highlight-search'.")
+
+  (when (require 'migemo nil t)
+    (setq migemo-command it)
+
+    (when (string-match-p "cmigemo" it)
+      (setq migemo-options '("-q" "--emacs"))
+      (setq migemo-user-dictionary nil)
+      (setq migemo-regex-dictionary nil)
+      (setq migemo-coding-system 'utf-8)
+      (setq migemo-dictionary (locate-file "utf-8/migemo-dict"
+                                           `(,(ini:emacs-d "share/migemo")
+                                             "/usr/local/share/migemo"
+                                             "/usr/share/migemo")
+                                           ))
+      (when (eq system-type 'cygwin)
+        (setq migemo-dictionary
+              (replace-regexp-in-string
+               "\r?\n" "" (shell-command-to-string
+                           (format "cygpath -w \"%s\""
+                                   (shell-quote-argument migemo-dictionary))))))
+      )
+
+    (setq migemo-use-pattern-alist t)
+    (setq migemo-use-frequent-pattern-alist t)
+    (setq migemo-pattern-alist-length 1024)
+    (setq migemo-pattern-alist-file (ini:emacs-d "migemo-pattern"))
+    (define-key isearch-mode-map (kbd "M-k") 'migemo-isearch-toggle-migemo) ; compatible with kogiku
+
+    ;; pty を消費しない
+    (let ((process-connection-type nil))
+      (migemo-init))
+
+    ;; query-replace 系での lazy-highlight 対応
+    (dolist (fn '(query-replace query-replace-regexp))
+      (eval `(defadvice ,fn (around ,(intern (format "ini:%s-with-migemo"
+                                                     fn)) activate)
+               "migemo 導入時でもハイライトを有効にする."
+               (cl-letf (((symbol-function 'isearch-lazy-highlight-search)
+                          ini:org-isearch-lazy-highlight-search))
+                 ad-do-it
+                 ))))
+
+    (with-eval-after-load "isearch"
+      ;; isearch 中に leim を使用しない
+      (define-key isearch-mode-map [remap toggle-input-method] 'undefined)
+      (define-key isearch-mode-map [remap isearch-toggle-input-method] 'undefined)
+      (define-key isearch-mode-map [remap isearch-toggle-specified-input-method]
+        'undefined))
+
+    (defadvice isearch-lazy-highlight-update (around ini:suppress-error-isearch-regexp activate)
+      "正規表現検索時のエラー回避."
+      (ignore-errors
+        ad-do-it))
+    ))
+
+;; mozc / https://code.google.com/p/mozc/source/browse/trunk/src/unix/emacs/mozc.el
+;;    and http://www49.atwiki.jp/ntemacs?cmd=upload&act=open&pageid=50&file=mozc_emacs_helper.zip
+(when (and (executable-find "mozc_emacs_helper")
+           (require 'mozc nil t))
+  (setq default-input-method "japanese-mozc")
+
+  (when (memq system-type '(windows-nt cygwin))
+    (defadvice mozc-session-execute-command (after ini:mozc-session-execute-command activate)
+      "`mozc' を有効化した際に自動的にひらがな入力モードに変更する."
+      (if (eq (ad-get-arg 0) 'CreateSession)
+          (mozc-session-sendkey '(hiragana)))))
+
+  (defadvice mozc-mode (after ini:mozc-minibuffer-workaround activate)
+    "ミニバッファから抜ける際に正しく input-method を無効化する."
+    (when (and mozc-mode
+               (eq (selected-window) (minibuffer-window)))
+      (add-hook 'minibuffer-exit-hook 'mozc-exit-from-minibuffer)))
+
+  (defun mozc-exit-from-minibuffer ()
+    "`minibuffer' から抜ける際に `deactivate-input-method' を呼び出す."
+    (when (equal current-input-method "japanese-mozc")
+      (deactivate-input-method)
+      (if (<= (minibuffer-depth) 1)
+          (remove-hook 'minibuffer-exit-hook 'mozc-exit-from-minibuffer))))
+
+  (defadvice mozc-leim-deactivate (around ini:mozc-deactive-workaround activate)
+    "正しく `mozc-mode' を終了させる."
+    (mozc-mode -1))
+
+  (defadvice mozc-helper-process-recv-response (after ini:mozc-accept-output-workaround activate)
+    "他プロセスが終了した際に accept-process-output がタイムアウトする問題対策."
+    (unless ad-return-value
+      (setq ad-return-value (mozc-helper-process-recv-response))))
+
+  ;; mozc-el-extensions / git clone https://github.com/iRi-E/mozc-el-extensions
+  (when (require 'mozc-mode-line-indicator nil t)
+    (setq mozc-leim-title "[あ]")
+    (setq mozc-mode-line-indicator-title-format "[%s]"))
+
+  ;; mozc-popup / git clone https://github.com/d5884/mozc-popup
+  (when (and (require 'popup nil t)
+             (require 'mozc-popup nil t))
+    (setq mozc-candidate-style 'popup)))
+
+;; narrowing
+(put 'narrow-to-region 'disabled nil)
+(put 'narrow-to-page 'disabled nil)
+
+;; nxml-mode
+(fset 'html-mode 'nxml-mode)
+(fset 'xml-mode 'nxml-mode)
+
+(setq magic-mode-alist
+      (cons '("<\\?xml" . nxml-mode) magic-mode-alist))
+
+(with-eval-after-load "nxml-mode"
+  (with-eval-after-load "smart-compile"
+    (setq smart-compile-alist (cons
+                               '(nxml-mode browse-url-of-buffer)
+                               smart-compile-alist))))
+
+;; occur
+(define-key occur-mode-map (kbd "n") 'occur-next)
+(define-key occur-mode-map (kbd "p") 'occur-prev)
+(add-hook 'occur-mode-hook 'next-error-follow-minor-mode)
+
+;; outline-minor-mode
+(add-hook 'outline-minor-mode-hook
+          (lambda ()
+            (local-set-key (kbd "C-c C-o") outline-mode-prefix-map)))
+
+;; popup-kill-ring / (package-install 'popup-kill-ring)
+(when (require 'popup-kill-ring nil t)
+  (setq popup-kill-ring-interactive-insert t)
+  (global-set-key (kbd "M-y") 'popup-kill-ring)
+  (define-key popup-kill-ring-keymap (kbd "TAB") 'popup-kill-ring-next)
+  (define-key popup-kill-ring-keymap (kbd "M-y") 'popup-kill-ring-next))
+
+;; popwin / (package-install 'popwin)
+(when (require 'popwin nil t)
+  (global-set-key (kbd "C-z C-s") 'popwin:stick-popup-window)
+  (global-set-key [remap view-echo-area-messages] 'popwin:messages)
+  (setq popwin:reuse-window nil)
+  (setq popwin:special-display-config
+        (append
+         '("*Process List*"
+           "*Proced*"
+           ;; vc
+           "*vc-diff*"
+           "*vc-change-log*"
+           ;; calendar and diary
+           (calendar-mode :stick t)
+           "*Sunrise/Sunset Times*"
+           "*Phases of Moon*"
+           "*Holidays*"
+           (diary-fancy-display-mode :noselect t)
+           ("*Shell Command Output*" :stick t :noselect t)
+           ("*Occur*" :stick t)         ; not mode because occur-edit
+           (apropos-mode :stick t)
+           (grep-mode :stick t)
+           (completion-list-mode :noselect t)
+           (compilation-mode :stick t :noselect t)
+           (help-mode :stick t)
+           (dired-mode :stick t))
+         popwin:special-display-config))
+  (popwin-mode 1)
+  )
+
+;; quail-japanese
+(with-eval-after-load "japanese"
+  (setq quail-japanese-use-double-n t))
+
+;; recentf
+(with-eval-after-load "recentf"
+  ;; 基本的に使わないがファイルをホームに作らないよう設定
+  (setq recentf-save-file (ini:emacs-d "recentf")))
+
+
+  (when (and (require 'yasnippet nil t)
+             (require 'auto-complete nil t))
+    (defun ac-ruby-mode-setup ()
+      (setq ac-sources (cons 'ac-source-yasnippet ac-sources))))
+
+  (when (require 'hideshow nil t)
+    (add-to-list 'hs-special-modes-alist
+                 `(ruby-mode
+                   ,(concat "\\<"
+                            (regexp-opt '("class" "module" "def" "if" "unless" "loop"
+                                          "case" "while" "until" "for" "begin" "do"))
+                            "\\>\\|{")
+                   "\\<end\\>\\|}"
+                   "#"
+                   ruby-move-to-block
+                   nil))
+    )
+
+  (add-hook 'ruby-mode-hook 'hs-minor-mode)
+
+  ;; flycheck
+  (when (package-installed-p 'flycheck)
+    (add-hook 'ruby-mode-hook 'flycheck-mode)))
+
+;; session / (package-install 'session)
+(when (require 'session nil t)
+  (add-hook 'after-init-hook 'session-initialize)
+  (setq session-initialize '(de-saveplace session places))
+  (setq session-save-file (ini:emacs-d "session-data"))
+  (setq session-globals-include '((kill-ring 50)
+                                  (read-expression-history 100)
+                                  (session-file-alist 500 t)
+                                  (file-name-history 10000)))
+  (setq session-globals-max-string 100000000)
+  (setq session-undo-check -1)
+  (setq history-length t)
+
+  ;; magit の commit log が emacsclient 経由で開かれるので exclude されない対策
+  (add-hook 'session-after-load-save-file-hook
+            (lambda ()
+              (setq file-name-history
+                    (cl-remove-if
+                     (lambda (f)
+                       (string-match-p session-set-file-name-exclude-regexp f))
+                     file-name-history))))
+
+  (ini:make-silently-loading session-initialize-do))
 
 ;; sdic / http://www.namazu.org/~tsuchiya/sdic/
 (when (locate-library "sdic")
@@ -1368,6 +1405,11 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
       )
     ))
 
+;; server
+(when (and (require 'server nil t)
+           (memq (server-running-p) '(nil :other)))
+  (server-start))
+
 ;; shell-pop / (package-install 'shell-pop)
 (when (package-installed-p 'shell-pop)
   (global-set-key (kbd "C-z C-z") 'shell-pop)
@@ -1386,126 +1428,67 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
           (delete-window))))
     ))
 
-;; popwin / (package-install 'popwin)
-(when (require 'popwin nil t)
-  (global-set-key (kbd "C-z C-s") 'popwin:stick-popup-window)
-  (global-set-key [remap view-echo-area-messages] 'popwin:messages)
-  (setq popwin:reuse-window nil)
-  (setq popwin:special-display-config
-        (append
-         '("*Process List*"
-           "*Proced*"
-           ;; vc
-           "*vc-diff*"
-           "*vc-change-log*"
-           ;; calendar and diary
-           (calendar-mode :stick t)
-           "*Sunrise/Sunset Times*"
-           "*Phases of Moon*"
-           "*Holidays*"
-           (diary-fancy-display-mode :noselect t)
-           ("*Shell Command Output*" :stick t :noselect t)
-           ("*Occur*" :stick t)         ; not mode because occur-edit
-           (apropos-mode :stick t)
-           (grep-mode :stick t)
-           (completion-list-mode :noselect t)
-           (compilation-mode :stick t :noselect t)
-           (help-mode :stick t)
-           (dired-mode :stick t))
-         popwin:special-display-config))
-  (popwin-mode 1)
+;; shell/term
+(defun ini:add-process-sentinel (process sentinel)
+  "PROCESS に センチネル SENTINEL を追加する.
+SENTINEL は元々設定されていたセンチネルが実行されてから呼び出される."
+  (let ((org-sentinel (and (processp process)
+                           (process-sentinel process))))
+    (set-process-sentinel process
+                          (if org-sentinel
+                              `(lambda (proc msg)
+                                 (funcall (function ,org-sentinel) proc msg)
+                                 (funcall (function ,sentinel) proc msg))
+                            sentinel))
+    ))
+
+(defun ini:set-process-cleaner (&optional process)
+  "PROCESS 終了時にバッファとウィンドウを削除する.
+また Emacs 終了時にプロセスも終了させる.
+PROCESS が nil の場合はカレントバッファのプロセスに設定する."
+  (ini:awhen (or (and (processp process)
+                      process)
+                 (get-buffer-process (current-buffer)))
+    (set-process-query-on-exit-flag it nil)
+    ;; PROCESS のバッファを削除し、ウィンドウが開いていたら閉じる
+    (ini:add-process-sentinel it
+                              (lambda (process event)
+                                (let ((buf (process-buffer process)))
+                                  (dolist (win (get-buffer-window-list buf))
+                                    (unless (one-window-p)
+                                      (delete-window win)))
+                                  (kill-buffer buf))))
+    ))
+
+;; shell
+(with-eval-after-load "shell"
+  (setq comint-prompt-read-only t)
+
+  (add-hook 'shell-mode-hook 'ini:set-process-cleaner)
+  (define-key shell-mode-map (kbd "M-p") 'comint-previous-matching-input-from-input)
+  (define-key shell-mode-map (kbd "M-n") 'comint-next-matching-input-from-input))
+
+;; term
+(with-eval-after-load "term"
+  (add-hook 'term-exec-hook 'ini:set-process-cleaner)
+
+  ;; C-c に C-x を取り込まない
+  (set-keymap-parent term-raw-escape-map nil)
+  ;; char-mode で使いたいキーを開放して C-c に移動
+  (dolist (key '("M-x" "M-:" "C-z" "C-u" "C-\\"))
+    (define-key term-raw-map (kbd key) nil)
+    (define-key term-raw-map (kbd (concat "C-c " key))
+      (if (string-match-p "^M-" key)
+          'term-send-raw-meta
+        'term-send-raw)))
+
+  (define-key term-mode-map (kbd "C-c C-w") nil)
   )
 
-;; stripe-buffer / (package-install 'stripe-buffer)
-(when (package-installed-p 'stripe-buffer)
-  (add-hook 'dired-mode-hook 'turn-on-stripe-buffer-mode)
-  (add-hook 'tabulated-list-mode-hook 'turn-on-stripe-buffer-mode))
+;; show-paren
+(show-paren-mode t)
 
-;; yascroll / (package-install 'yascroll)
-(when (package-installed-p 'yascroll)
-  ;; 1行単位のスクロールにしているとちらつくので必要な時だけ表示にする
-  (dolist (fn '(set-mark exchange-point-and-mark scroll-up scroll-down recenter))
-    (eval `(defadvice ,fn (after ,(intern (format "ini:show-yascroll-on-%s" fn)) activate)
-             "スクロールバーを表示する."
-             (when (not (memq major-mode '(term-mode shell-mode)))
-               (yascroll:show-scroll-bar)))))
-  (with-eval-after-load "isearch"
-    (add-hook 'isearch-update-post-hook 'yascroll:show-scroll-bar))
-  )
-
-;; session / (package-install 'session)
-(when (require 'session nil t)
-  (add-hook 'after-init-hook 'session-initialize)
-  (setq session-initialize '(de-saveplace session places))
-  (setq session-save-file (ini:emacs-d "session-data"))
-  (setq session-globals-include '((kill-ring 50)
-                                  (read-expression-history 100)
-                                  (session-file-alist 500 t)
-                                  (file-name-history 10000)))
-  (setq session-globals-max-string 100000000)
-  (setq session-undo-check -1)
-  (setq history-length t)
-
-  ;; magit の commit log が emacsclient 経由で開かれるので exclude されない対策
-  (add-hook 'session-after-load-save-file-hook
-            (lambda ()
-              (setq file-name-history
-                    (cl-remove-if
-                     (lambda (f)
-                       (string-match-p session-set-file-name-exclude-regexp f))
-                     file-name-history))))
-
-  (ini:make-silently-loading session-initialize-do))
-
-;; quail-japanese
-(with-eval-after-load "japanese"
-  (setq quail-japanese-use-double-n t))
-
-;; Mozc / https://code.google.com/p/mozc/source/browse/trunk/src/unix/emacs/mozc.el
-;;    and http://www49.atwiki.jp/ntemacs?cmd=upload&act=open&pageid=50&file=mozc_emacs_helper.zip
-(when (and (executable-find "mozc_emacs_helper")
-           (require 'mozc nil t))
-  (setq default-input-method "japanese-mozc")
-
-  (when (memq system-type '(windows-nt cygwin))
-    (defadvice mozc-session-execute-command (after ini:mozc-session-execute-command activate)
-      "`mozc' を有効化した際に自動的にひらがな入力モードに変更する."
-      (if (eq (ad-get-arg 0) 'CreateSession)
-          (mozc-session-sendkey '(hiragana)))))
-
-  (defadvice mozc-mode (after ini:mozc-minibuffer-workaround activate)
-    "ミニバッファから抜ける際に正しく input-method を無効化する."
-    (when (and mozc-mode
-               (eq (selected-window) (minibuffer-window)))
-      (add-hook 'minibuffer-exit-hook 'mozc-exit-from-minibuffer)))
-
-  (defun mozc-exit-from-minibuffer ()
-    "`minibuffer' から抜ける際に `deactivate-input-method' を呼び出す."
-    (when (equal current-input-method "japanese-mozc")
-      (deactivate-input-method)
-      (if (<= (minibuffer-depth) 1)
-          (remove-hook 'minibuffer-exit-hook 'mozc-exit-from-minibuffer))))
-
-  (defadvice mozc-leim-deactivate (around ini:mozc-deactive-workaround activate)
-    "正しく `mozc-mode' を終了させる."
-    (mozc-mode -1))
-
-  (defadvice mozc-helper-process-recv-response (after ini:mozc-accept-output-workaround activate)
-    "他プロセスが終了した際に accept-process-output がタイムアウトする問題対策."
-    (unless ad-return-value
-      (setq ad-return-value (mozc-helper-process-recv-response))))
-
-  ;; mozc-el-extensions / git clone https://github.com/iRi-E/mozc-el-extensions
-  (when (require 'mozc-mode-line-indicator nil t)
-    (setq mozc-leim-title "[あ]")
-    (setq mozc-mode-line-indicator-title-format "[%s]"))
-
-  ;; mozc-popup / git clone https://github.com/d5884/mozc-popup
-  (when (and (require 'popup nil t)
-             (require 'mozc-popup nil t))
-    (setq mozc-candidate-style 'popup)))
-
-;; Daredevil SKK / (package-install 'ddskk)
+;; skk / (package-install 'ddskk)
 ;; 辞書 / cvs -d:pserver:guest@openlab.jp:/circus/cvsroot login [guest]
 ;;        cvs -d:pserver:guest@openlab.jp:/circus/cvsroot co -d ~/.emacs.d/share/skk skk/dic
 (when (and (load "ddskk-autoloads" t t)
@@ -1586,67 +1569,134 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
                 (setq skk-tooltip-function 'pos-tip-show))
               )))
 
-;; migemo / (package-install 'migemo)
-;; cmigemo / http://www.kaoriya.net/software/cmigemo
-(ini:awhen (or (executable-find "cmigemo")
-               (executable-find "migemo"))
-  (defvar ini:org-isearch-lazy-highlight-search
-    (symbol-function 'isearch-lazy-highlight-search)
-    "migemo に置き換えられる前の `isearch-lazy-highlight-search'.")
+;; smart-compile / (package-install 'smart-compile)
+(when (package-installed-p 'smart-compile)
+  (autoload 'recompile "compile" nil t)
 
-  (when (require 'migemo nil t)
-    (setq migemo-command it)
+  (defun ini:smart-recompile (arg)
+    "一度目は `smart-compile'、二度目は `recompile' を呼び出す.
+ARG が non-nil の場合は `smart-compile' を呼び出す."
+    (interactive "P")
+    (if (or (not (local-variable-p 'compile-command))
+            arg)
+        (smart-compile 4)
+      (recompile)))
 
-    (when (string-match-p "cmigemo" it)
-      (setq migemo-options '("-q" "--emacs"))
-      (setq migemo-user-dictionary nil)
-      (setq migemo-regex-dictionary nil)
-      (setq migemo-coding-system 'utf-8)
-      (setq migemo-dictionary (locate-file "utf-8/migemo-dict"
-                                           `(,(ini:emacs-d "share/migemo")
-                                             "/usr/local/share/migemo"
-                                             "/usr/share/migemo")
-                                           ))
-      (when (eq system-type 'cygwin)
-        (setq migemo-dictionary
-              (replace-regexp-in-string
-               "\r?\n" "" (shell-command-to-string
-                           (format "cygpath -w \"%s\""
-                                   (shell-quote-argument migemo-dictionary))))))
-      )
+  (global-set-key [remap compile] 'ini:smart-recompile)
+  )
 
-    (setq migemo-use-pattern-alist t)
-    (setq migemo-use-frequent-pattern-alist t)
-    (setq migemo-pattern-alist-length 1024)
-    (setq migemo-pattern-alist-file (ini:emacs-d "migemo-pattern"))
-    (define-key isearch-mode-map (kbd "M-k") 'migemo-isearch-toggle-migemo) ; compatible with kogiku
+;; ssh-agent / git clone https://github.com/d5884/ssh-agent
+(when (locate-library "ssh-agent")
+  (autoload 'ssh-agent-add-key "ssh-agent" nil t)
 
-    ;; pty を消費しない
-    (let ((process-connection-type nil))
-      (migemo-init))
+  (with-eval-after-load "magit"
+    (defadvice magit-push-dwim (before ini:ssh-agent-with-magit-push activate)
+      (ssh-agent-add-key))
 
-    ;; query-replace 系での lazy-highlight 対応
-    (dolist (fn '(query-replace query-replace-regexp))
-      (eval `(defadvice ,fn (around ,(intern (format "ini:%s-with-migemo"
-                                                     fn)) activate)
-               "migemo 導入時でもハイライトを有効にする."
-               (cl-letf (((symbol-function 'isearch-lazy-highlight-search)
-                          ini:org-isearch-lazy-highlight-search))
-                 ad-do-it
-                 ))))
+    (defadvice magit-fetch (before ini:ssh-agent-with-magit-fetch activate)
+      (ssh-agent-add-key)))
 
-    (with-eval-after-load "isearch"
-      ;; isearch 中に leim を使用しない
-      (define-key isearch-mode-map [remap toggle-input-method] 'undefined)
-      (define-key isearch-mode-map [remap isearch-toggle-input-method] 'undefined)
-      (define-key isearch-mode-map [remap isearch-toggle-specified-input-method]
-        'undefined))
+  (with-eval-after-load "tramp-sh"
+    (defadvice tramp-send-command (before ini:ssh-agent-with-tramp activate)
+      (ssh-agent-add-key)))
+  )
 
-    (defadvice isearch-lazy-highlight-update (around ini:suppress-error-isearch-regexp activate)
-      "正規表現検索時のエラー回避."
-      (ignore-errors
-        ad-do-it))
-    ))
+;; stripe-buffer / (package-install 'stripe-buffer)
+(when (package-installed-p 'stripe-buffer)
+  (add-hook 'dired-mode-hook 'turn-on-stripe-buffer-mode)
+  (add-hook 'tabulated-list-mode-hook 'turn-on-stripe-buffer-mode))
+
+;; temp-buffer-resize
+(if (not (package-installed-p 'popwin))
+    (temp-buffer-resize-mode t)
+  ;; popwin でも temp-buffer-resize
+  (with-eval-after-load "popwin"
+    (add-hook 'popwin:after-popup-hook
+              (lambda ()
+                (when (and (popwin:popup-window-live-p)
+                           (with-current-buffer popwin:popup-buffer
+                             (not (derived-mode-p 'compilation-mode))))
+                  (let ((max-height (plist-get (cdr popwin:popup-last-config)
+                                               :height)))
+                    (fit-window-to-buffer popwin:popup-window max-height)))))))
+
+;; tramp
+(with-eval-after-load "tramp"
+  (setq tramp-default-method "ssh")
+  (setq tramp-verbose 2))
+
+(with-eval-after-load "tramp-sh"
+  (let ((process-environment tramp-remote-process-environment))
+    (setenv "LC_ALL" nil)               ; リモートのロケールは接続先に準じる
+    (setq tramp-remote-process-environment process-environment)))
+
+;; transient-mark-mode
+(defadvice exchange-point-and-mark (after ini:exchange-point-and-mark-deactivate activate)
+  "Function `transient-mark-mode' が有効な時にリージョンに色が付かないようにする."
+  (if (and (transient-mark-mode mark-active))
+      (deactivate-mark)))
+
+;; uniquify
+(when (require 'uniquify nil t)
+  (setq uniquify-buffer-name-style 'post-forward-angle-brackets)
+  (setq uniquify-ignore-buffers-re "*[^*]+*"))
+
+;; upcase/downcase
+(put 'upcase-region 'disabled nil)
+(put 'downcase-region 'disabled nil)
+
+;; view-mode
+(setq view-read-only t)
+(with-eval-after-load "view"
+  (define-key view-mode-map "j" 'next-line)
+  (define-key view-mode-map "k" 'previous-line)
+  )
+
+;; windmove
+(global-set-key (kbd "C-z C-n") 'windmove-down)
+(global-set-key (kbd "C-z C-p") 'windmove-up)
+(global-set-key (kbd "C-z C-f") 'windmove-right)
+(global-set-key (kbd "C-z C-b") 'windmove-left)
+
+;; yank/undo highlighting
+;;   from http://www.fan.gr.jp/~ring/Meadow/meadow.html#ys:highlight-string
+(defadvice insert-for-yank (after ini:yank-highlight-string activate)
+  "文字列ヤンク時にハイライト表示する."
+  (let ((ol (make-overlay (mark t) (point))))
+    (unwind-protect
+        (progn (overlay-put ol 'face 'highlight)
+               (sit-for 0.5))
+      (delete-overlay ol))))
+
+(defadvice undo (after ini:undo-highlight-string activate)
+  "アンドゥで再挿入された文字列をハイライト表示する."
+  (catch 'return
+    (dolist (entry buffer-undo-list)
+      (let ((beg (car entry))
+            (end (cdr entry)))
+        (cond
+         ((null entry)) ;; boundary. skip it.
+         ((and (integerp beg)
+               (integerp end))
+          (let ((ol (make-overlay beg end)))
+            (unwind-protect
+                (progn (overlay-put ol 'face 'highlight)
+                       (sit-for 0.5))
+              (delete-overlay ol)
+              (throw 'return nil))))
+         (t (throw 'return nil)))))))
+
+;; yascroll / (package-install 'yascroll)
+(when (package-installed-p 'yascroll)
+  ;; 1行単位のスクロールにしているとちらつくので必要な時だけ表示にする
+  (dolist (fn '(set-mark exchange-point-and-mark scroll-up scroll-down recenter))
+    (eval `(defadvice ,fn (after ,(intern (format "ini:show-yascroll-on-%s" fn)) activate)
+             "スクロールバーを表示する."
+             (when (not (memq major-mode '(term-mode shell-mode)))
+               (yascroll:show-scroll-bar)))))
+  (with-eval-after-load "isearch"
+    (add-hook 'isearch-update-post-hook 'yascroll:show-scroll-bar))
+  )
 
 ;; yasnippet / (package-install 'yasnippet)
 (when (require 'yasnippet nil t)
@@ -1691,34 +1741,6 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
           )))
     )
   )
-
-;; auto-complete-mode / (package-install 'auto-complete)
-(when (require 'auto-complete-config nil t)
-  (diminish 'auto-complete-mode)
-
-  (ac-config-default)
-
-  (define-key ac-mode-map (kbd "M-TAB") 'auto-complete)
-  (define-key ac-completing-map (kbd "C-g") 'ac-stop)
-
-  (setq ac-use-menu-map t)
-
-  (when (require 'pos-tip nil t)
-    (setq ac-quick-help-prefer-pos-tip t))
-  )
-
-;; popup-kill-ring / (package-install 'popup-kill-ring)
-(when (require 'popup-kill-ring nil t)
-  (setq popup-kill-ring-interactive-insert t)
-  (global-set-key (kbd "M-y") 'popup-kill-ring)
-  (define-key popup-kill-ring-keymap (kbd "TAB") 'popup-kill-ring-next)
-  (define-key popup-kill-ring-keymap (kbd "M-y") 'popup-kill-ring-next))
-
-;; image+ / (package-install 'image+)
-(with-eval-after-load "image"
-  (when (and (executable-find "convert")
-             (require 'image+ nil t))
-    (imagex-auto-adjust-mode t)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 追加関数定義

@@ -1430,10 +1430,7 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
     (define-key term-raw-map (kbd (concat "C-c " key))
       (if (string-match-p "^M-" key)
           'term-send-raw-meta
-        'term-send-raw)))
-
-  (define-key term-mode-map (kbd "C-c C-w") nil)
-  )
+        'term-send-raw))))
 
 ;; show-paren
 (show-paren-mode t)

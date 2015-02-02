@@ -209,7 +209,7 @@ ORIGINAL が non-nil であれば最後に連結される."
   ;; ウィンドウサイズ
   ;; w32-resume-frame / git clone https://github.com/d5884/w32-resume-frame
   (if (require 'w32-resume-frame nil t)
-      (w32-resume-activate)
+      (w32-resume-frame-activate)
     (setq initial-frame-alist `((top . 60) (left . 120) ,@initial-frame-alist)))
   (setq default-frame-alist `((width . 100) (height . 40) ,@default-frame-alist))
   )

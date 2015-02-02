@@ -1438,8 +1438,7 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
 ;; skk / (package-install 'ddskk)
 ;; 辞書 / cvs -d:pserver:guest@openlab.jp:/circus/cvsroot login [guest]
 ;;        cvs -d:pserver:guest@openlab.jp:/circus/cvsroot co -d ~/.emacs.d/share/skk skk/dic
-(when (and (load "ddskk-autoloads" t t)
-           (require 'skk-leim nil t))
+(when (require 'skk-leim nil t)
   (setq skk-user-directory user-emacs-directory)
   (setq skk-init-file (expand-file-name "skk-init.el" skk-user-directory))
 

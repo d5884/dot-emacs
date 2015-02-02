@@ -1403,10 +1403,11 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
     (ini:add-process-sentinel it
                               (lambda (process event)
                                 (let ((buf (process-buffer process)))
-                                  (dolist (win (get-buffer-window-list buf))
-                                    (unless (one-window-p)
-                                      (delete-window win)))
-                                  (kill-buffer buf))))
+                                  (when (and buf (buffer-live-p buf))
+                                    (dolist (win (get-buffer-window-list buf))
+                                      (unless (one-window-p)
+                                        (delete-window win))
+                                      (kill-buffer buf))))))
     ))
 
 ;; shell

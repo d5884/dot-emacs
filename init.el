@@ -490,8 +490,10 @@ ARG が non-nil の場合はフレームの数に関係なく emacs を終了す
 (setq truncate-partial-width-windows nil)
 (setq visible-bell t)
 
-;; モードライン関係
-(column-number-mode t)
+;; バックアップ関係
+(setq make-backup-files nil)
+(setq auto-save-default nil)
+(setq auto-save-list-file-prefix nil)
 
 ;; 起動画面関係
 (setq inhibit-startup-screen t)
@@ -512,11 +514,6 @@ Daemon 起動時以外は表示関数を直接潰す"
 (setq mouse-wheel-scroll-amount '(1 ((shift) . 5)))
 (setq recenter-positions '(middle top))
 
-;; バックアップ関係
-(setq make-backup-files nil)
-(setq auto-save-default nil)
-(setq auto-save-list-file-prefix nil)
-
 ;; フレーム/カーソル関連
 (setq frame-title-format "%b")
 (blink-cursor-mode -1)
@@ -525,6 +522,9 @@ Daemon 起動時以外は表示関数を直接潰す"
 (when (featurep 'scroll-bar)
   (scroll-bar-mode -1))
 (mouse-avoidance-mode 'exile)
+
+;; モードライン関係
+(column-number-mode t)
 
 ;; ansi-color
 (with-eval-after-load "comint"

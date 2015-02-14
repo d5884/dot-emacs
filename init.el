@@ -438,31 +438,31 @@ ORIGINAL が non-nil であれば最後に連結される."
     ))
 
 (when (display-multi-frame-p)
-  (defun ini:close-or-exit-emacs (&optional arg)
-    "フレームが一つなら emacs を終了、それ以外はフレームを閉じる.
+  (global-set-key [remap save-buffers-kill-emacs]
+                  (defun ini:close-or-exit-emacs (&optional arg)
+                    "フレームが一つなら emacs を終了、それ以外はフレームを閉じる.
 ARG が non-nil の場合はフレームの数に関係なく emacs を終了する."
-    (interactive "P")
-    (if (or arg (eq 1 (length (frame-list))))
-        (save-buffers-kill-terminal)
-      (delete-frame)))
+                    (interactive "P")
+                    (if (or arg (eq 1 (length (frame-list))))
+                        (save-buffers-kill-terminal)
+                      (delete-frame))))
 
-  (global-set-key [remap save-buffers-kill-terminal] 'ini:close-or-exit-emacs)
+  (global-set-key (kbd "C-z C-:")
+                  (if (fboundp 'toggle-frame-maximized)
+                      'toggle-frame-maximized
+                    (defun toggle-frame-maximized ()
+                      "フレームサイズの最大化状態を切り替える."
+                      (interactive)
+                      (if (frame-parameter nil 'fullscreen)
+                          (progn
+                            (and (fboundp 'w32-send-sys-command)
+                                 (w32-send-sys-command #xf030))
+                            (set-frame-parameter nil 'fullscreen 'maximized))
+                        (and (fboundp 'w32-send-sys-command)
+                             (w32-send-sys-command #xf120))
+                        (set-frame-parameter nil 'fullscreen nil))))))
 
-  (unless (fboundp 'toggle-frame-maximized)
-    (defun toggle-frame-maximized ()
-      "フレームサイズの最大化状態を切り替える."
-      (interactive)
-      (if (frame-parameter nil 'fullscreen)
-          (progn
-            (and (fboundp 'w32-send-sys-command)
-                 (w32-send-sys-command #xf030))
-            (set-frame-parameter nil 'fullscreen 'maximized))
-        (and (fboundp 'w32-send-sys-command)
-             (w32-send-sys-command #xf120))
-        (set-frame-parameter nil 'fullscreen nil))))
-
-  (global-set-key (kbd "C-z C-:") 'toggle-frame-maximized)
-  (global-set-key (kbd "C-z C-;") 'iconify-or-deiconify-frame))
+(global-set-key (kbd "C-z C-;") 'suspend-frame)
 
 ;; IME関連キーの整理
 (global-set-key (kbd "<enlw>") 'toggle-input-method)  ; 半角/全角

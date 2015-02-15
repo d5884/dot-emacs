@@ -588,13 +588,6 @@ Daemon 起動時以外は表示関数を直接潰す"
   (setq diary-list-include-blanks t)
   (setq calendar-mark-diary-entries-flag t)
 
-  (define-key calendar-mode-map (kbd "n") 'calendar-forward-week)
-  (define-key calendar-mode-map (kbd "p") 'calendar-backward-week)
-  (define-key calendar-mode-map (kbd "f") 'calendar-forward-day)
-  (define-key calendar-mode-map (kbd "b") 'calendar-backward-day)
-  (define-key calendar-mode-map (kbd "C-j") 'diary-view-entries)
-  (define-key calendar-mode-map (kbd "<RET>") 'diary-view-entries)
-
   ;; 日本の祝日表示 / (package-install 'japanese-holidays)
   (when (require 'japanese-holidays nil t)
     (setq calendar-holidays
@@ -617,10 +610,6 @@ Daemon 起動時以外は表示関数を直接潰す"
 
 ;; completion
 (setq completion-show-help nil)
-(define-key completion-list-mode-map (kbd "<tab>") 'next-completion)
-(define-key completion-list-mode-map (kbd "S-<tab>") 'previous-completion)
-(define-key completion-list-mode-map (kbd "n") 'next-completion)
-(define-key completion-list-mode-map (kbd "p") 'previous-completion)
 
 ;; compile
 (with-eval-after-load "compile"

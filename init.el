@@ -595,10 +595,6 @@ Daemon 起動時以外は表示関数を直接潰す"
   (define-key calendar-mode-map (kbd "C-j") 'diary-view-entries)
   (define-key calendar-mode-map (kbd "<RET>") 'diary-view-entries)
 
-  ;; 月の満ち欠けの日本語化
-  (with-eval-after-load "lunar"
-    (setq lunar-phase-names '("新月" "上弦" "満月""下弦")))
-
   ;; 日本の祝日表示 / (package-install 'japanese-holidays)
   (when (require 'japanese-holidays nil t)
     (setq calendar-holidays

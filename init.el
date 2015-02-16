@@ -673,15 +673,13 @@ Daemon 起動時以外は表示関数を直接潰す"
               (setq-local delete-by-moving-to-trash t)
               (hl-line-mode t)))
 
-  (when (eq system-type 'windows-nt)
-    (define-key dired-mode-map (kbd "E")
-      (defun init:dired-execute (arg)
-        "ファイルを関連付けされたプログラムで開く.
-プリフィクスキーが入力されている場合はカレントディレクトリをエクスプローラで開く."
-        (interactive "P")
-        (if arg
-            (w32-shell-execute nil ".")
-          (w32-shell-execute nil (dired-get-file-for-visit))))))
+  (autoload 'browse-url-default-browser "browse-url")
+  (define-key dired-mode-map (kbd "E")
+    (defun init:dired-execute (arg)
+      "ファイルを関連付けされたプログラムで開く.
+プリフィクスキーが入力されている場合はカレントディレクトリを開く."
+      (interactive "P")
+      (browse-url-default-browser (if arg "." (dired-get-file-for-visit)))))
 
   (define-key dired-mode-map (kbd "v")
     (defun init:dired-view-other-window ()

@@ -1522,13 +1522,16 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 
   (with-eval-after-load "magit"
     (defadvice magit-push-dwim (before init:ssh-agent-with-magit-push activate)
+      "git push 前に ssh-add 実行."
       (ssh-agent-add-key))
 
     (defadvice magit-fetch (before init:ssh-agent-with-magit-fetch activate)
+      "git fetch 前に ssh-add 実行."
       (ssh-agent-add-key)))
 
   (with-eval-after-load "tramp-sh"
     (defadvice tramp-send-command (before init:ssh-agent-with-tramp activate)
+      "リモートコマンド実行前に ssh-add 実行."
       (ssh-agent-add-key)))
   )
 

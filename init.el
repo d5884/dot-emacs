@@ -105,9 +105,19 @@ ORIGINAL が non-nil であれば最後に連結される."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; ロードパス追加
 
-;; .emacs.d を init.el が置いてある場所にする
-;; (setq user-emacs-directory (file-name-directory
-;;                          (or (buffer-file-name) load-file-name)))
+;; ポータブル化
+(when after-init-time
+  (let ((this-file (or (buffer-file-name) load-file-name)))
+    ;; .emacs.d を init.el が置いてある場所にする
+    (setq user-emacs-directory (file-name-directory this-file))
+
+    ;; -l init.el で起動したときも after-init-hook を実行する
+    (setq after-init-hook nil)
+    (with-eval-after-load this-file (run-hooks 'after-init-hook))
+
+    ;; HOME 設定
+    (unless (getenv "HOME")
+      (setenv "HOME" (expand-file-name ".." user-emacs-directory)))))
 
 ;; (存在するなら) ~/.emacs.d/lisp および直下のディレクトリを load-path へ追加
 ;; データフォルダ等もあるので再帰的には追加しない

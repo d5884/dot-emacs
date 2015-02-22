@@ -583,6 +583,20 @@ Daemon 起動時以外は表示関数を直接潰す"
 (with-eval-after-load "bookmark"
   (setq bookmark-default-file (init:emacs-d "bookmark")))
 
+;; calculator
+(global-set-key (kbd "C-z C-c") 'calculator)
+
+(eval-when-compile
+  (declare-function calculator-save-and-quit "calculator"))
+(with-eval-after-load "calculator"
+  ;; C-ret は cua-mode に上書きされてるので
+  (define-key calculator-mode-map (kbd "C-i")
+    (defun init:calculator-quit-and-yank ()
+      "`calculator' を終了して結果を `yank' する."
+      (interactive)
+      (calculator-save-and-quit)
+      (yank))))
+
 ;; calendar
 (with-eval-after-load "calendar"
   ;; solor / geocode from http://api.knecht.jp/geocoding

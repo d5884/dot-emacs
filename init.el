@@ -651,6 +651,8 @@ Daemon 起動時以外は表示関数を直接潰す"
 ;; dired
 (global-set-key (kbd "C-x C-d") 'dired-other-window)
 
+(eval-when-compile
+  (declare-function browse-url-default-browser "browse-url"))
 (with-eval-after-load "dired"
   (eval-when-compile
     (declare-function dired-get-file-for-visit "dired"))

@@ -111,6 +111,7 @@ ORIGINAL が non-nil であれば最後に連結される."
 
 ;; (存在するなら) ~/.emacs.d/lisp および直下のディレクトリを load-path へ追加
 ;; データフォルダ等もあるので再帰的には追加しない
+;; normal-top-level-add-subdirs-to-load-path は地味に遅いから使わない
 (setq load-path
       (append
        (init:awhen (init:locate-directory (init:emacs-d "lisp"))
@@ -1675,7 +1676,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; 追加関数定義
+;; 持ち歩きたい関数定義
 
 ;;;;;;;;;;;;;;;;;;;
 ;; scratch 自動保存/永続化

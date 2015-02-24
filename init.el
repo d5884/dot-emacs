@@ -937,47 +937,6 @@ Daemon 起動時以外は表示関数を直接潰す"
     )
   )
 
-;; gswin32
-;;  http://www.khotta.org/ghost/index.html
-;;  http://w32tex.org/index-ja.html
-(when (eq system-type 'windows-nt)
-  (init:awhen (init:aif (executable-find "gswin32c")
-                 (expand-file-name ".." (file-name-directory it))
-               (init:find-directory '("c:/gs" "c:/gnupack/app/gs")))
-      (defvar gswin-command (expand-file-name "bin/gswin32c" it)
-        "ghostscript の実行プログラム.")
-
-      (unless (getenv "GS_LIB")
-        (setenv "GS_LIB" (init:concat-system-file-names '("lib" "kanji" "Resource/Init") it)))
-      (unless (getenv "GS_DLL")
-        (setenv "GS_DLL" (init:system-file-name "bin/gsdll32.dll" it)))
-      (setenv "PATH" (init:concat-system-file-names '("bin" "lib") it (getenv "PATH")))
-
-      ;; lpr
-      (with-eval-after-load "lpr"
-        (setq printer-name nil))
-
-      ;; gs
-      (with-eval-after-load "gs"
-        (setq gs-command gswin-command
-              gs-device "display"))
-
-      ;; ps-print-buffer
-      (with-eval-after-load "ps-print"
-        (setq ps-print-color-p t
-              ps-lpr-command gswin-command
-              ps-lpr-switches '("-sDEVICE=mswinpr2" "-dNOPAUSE" "-dBATCH" "-dWINKANJI")
-              ps-multibyte-buffer 'non-latin-printer
-              ps-printer-name nil
-              ps-printer-name-option nil))
-
-      ;; doc-view
-      (with-eval-after-load "doc-view"
-        (setq doc-view-ghostscript-program gswin-command)
-        (push "-dWINKANJI" doc-view-ghostscript-options)
-        )
-      ))
-
 ;; hideshow
 (with-eval-after-load "hideshow"
   (diminish 'hs-minor-mode)

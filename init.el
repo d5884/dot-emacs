@@ -1402,6 +1402,7 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
         'term-send-raw))))
 
 ;; show-paren
+(setq show-paren-delay 0)
 (show-paren-mode t)
 
 ;; skk / (package-install 'ddskk)
@@ -1806,6 +1807,10 @@ RENEW が non-nil の場合は新しい状態を作る.
     (face-spec-reset-face 'cua-global-mark)
     (set-face-attribute 'cua-global-mark nil :inherit 'region
                         :weight 'bold))
+
+  (with-eval-after-load "paren"
+    (face-spec-reset-face 'show-paren-match)
+    (set-face-attribute 'show-paren-match nil :inherit 'highlight))
 
   (when (> (display-color-cells nil) 256)
     (with-eval-after-load "stripe-buffer"

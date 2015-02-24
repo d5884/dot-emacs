@@ -1797,52 +1797,31 @@ RENEW が non-nil の場合は新しい状態を作る.
 (cl-flet ((color-candidate (&rest colors)
                            (cl-find-if #'color-defined-p colors)))
   (require 'color)
-  (set-face-attribute 'region nil
-                      :foreground (color-candidate "SystemHilightText" "White")
-                      :background (color-candidate "SystemHilight" "Royal Blue"))
 
-  (set-face-attribute 'isearch nil
-                      :background (color-darken-name (color-candidate "SystemHilight"
-                                                                      "Royal Blue") 10)
-                      :inherit 'region)
-
-  (set-face-attribute 'lazy-highlight nil
-                      :background (color-darken-name (color-candidate "SystemWindow"
-                                                                      "White") 40)
-                      :inherit 'isearch)
-
-  (face-spec-reset-face 'match)
-  (set-face-attribute 'match nil :inherit 'lazy-highlight)
+  (load-theme 'wombat t)
 
   (with-eval-after-load "cua-base"
     (face-spec-reset-face 'cua-rectangle)
     (set-face-attribute 'cua-rectangle nil :inherit 'region)
     (face-spec-reset-face 'cua-global-mark)
     (set-face-attribute 'cua-global-mark nil :inherit 'region
-                        :weight 'bold)
-    )
-
-  (with-eval-after-load "paren"
-    (set-face-attribute 'show-paren-match nil
-                        :weight 'bold
-                        :foreground "#005"
-                        :background "#ccf")
-    (set-face-attribute 'show-paren-mismatch nil
-                        :weight 'bold
-                        :foreground "#700"
-                        :background "#fcc")
-    )
+                        :weight 'bold))
 
   (when (> (display-color-cells nil) 256)
     (with-eval-after-load "stripe-buffer"
       (set-face-attribute 'stripe-highlight nil
-                          :background "gray97")))
+                          :background
+                          (if (eq 'light (frame-parameter nil 'background-mode))
+                              (color-darken-name (face-background 'default) 3)
+                            (color-lighten-name (face-background 'default) 3)))))
 
   (with-eval-after-load "mozc"
     (set-face-attribute 'mozc-cand-overlay-even-face nil
+                        :foreground "black"
                         :background "gray80")
+    (face-spec-reset-face 'mozc-cand-overlay-odd-face)
     (set-face-attribute 'mozc-cand-overlay-odd-face nil
-                        :background "gray80")
+                        :inherit 'mozc-cand-overlay-even-face)
     (set-face-attribute 'mozc-cand-overlay-footer-face nil
                         :foreground "white"
                         :background "gray50")
@@ -1854,8 +1833,7 @@ RENEW が non-nil の場合は新しい状態を作る.
                         :foreground "gray46"))
 
   ;; カーソルカラー
-  (let ((normal (if (eq (frame-parameter nil 'background-mode) 'dark)
-                    "white" "black"))
+  (let ((normal (face-background 'cursor))
         (ime "dark red"))
 
     (set-cursor-color normal)

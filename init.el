@@ -1095,7 +1095,7 @@ Daemon 起動時以外は表示関数を直接潰す"
         ad-do-it))
     ))
 
-;; mozc / https://code.google.com/p/mozc/source/browse/trunk/src/unix/emacs/mozc.el
+;; mozc / (package-install 'mozc)
 ;;    and http://www49.atwiki.jp/ntemacs?cmd=upload&act=open&pageid=50&file=mozc_emacs_helper.zip
 (when (and (executable-find "mozc_emacs_helper")
            (require 'mozc nil t))
@@ -1134,7 +1134,7 @@ Daemon 起動時以外は表示関数を直接潰す"
     (setq mozc-leim-title "[あ]")
     (setq mozc-mode-line-indicator-title-format "[%s]"))
 
-  ;; mozc-popup / git clone https://github.com/d5884/mozc-popup
+  ;; mozc-popup / (package-install 'mozc-popup)
   (when (and (require 'popup nil t)
              (require 'mozc-popup nil t))
     (setq mozc-candidate-style 'popup)))

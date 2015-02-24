@@ -171,14 +171,14 @@ ORIGINAL が non-nil であれば最後に連結される."
           width1-charset-list)
       ;; ベースとなる ASCII フォント
       (init:awhen (font-candidate "Consolas:pixelsize=15:weight=normal:slant=normal"
-                                 "DejaVu Sans Mono-11:weight=normal:slant=normal")
+                                  "DejaVu Sans Mono-11:weight=normal:slant=normal")
 
         ;; ASCII
         (set-fontset-font fontset 'ascii it)
 
         ;; アクセント付きアルファベット類/ロシア語/ギリシャ語
         (init:awhen (font-candidate "Consolas"
-                                   "DefaVu Sans Mono")
+                                    "DefaVu Sans Mono")
           (dolist (charset '(latin-iso8859-1
                              latin-iso8859-2
                              latin-iso8859-3
@@ -191,8 +191,8 @@ ORIGINAL が non-nil であれば最後に連結される."
         ;; 日本語 / meiryoKe_602r1.ttc
         ;; http://okrchicagob.blog4.fc2.com/blog-entry-121.html
         (init:awhen (font-candidate "MeiryoKe_Console"
-                                   "VL ゴシック"
-                                   "ＭＳ ゴシック")
+                                    "VL ゴシック"
+                                    "ＭＳ ゴシック")
           (set-fontset-font fontset 'unicode
                             `(,it . "iso10646-1") nil 'append))
 
@@ -1004,10 +1004,10 @@ Daemon 起動時以外は表示関数を直接潰す"
 (with-eval-after-load "ispell"
   ;; from http://www.an.econ.kobe-u.ac.jp/~namba/meadow/words.lzh
   (init:awhen (locate-file "words"
-                          `(,(init:emacs-d "share")
-                            ,user-emacs-directory
-                            "/usr/dict"
-                            "/usr/share/dict"))
+                           `(,(init:emacs-d "share")
+                             ,user-emacs-directory
+                             "/usr/dict"
+                             "/usr/share/dict"))
     (setq ispell-alternate-dictionary it)))
 
 ;; magit / (package-install 'magit)
@@ -1036,7 +1036,7 @@ Daemon 起動時以外は表示関数を直接潰す"
 ;; migemo / (package-install 'migemo)
 ;; cmigemo / http://www.kaoriya.net/software/cmigemo
 (init:awhen (or (executable-find "cmigemo")
-               (executable-find "migemo"))
+                (executable-find "migemo"))
   (defvar init:org-isearch-lazy-highlight-search
     (symbol-function 'isearch-lazy-highlight-search)
     "migemo に置き換えられる前の `isearch-lazy-highlight-search'.")
@@ -1365,18 +1365,18 @@ SENTINEL は元々設定されていたセンチネルが実行されてから�
 また Emacs 終了時にプロセスも終了させる.
 PROCESS が nil の場合はカレントバッファのプロセスに設定する."
   (init:awhen (or (and (processp process)
-                      process)
-                 (get-buffer-process (current-buffer)))
+                       process)
+                  (get-buffer-process (current-buffer)))
     (set-process-query-on-exit-flag it nil)
     ;; PROCESS のバッファを削除し、ウィンドウが開いていたら閉じる
     (init:add-process-sentinel it
-                              (lambda (process event)
-                                (let ((buf (process-buffer process)))
-                                  (when (and buf (buffer-live-p buf))
-                                    (dolist (win (get-buffer-window-list buf))
-                                      (unless (one-window-p)
-                                        (delete-window win))
-                                      (kill-buffer buf))))))
+                               (lambda (process event)
+                                 (let ((buf (process-buffer process)))
+                                   (when (and buf (buffer-live-p buf))
+                                     (dolist (win (get-buffer-window-list buf))
+                                       (unless (one-window-p)
+                                         (delete-window win))
+                                       (kill-buffer buf))))))
     ))
 
 ;; shell
@@ -1624,8 +1624,8 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
   (setq yas-prompt-functions (delq 'yas-x-prompt yas-prompt-functions))
   (setq yas-expand-only-for-last-commands '(self-insert-command ac-expand))
 
- (when (fboundp 'yas--load-yas-setup-file)
-   (init:make-silently-loading yas--load-yas-setup-file))
+  (when (fboundp 'yas--load-yas-setup-file)
+    (init:make-silently-loading yas--load-yas-setup-file))
 
   (yas-global-mode t)
 
@@ -1709,7 +1709,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
           snapshot-name)
       (while (file-exists-p
               (setq snapshot-name (expand-file-name
-                                (format name-base serial) init:scratch-snapshot-directory)))
+                                   (format name-base serial) init:scratch-snapshot-directory)))
         (setq serial (1+ serial)))
       (with-current-buffer it
         (save-match-data
@@ -1855,14 +1855,14 @@ RENEW が non-nil の場合は新しい状態を作る.
     ;; mozc-el-extensions / git clone https://github.com/iRi-E/mozc-el-extensions
     (when (and (not (featurep 'ccc))
                (require 'mozc-cursor-color nil t))
-        (setq mozc-cursor-color-alist
-              `((direct        . ,normal)
-                (read-only     . ,normal)
-                (hiragana      . ,ime)
-                (full-katakana . ,ime)
-                (half-ascii    . ,ime)
-                (full-ascii    . ,ime)
-                (half-katakana . ,ime))))
+      (setq mozc-cursor-color-alist
+            `((direct        . ,normal)
+              (read-only     . ,normal)
+              (hiragana      . ,ime)
+              (full-katakana . ,ime)
+              (half-ascii    . ,ime)
+              (full-ascii    . ,ime)
+              (half-katakana . ,ime))))
     )
   )
 

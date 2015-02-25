@@ -1129,10 +1129,7 @@ Daemon 起動時以外は表示関数を直接潰す"
     (unless ad-return-value
       (setq ad-return-value (mozc-helper-process-recv-response))))
 
-  ;; mozc-el-extensions / git clone https://github.com/iRi-E/mozc-el-extensions
-  (when (require 'mozc-mode-line-indicator nil t)
-    (setq mozc-leim-title "[あ]")
-    (setq mozc-mode-line-indicator-title-format "[%s]"))
+  (setq mozc-leim-title "[あ]")
 
   ;; mozc-popup / (package-install 'mozc-popup)
   (when (and (require 'popup nil t)
@@ -1856,20 +1853,7 @@ RENEW が non-nil の場合は新しい状態を作る.
     (when (package-installed-p 'ddskk)
       (eval `(with-eval-after-load "skk"
                (setq skk-cursor-hiragana-color ,ime))))
-
-    ;; mozc-el-extensions / git clone https://github.com/iRi-E/mozc-el-extensions
-    (when (and (not (featurep 'ccc))
-               (require 'mozc-cursor-color nil t))
-      (setq mozc-cursor-color-alist
-            `((direct        . ,normal)
-              (read-only     . ,normal)
-              (hiragana      . ,ime)
-              (full-katakana . ,ime)
-              (half-ascii    . ,ime)
-              (full-ascii    . ,ime)
-              (half-katakana . ,ime))))
-    )
-  )
+    ))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

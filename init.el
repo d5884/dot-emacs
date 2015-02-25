@@ -1100,6 +1100,7 @@ Daemon 起動時以外は表示関数を直接潰す"
 (when (and (executable-find "mozc_emacs_helper")
            (require 'mozc nil t))
   (setq default-input-method "japanese-mozc")
+  (setq mozc-leim-title "[あ]")
 
   (when (memq system-type '(windows-nt cygwin))
     (defadvice mozc-session-execute-command (after init:mozc-session-execute-command activate)
@@ -1128,8 +1129,6 @@ Daemon 起動時以外は表示関数を直接潰す"
     "他プロセスが終了した際に accept-process-output がタイムアウトする問題対策."
     (unless ad-return-value
       (setq ad-return-value (mozc-helper-process-recv-response))))
-
-  (setq mozc-leim-title "[あ]")
 
   ;; mozc-popup / (package-install 'mozc-popup)
   (when (and (require 'popup nil t)

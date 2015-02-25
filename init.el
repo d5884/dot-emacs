@@ -1177,16 +1177,7 @@ Daemon 起動時以外は表示関数を直接潰す"
   (setq popwin:reuse-window nil)
   (setq popwin:special-display-config
         (append
-         '("*Process List*"
-           "*Proced*"
-           ;; vc
-           "*vc-diff*"
-           "*vc-change-log*"
-           ;; calendar and diary
-           (calendar-mode :stick t)
-           "*Sunrise/Sunset Times*"
-           "*Phases of Moon*"
-           "*Holidays*"
+         '((calendar-mode :stick t)
            (diary-fancy-display-mode :noselect t)
            ("*Shell Command Output*" :stick t :noselect t)
            ("*Occur*" :stick t)         ; not mode because occur-edit
@@ -1197,8 +1188,12 @@ Daemon 起動時以外は表示関数を直接潰す"
            (help-mode :stick t)
            (dired-mode :stick t))
          popwin:special-display-config))
-  (popwin-mode 1)
-  )
+  ;; special-mode 派生はとりえあえず全部 popwin 管轄下へ
+  (add-to-list 'popwin:special-display-config
+               (list (lambda (b)
+                       (with-current-buffer b
+                         (derived-mode-p 'special-mode)))) t)
+  (popwin-mode 1))
 
 ;; quail-japanese
 (with-eval-after-load "japanese"

@@ -1829,24 +1829,20 @@ RENEW が non-nil の場合は新しい状態を作る.
                         :foreground "gray46"))
 
   ;; カーソルカラー
-  (let ((normal (face-background 'cursor))
-        (ime "dark red"))
-
-    (set-cursor-color normal)
-
+  (let ((ime-color "dark red"))
     ;; input method 全般
     ;; ccc / (package-install 'ccc)
     (when (require 'ccc nil t)
       (ccc-setup)
       (add-hook 'input-method-activate-hook
-                (eval `(lambda () (ccc-set-buffer-local-cursor-color ,ime))))
+                (eval `(lambda () (ccc-set-buffer-local-cursor-color ,ime-color))))
       (add-hook 'input-method-deactivate-hook
                 (lambda () (ccc-set-cursor-color-buffer-local nil))))
 
     ;; skk
     (when (package-installed-p 'ddskk)
-      (eval `(with-eval-after-load "skk"
-               (setq skk-cursor-hiragana-color ,ime))))
+      (eval-after-load "skk"
+        `(setq skk-cursor-hiragana-color ,ime-color)))
     ))
 
 

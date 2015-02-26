@@ -50,9 +50,17 @@ BODY 内では PRED の評価結果を `it' で参照出来る."
   "NAME をシステムで認識可能なファイルパスに変換する.
 `expand-file-name' により DIRECTORY を基準にして絶対パスに変換される.
 環境変数などの Emacs 外のプログラムに参照される場合に用いる."
-  (if (eq system-type 'windows-nt)
-      `(subst-char-in-string ?/ ?\\ (expand-file-name ,name ,directory))
-    `(expand-file-name ,name ,directory)))
+  `(cond
+    ((eq system-type 'windows-nt)
+     (subst-char-in-string ?/ ?\\ (expand-file-name ,name ,directory)))
+    ((eq system-type 'cygwin)
+     (replace-regexp-in-string "\r?\n" ""
+                               (shell-command-to-string
+                                (format "cygpath -w \"%s\""
+                                        (shell-quote-argument
+                                         (expand-file-name ,name ,directory))))))
+    (t
+     (expand-file-name ,name ,directory))))
 
 (defmacro init:concat-system-file-names (names &optional directory original)
   "NAMES をシステムで認識可能なファイルパスの連結に変換する.
@@ -1049,18 +1057,11 @@ Daemon 起動時以外は表示関数を直接潰す"
       (setq migemo-user-dictionary nil)
       (setq migemo-regex-dictionary nil)
       (setq migemo-coding-system 'utf-8)
-      (setq migemo-dictionary (locate-file "utf-8/migemo-dict"
-                                           `(,(init:emacs-d "share/migemo")
-                                             "/usr/local/share/migemo"
-                                             "/usr/share/migemo")
-                                           ))
-      (when (eq system-type 'cygwin)
-        (setq migemo-dictionary
-              (replace-regexp-in-string
-               "\r?\n" "" (shell-command-to-string
-                           (format "cygpath -w \"%s\""
-                                   (shell-quote-argument migemo-dictionary))))))
-      )
+      (setq migemo-dictionary
+            (init:system-file-name (locate-file "utf-8/migemo-dict"
+                                                `(,(init:emacs-d "share/migemo")
+                                                  "/usr/local/share/migemo"
+                                                  "/usr/share/migemo")))))
 
     (setq migemo-use-pattern-alist t)
     (setq migemo-use-frequent-pattern-alist t)

@@ -95,8 +95,7 @@ ORIGINAL が non-nil であれば最後に連結される."
        (cl-letf (((symbol-function 'load)
                   (lambda (file &optional noerror nomessage nosuffix must-suffix)
                     (funcall org-load file noerror t nosuffix must-suffix))))
-         ad-do-it)
-       )))
+         ad-do-it))))
 
 ;; before emacs-24.4
 (unless (fboundp 'with-eval-after-load)
@@ -107,8 +106,7 @@ ORIGINAL が non-nil であれば最後に連結される."
        `(funcall ,(lambda () ,@body))))
 
   (font-lock-add-keywords 'emacs-lisp-mode
-                          '(("with-eval-after-load" . 'font-lock-keyword-face)))
-  )
+                          '(("with-eval-after-load" . 'font-lock-keyword-face))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; ロードパス追加
@@ -222,16 +220,14 @@ ORIGINAL が non-nil であれば最後に連結される."
             (setq char-width-table table)))
 
         ;; フレームに設定
-        (add-to-list 'default-frame-alist (cons 'font fontset))
-        )))
+        (add-to-list 'default-frame-alist (cons 'font fontset)))))
 
   ;; ウィンドウサイズ
   ;; w32-resume-frame / git clone https://github.com/d5884/w32-resume-frame
   (if (require 'w32-resume-frame nil t)
       (w32-resume-frame-activate)
     (setq initial-frame-alist `((top . 60) (left . 120) ,@initial-frame-alist)))
-  (setq default-frame-alist `((width . 100) (height . 40) ,@default-frame-alist))
-  )
+  (setq default-frame-alist `((width . 100) (height . 40) ,@default-frame-alist)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Cygwin 連携
@@ -256,8 +252,7 @@ ORIGINAL が non-nil であれば最後に連結される."
                                              (getenv "USERPROFILE")
                                              (getenv "LOCALAPPDATA")
                                              (getenv "APPDATA")
-                                             (getenv "ProgramFiles")
-                                             )))))))
+                                             (getenv "ProgramFiles"))))))))
     (when root-dir
       ;; パスが通ってなければ通す
       (unless cygdll
@@ -367,9 +362,7 @@ ORIGINAL が non-nil であれば最後に連結される."
                 ad-do-it
                 (setq rest (substring rest w32-pipe-limit)))
               (ad-set-arg 1 rest)
-              ad-do-it
-              )))
-        )
+              ad-do-it))))
 
       ;; cygwin-mount / (package-install 'cygwin-mount)
       (when (require 'cygwin-mount nil t)
@@ -380,8 +373,7 @@ ORIGINAL が non-nil であれば最後に連結される."
       ;; gcc -o qkill.exe qkill.c
       ;; git clone https://github.com/d5884/fakecygpty
       (when (require 'fakecygpty nil t)
-        (fakecygpty-activate))
-      )))
+        (fakecygpty-activate)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; パス追加
@@ -392,9 +384,7 @@ ORIGINAL が non-nil であれば最後に連結される."
 
 ;; Ctrl-h を DEL に
 (when (load "term/bobcat" nil t)
-  (terminal-init-bobcat)
-  ;; (setq help-char ?\C-?)
-  )             ; => C-h
+  (terminal-init-bobcat))
 
 ;; ignore はヘルプ等に表示しない
 (put 'ignore 'suppress-keymap t)
@@ -453,8 +443,7 @@ ORIGINAL が non-nil であれば最後に連結される."
     (global-set-key (kbd "<C-mouse-2>") (defun init:text-scale-reset ()
                                           "テキストのスケーリングをリセットする."
                                           (interactive)
-                                          (text-scale-set 0)))
-    ))
+                                          (text-scale-set 0)))))
 
 (when (display-multi-frame-p)
   (global-set-key [remap save-buffers-kill-emacs]
@@ -569,8 +558,7 @@ Daemon 起動時以外は表示関数を直接潰す"
 
 ;; auth-source
 (with-eval-after-load "auth-source"
-  (setq auth-sources (cons (init:emacs-d "authinfo.gpg") auth-sources))
-  )
+  (setq auth-sources (cons (init:emacs-d "authinfo.gpg") auth-sources)))
 
 ;; auto-complete-mode / (package-install 'auto-complete)
 (when (require 'auto-complete-config nil t)
@@ -584,8 +572,7 @@ Daemon 起動時以外は表示関数を直接潰す"
   (setq ac-use-menu-map t)
 
   (when (require 'pos-tip nil t)
-    (setq ac-quick-help-prefer-pos-tip t))
-  )
+    (setq ac-quick-help-prefer-pos-tip t)))
 
 ;; bookmark
 (with-eval-after-load "bookmark"
@@ -627,9 +614,7 @@ Daemon 起動時以外は表示関数を直接潰す"
           (append japanese-holidays holiday-local-holidays holiday-other-holidays))
 
     (add-hook 'today-visible-calendar-hook 'japanese-holiday-mark-weekend)
-    (add-hook 'today-invisible-calendar-hook 'japanese-holiday-mark-weekend)
-    )
-  )
+    (add-hook 'today-invisible-calendar-hook 'japanese-holiday-mark-weekend)))
 
 ;; cc-mode
 (with-eval-after-load "cc-mode"
@@ -672,9 +657,7 @@ Daemon 起動時以外は表示関数を直接潰す"
                                              (when (get-buffer-window buffer)
                                                (delete-window (get-buffer-window buffer))))))
                                        nil t)))
-                 ad-do-it))))
-    )
-  )
+                 ad-do-it))))))
 
 ;; cua-mode
 (when (require 'cua-base nil t)
@@ -692,8 +675,9 @@ Daemon 起動時以外は表示関数を直接潰す"
   (setq dired-dwim-target t)
   (setq dired-isearch-filenames t)
   (setq dired-listing-switches "-lAF")
-  (if (eq system-type 'windows-nt)
-      (with-eval-after-load "ls-lisp"
+  (if (and (featurep 'ls-lisp)
+           (not ls-lisp-use-insert-directory-program))
+      (progn
         (setq ls-lisp-dirs-first t)
         (setq ls-lisp-format-time-list '("%Y-%m-%d %H:%M" "%Y-%m-%d %H:%M"))
         (setq ls-lisp-use-localized-time-format t))
@@ -742,8 +726,7 @@ Daemon 起動時以外は表示関数を直接潰す"
                               (eq popwin:popup-buffer prev-buffer))
                          (setq popwin:popup-buffer (current-buffer)))
                      (kill-buffer prev-buffer)
-                     (dired-sort-other (setq dired-actual-switches switch))))))
-          ))
+                     (dired-sort-other (setq dired-actual-switches switch))))))))
 
   ;; find-dired
   (with-eval-after-load "find-dired"
@@ -755,14 +738,12 @@ Daemon 起動時以外は表示関数を直接潰す"
       (defadvice find-grep-dired (around init:find-grep-replace activate)
         "lgrep がちゃんと動かないので普通の grep に置き換え."
         (let ((grep-program "grep"))
-          ad-do-it)))
-    )
+          ad-do-it))))
 
   ;; dired-x は導入するが C-x C-j は skk 等で使用
   (let ((cxcj (key-binding (kbd "C-x C-j"))))
     (when (require 'dired-x nil t)
-      (global-set-key (kbd "C-x C-j") cxcj)))
-  )
+      (global-set-key (kbd "C-x C-j") cxcj))))
 
 ;; ediff
 (with-eval-after-load "ediff"
@@ -793,8 +774,7 @@ Daemon 起動時以外は表示関数を直接潰す"
                   (when (and (boundp 'init:ediff-kill-on-quit)
                              init:ediff-kill-on-quit)
                     (kill-buffer))))
-              (set-window-configuration init:ediff-window-configuration-stash)))
-  )
+              (set-window-configuration init:ediff-window-configuration-stash))))
 
 ;; eldoc
 (with-eval-after-load "eldoc"
@@ -824,9 +804,7 @@ Daemon 起動時以外は表示関数を直接潰す"
               (eldoc-mode t)
               (add-hook 'after-save-hook
                         'init:byte-compile-current-file-if-necessary
-                        nil t)
-              ))
-  )
+                        nil t))))
 
 ;; eww
 (with-eval-after-load "eww"
@@ -842,8 +820,7 @@ Daemon 起動時以外は表示関数を直接潰す"
     (cl-letf (((symbol-function 'find-coding-systems-string)
                (lambda (string)
                  (list buffer-file-coding-system))))
-      ad-do-it))
-  )
+      ad-do-it)))
 
 ;; executable-make-buffer-executable
 (add-hook 'after-save-hook 'executable-make-buffer-file-executable-if-script-p)
@@ -865,8 +842,7 @@ Daemon 起動時以外は表示関数を直接潰す"
     (global-set-key (kbd "[") 'skeleton-pair-insert-maybe)
     (global-set-key (kbd "{") 'skeleton-pair-insert-maybe)
     ;; (global-set-key (kbd "`") 'skeleton-pair-insert-maybe)
-    (global-set-key (kbd "\"") 'skeleton-pair-insert-maybe)
-    ))
+    (global-set-key (kbd "\"") 'skeleton-pair-insert-maybe)))
 
 ;; flycheck / (package-install 'flycheck)
 (when (package-installed-p 'flycheck)
@@ -903,24 +879,20 @@ Daemon 起動時以外は表示関数を直接潰す"
                                     (nnimap-address "imap.gmail.com")
                                     (nnimap-server-port 993)
                                     (nnimap-stream ssl)))
-  (setq gnus-ignored-newsgroups "^to\\.\\|^[0-9. ]+\\( \\|$\\)\\|^[\"]\"[#'()]")
-  )
+  (setq gnus-ignored-newsgroups "^to\\.\\|^[0-9. ]+\\( \\|$\\)\\|^[\"]\"[#'()]"))
 
 (with-eval-after-load "message"
   (setq message-send-mail-function 'smtpmail-send-it)
-  (setq message-auto-save-directory nil)
-  )
+  (setq message-auto-save-directory nil))
 
 (with-eval-after-load "sendmail"
-  (setq send-mail-function 'smtpmail-send-it)
-  )
+  (setq send-mail-function 'smtpmail-send-it))
 
 (with-eval-after-load "smtpmail"
   (setq smtpmail-smtp-server "smtp.gmail.com")
   (setq smtpmail-smtp-service 465)
   (setq smtpmail-stream-type 'tls)
-  (setq smtpmail-local-domain "gmail.com")
-  )
+  (setq smtpmail-local-domain "gmail.com"))
 
 ;; gnutls
 (when (eq system-type 'windows-nt)
@@ -941,9 +913,7 @@ Daemon 起動時以外は表示関数を直接潰す"
                         (format "%s <C> <R> - <F>" grep-command))
     (grep-apply-setting 'grep-find-template
                         (format "find . <X> -type f <F> -exec %s <C> <R> - <N> {} +"
-                                grep-command))
-    )
-  )
+                                grep-command))))
 
 ;; hideshow
 (with-eval-after-load "hideshow"
@@ -988,9 +958,7 @@ Daemon 起動時以外は表示関数を直接潰す"
           (select-window selected)
           (ido-visit-buffer
            (get-buffer (car ido-matches)) t)
-          (select-window (minibuffer-window))))
-      ))
-  )
+          (select-window (minibuffer-window)))))))
 
 ;; image+ / (package-install 'image+)
 (with-eval-after-load "image"
@@ -1028,8 +996,7 @@ Daemon 起動時以外は表示関数を直接潰す"
   (with-eval-after-load "session"
     (setq session-set-file-name-exclude-regexp
           (concat session-set-file-name-exclude-regexp
-                  "\\|" (regexp-opt '("COMMIT_EDITMSG"))))
-    ))
+                  "\\|" (regexp-opt '("COMMIT_EDITMSG"))))))
 
 ;; man & woman
 (with-eval-after-load "woman"
@@ -1080,8 +1047,7 @@ Daemon 起動時以外は表示関数を直接潰す"
                "migemo 導入時でもハイライトを有効にする."
                (cl-letf (((symbol-function 'isearch-lazy-highlight-search)
                           init:org-isearch-lazy-highlight-search))
-                 ad-do-it
-                 ))))
+                 ad-do-it))))
 
     (with-eval-after-load "isearch"
       ;; isearch 中に leim を使用しない
@@ -1093,8 +1059,7 @@ Daemon 起動時以外は表示関数を直接潰す"
     (defadvice isearch-lazy-highlight-update (around init:suppress-error-isearch-regexp activate)
       "正規表現検索時のエラー回避."
       (ignore-errors
-        ad-do-it))
-    ))
+        ad-do-it))))
 
 ;; mozc / (package-install 'mozc)
 ;;    and http://www49.atwiki.jp/ntemacs?cmd=upload&act=open&pageid=50&file=mozc_emacs_helper.zip
@@ -1226,8 +1191,7 @@ Daemon 起動時以外は表示関数を直接潰す"
                    "\\<end\\>\\|}"
                    "#"
                    ruby-move-to-block
-                   nil))
-    )
+                   nil)))
 
   (add-hook 'ruby-mode-hook 'hs-minor-mode)
 
@@ -1310,10 +1274,7 @@ Daemon 起動時以外は表示関数を直接潰す"
           (unless (eq (window-buffer) (get-buffer sdic-buffer-name))
             (display-buffer (get-buffer sdic-buffer-name)))
           (set-window-start (get-buffer-window sdic-buffer-name) p)
-          (goto-char p)
-          ))
-      )
-    ))
+          (goto-char p))))))
 
 ;; server
 (when (and (require 'server nil t)
@@ -1335,8 +1296,7 @@ Daemon 起動時以外は表示関数を直接潰す"
           (switch-to-buffer shell-pop-last-buffer)
         (if (window-live-p shell-pop-last-window)
             ad-do-it
-          (delete-window))))
-    ))
+          (delete-window))))))
 
 ;; shell/term
 (defun init:add-process-sentinel (process sentinel)
@@ -1349,8 +1309,7 @@ SENTINEL は元々設定されていたセンチネルが実行されてから�
                               `(lambda (proc msg)
                                  (funcall (function ,org-sentinel) proc msg)
                                  (funcall (function ,sentinel) proc msg))
-                            sentinel))
-    ))
+                            sentinel))))
 
 (defun init:set-process-cleaner (&optional process)
   "PROCESS 終了時にバッファとウィンドウを削除する.
@@ -1368,8 +1327,7 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
                                      (dolist (win (get-buffer-window-list buf))
                                        (unless (one-window-p)
                                          (delete-window win))
-                                       (kill-buffer buf))))))
-    ))
+                                       (kill-buffer buf))))))))
 
 ;; shell
 (with-eval-after-load "shell"
@@ -1431,9 +1389,7 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
                                          '("JIS2" "JIS2004" "JIS3_4"
                                            "assoc" "geo" "jinmei" "station"
                                            "law" "fullname" "propernoun"
-                                           "okinawa" "edict")
-                                         )))
-                )
+                                           "okinawa" "edict")))))
 
               (when (require 'skk-study nil t)
                 (setq skk-study-backup-file nil))
@@ -1474,8 +1430,7 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
               (setq skk-show-tooltip t)
 
               (when (require 'pos-tip nil t)
-                (setq skk-tooltip-function 'pos-tip-show))
-              )))
+                (setq skk-tooltip-function 'pos-tip-show)))))
 
 ;; smart-compile / (package-install 'smart-compile)
 (when (package-installed-p 'smart-compile)
@@ -1490,8 +1445,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
         (smart-compile 4)
       (recompile)))
 
-  (global-set-key [remap compile] 'init:smart-recompile)
-  )
+  (global-set-key [remap compile] 'init:smart-recompile))
 
 ;; ssh-agent / git clone https://github.com/d5884/ssh-agent
 (when (locate-library "ssh-agent")
@@ -1509,8 +1463,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
   (with-eval-after-load "tramp-sh"
     (defadvice tramp-send-command (before init:ssh-agent-with-tramp activate)
       "リモートコマンド実行前に ssh-add 実行."
-      (ssh-agent-add-key)))
-  )
+      (ssh-agent-add-key))))
 
 ;; stripe-buffer / (package-install 'stripe-buffer)
 (when (package-installed-p 'stripe-buffer)
@@ -1560,8 +1513,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 (setq view-read-only t)
 (with-eval-after-load "view"
   (define-key view-mode-map "j" 'next-line)
-  (define-key view-mode-map "k" 'previous-line)
-  )
+  (define-key view-mode-map "k" 'previous-line))
 
 ;; windmove
 (global-set-key (kbd "C-z C-n") 'windmove-down)
@@ -1603,11 +1555,10 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
   (dolist (fn '(set-mark exchange-point-and-mark scroll-up scroll-down recenter))
     (eval `(defadvice ,fn (after ,(intern (format "init:show-yascroll-on-%s" fn)) activate)
              "スクロールバーを表示する."
-             (when (not (memq major-mode '(term-mode shell-mode)))
+             (unless (memq major-mode '(term-mode shell-mode))
                (yascroll:show-scroll-bar)))))
   (with-eval-after-load "isearch"
-    (add-hook 'isearch-update-post-hook 'yascroll:show-scroll-bar))
-  )
+    (add-hook 'isearch-update-post-hook 'yascroll:show-scroll-bar)))
 
 ;; yasnippet / (package-install 'yasnippet)
 (when (require 'yasnippet nil t)
@@ -1648,10 +1599,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
                 (mapcar (lambda (f)
                           (cons (intern (file-name-sans-extension f))
                                 (vector f 'init:auto-insert-yas-expand)))
-                        (directory-files auto-insert-directory nil "^[^.]")))
-          )))
-    )
-  )
+                        (directory-files auto-insert-directory nil "^[^.]"))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 持ち歩きたい関数定義
@@ -1689,8 +1637,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
 
     (if exists-p
         (message "*scratch* is cleaned up.")
-      (message "another *scratch* is created."))
-    ))
+      (message "another *scratch* is created."))))
 
 (defun init:scratch-buffer-snapshot ()
   "`*scratch*' バッファの内容を `init:scratch-snapshot-directory' 内に保存する."
@@ -1710,8 +1657,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
             (widen)
             (goto-char (point-min))
             (unless (re-search-forward "\\`[ \r\n\t]*\\'" nil t)
-              (write-region (point-min) (point-max) snapshot-name nil 'silent))))))
-    ))
+              (write-region (point-min) (point-max) snapshot-name nil 'silent))))))))
 
 (defun init:resume-scratch-buffer ()
   "`*scratch*' バッファの内容を復帰する."
@@ -1725,8 +1671,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
         (insert-file-contents file)
         (set-buffer-modified-p nil)
 
-        (setq init:scratch-modified-tick (buffer-chars-modified-tick))
-        ))))
+        (setq init:scratch-modified-tick (buffer-chars-modified-tick))))))
 
 (defun init:save-scratch-buffer ()
   "`*scratch*' バッファの内容を保存する."
@@ -1740,8 +1685,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
             (widen)
             (write-region (point-min) (point-max)
                           (expand-file-name init:scratch-save-file)
-                          nil 'slient)
-            ))))))
+                          nil 'slient)))))))
 
 (add-hook 'after-init-hook
           (lambda ()
@@ -1755,8 +1699,7 @@ ARG が non-nil の場合は `smart-compile' を呼び出す."
             (add-hook 'kill-buffer-query-functions
                       (lambda ()
                         (if (equal (buffer-name) "*scratch*")
-                            (progn (init:refresh-scratch-buffer) nil) t)))
-            ))
+                            (progn (init:refresh-scratch-buffer) nil) t)))))
 
 (defun init:flip-window-state (&optional renew)
   "ウィンドウ分割状態を切り替える.
@@ -1843,8 +1786,7 @@ RENEW が non-nil の場合は新しい状態を作る.
     ;; skk
     (when (package-installed-p 'ddskk)
       (eval-after-load "skk"
-        `(setq skk-cursor-hiragana-color ,ime-color)))
-    ))
+        `(setq skk-cursor-hiragana-color ,ime-color)))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

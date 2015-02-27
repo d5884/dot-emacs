@@ -315,8 +315,7 @@ ORIGINAL が non-nil であれば最後に連結される."
 
       ;; gdb 使用時のエラー回避
       (with-eval-after-load "gdb-mi"
-        (eval-when-compile
-          (declare-function gdb-input "gdb-mi"))
+        (declare-function gdb-input "gdb-mi")
         (add-hook 'gdb-mode-hook
                   (lambda ()
                     (gdb-input "-gdb-set interactive-mode auto" 'ignore))))
@@ -581,9 +580,8 @@ Daemon 起動時以外は表示関数を直接潰す"
 ;; calculator
 (global-set-key (kbd "C-z C-c") 'calculator)
 
-(eval-when-compile
-  (declare-function calculator-save-and-quit "calculator"))
 (with-eval-after-load "calculator"
+  (declare-function calculator-save-and-quit "calculator")
   ;; C-ret は cua-mode に上書きされてるので
   (define-key calculator-mode-map (kbd "C-i")
     (defun init:calculator-quit-and-yank ()
@@ -666,11 +664,9 @@ Daemon 起動時以外は表示関数を直接潰す"
 ;; dired
 (global-set-key (kbd "C-x C-d") 'dired-other-window)
 
-(eval-when-compile
-  (declare-function browse-url-default-browser "browse-url"))
 (with-eval-after-load "dired"
-  (eval-when-compile
-    (declare-function dired-get-file-for-visit "dired"))
+  (declare-function browse-url-default-browser "browse-url")
+  (declare-function dired-get-file-for-visit "dired")
 
   (setq dired-dwim-target t)
   (setq dired-isearch-filenames t)
@@ -747,6 +743,8 @@ Daemon 起動時以外は表示関数を直接潰す"
 
 ;; ediff
 (with-eval-after-load "ediff"
+  (declare-function ediff-with-current-buffer "ediff")
+
   (setq ediff-window-setup-function 'ediff-setup-windows-plain)
   (setq ediff-split-window-function 'split-window-horizontally)
 
@@ -759,7 +757,6 @@ Daemon 起動時以外は表示関数を直接潰す"
         (ediff-with-current-buffer (symbol-value (ad-get-arg 1))
           (setq-local init:ediff-kill-on-quit t)))))
 
-  (eval-when-compile (require 'ediff nil t))
   (defvar init:ediff-window-configuration-stash nil
     "`ediff' 実行前のウィンドウ状態の一時保存先.")
 
@@ -859,8 +856,7 @@ Daemon 起動時以外は表示関数を直接潰す"
 
 ;; gdb
 (with-eval-after-load "gdb-mi"
-  (eval-when-compile
-    (declare-function gdb-many-windows "gdb-mi"))
+  (declare-function gdb-many-windows "gdb-mi")
   (add-hook 'gdb-mode-hook (lambda ()
                              (gdb-many-windows)
                              (gud-tooltip-mode))))
@@ -902,8 +898,7 @@ Daemon 起動時以外は表示関数を直接潰す"
 
 ;; grep
 (with-eval-after-load "grep"
-  (eval-when-compile
-    (declare-function grep-apply-setting "grep"))
+  (declare-function grep-apply-setting "grep")
 
   (when (executable-find "lgrep")
     ;; lv 付属の多国語化 grep

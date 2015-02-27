@@ -810,9 +810,11 @@ Daemon 起動時以外は表示関数を直接潰す"
   (define-coding-system-alias 'x-euc-jp 'euc-jp)
 
   (defadvice eww-display-html (after init:eww-change-buffer-coding-system activate)
+    "エンコーディングをバッファに記録する."
     (set-buffer-file-coding-system (ad-get-arg 0)))
 
   (defadvice eww-submit (around init:eww-override-find-coding-systems-string activate)
+    "バッファと同じエンコーディングで submit する."
     (cl-letf (((symbol-function 'find-coding-systems-string)
                (lambda (_string)
                  (list buffer-file-coding-system))))

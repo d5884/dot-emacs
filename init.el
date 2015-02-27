@@ -1428,16 +1428,14 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
 
 ;; smart-compile / (package-install 'smart-compile)
 (when (package-installed-p 'smart-compile)
-  (autoload 'recompile "compile" nil t)
-
   (defun init:smart-recompile (arg)
-    "一度目は `smart-compile'、二度目は `recompile' を呼び出す.
-ARG が non-nil の場合は `smart-compile' を呼び出す."
+    "初回のみ `smart-compile' を呼び出す. 二度目以降は問合せなしに `compile' する.
+ARG が non-nil の場合は再度 `smart-compile' を呼び出す."
     (interactive "P")
     (if (or (not (local-variable-p 'compile-command))
             arg)
         (smart-compile 4)
-      (recompile)))
+      (compile compile-command)))
 
   (global-set-key [remap compile] 'init:smart-recompile))
 

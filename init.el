@@ -342,7 +342,7 @@ ORIGINAL が non-nil であれば最後に連結される."
                                         (ad-get-args ,p)))))))
 
       (when (and (= emacs-major-version 24)
-                 (= emacs-minor-version 4)) ;; 24.5 以降はどうなるかわからんので
+                 (>= emacs-minor-version 4))
         (defconst w32-pipe-limit 4096
           "Windows でのパイプバッファサイズ.")
 

@@ -298,7 +298,6 @@ ORIGINAL が non-nil であれば最後に連結される."
       (setenv "SHELL" shell-file-name)
 
       (with-eval-after-load "term"
-        (require 'shell)
         (defadvice cd (around init:cd-accept-multibyte activate)
           "`term' で/proc等に移動時の強制終了を防ぐ."
           (unless (ignore-errors ad-do-it)

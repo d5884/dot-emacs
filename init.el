@@ -93,7 +93,7 @@ ORIGINAL が non-nil であれば最後に連結される."
      "`load' 時のメッセージを抑制する."
      (let ((org-load (symbol-function 'load)))
        (cl-letf (((symbol-function 'load)
-                  (lambda (file &optional noerror nomessage nosuffix must-suffix)
+                  (lambda (file &optional noerror _nomessage nosuffix must-suffix)
                     (funcall org-load file noerror t nosuffix must-suffix))))
          ad-do-it))))
 
@@ -814,7 +814,7 @@ Daemon 起動時以外は表示関数を直接潰す"
 
   (defadvice eww-submit (around init:eww-override-find-coding-systems-string activate)
     (cl-letf (((symbol-function 'find-coding-systems-string)
-               (lambda (string)
+               (lambda (_string)
                  (list buffer-file-coding-system))))
       ad-do-it)))
 
@@ -1315,7 +1315,7 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
     (set-process-query-on-exit-flag it nil)
     ;; PROCESS のバッファを削除し、ウィンドウが開いていたら閉じる
     (init:add-process-sentinel it
-                               (lambda (process event)
+                               (lambda (process _msg)
                                  (let ((buf (process-buffer process)))
                                    (when (and buf (buffer-live-p buf))
                                      (dolist (win (get-buffer-window-list buf))

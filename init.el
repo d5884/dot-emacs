@@ -1598,7 +1598,7 @@ ARG が non-nil の場合は再度 `smart-compile' を呼び出す."
   "`*scratch*' バッファの自動保存先ファイル名.")
 
 (defvar init:scratch-snapshot-directory (init:emacs-d "snap")
-  "`*scratch*' バッファのスナップショット先ディレクトリ名")
+  "`*scratch*' バッファのスナップショット先ディレクトリ名.")
 
 (defvar init:scratch-buffer-save-interval 1
   "`*scratch*' バッファの自動保存間隔.")

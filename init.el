@@ -1119,11 +1119,6 @@ Daemon 起動時以外は表示関数を直接潰す"
 (define-key occur-mode-map (kbd "p") 'occur-prev)
 (add-hook 'occur-mode-hook 'next-error-follow-minor-mode)
 
-;; outline-minor-mode
-(add-hook 'outline-minor-mode-hook
-          (lambda ()
-            (local-set-key (kbd "C-c C-o") outline-mode-prefix-map)))
-
 ;; popup-kill-ring / (package-install 'popup-kill-ring)
 (when (require 'popup-kill-ring nil t)
   (setq popup-kill-ring-interactive-insert t)

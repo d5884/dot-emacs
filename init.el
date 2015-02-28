@@ -1133,12 +1133,10 @@ Daemon 起動時以外は表示関数を直接潰す"
   (setq popwin:special-display-config
         (append
          '((calendar-mode :stick t)
-           (diary-fancy-display-mode :noselect t)
            ("*Shell Command Output*" :stick t :noselect t)
            ("*Occur*" :stick t)         ; not mode because occur-edit
            (apropos-mode :stick t)
            (grep-mode :stick t)
-           (completion-list-mode :noselect t)
            (compilation-mode :stick t :noselect t)
            (help-mode :stick t)
            (dired-mode :stick t))

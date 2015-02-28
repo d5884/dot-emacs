@@ -325,7 +325,7 @@ ORIGINAL が non-nil であれば最後に連結される."
           (add-to-list 'Info-additional-directory-list it)))
 
       ;; NTEmacs の場合、プロセスの引数は起動した環境のコードページに依存するため
-      ;; プロセス呼び出し時に引数のみ cp932 へ強制変換する
+      ;; プロセス呼び出し時に引数のみ locale-coding-system へ強制変換する
       (dolist (pair '((call-process-region . 6)
                       (call-process . 4)
                       (start-process . 3)))
@@ -333,11 +333,11 @@ ORIGINAL が non-nil であれば最後に連結される."
               (p (cdr pair)))
           (eval `(defadvice ,f (before ,(intern (format "init:%s-encode-setup" f))
                                        activate)
-                   ,(format "実行時に%d番目以降の引数を cp932 でエンコードする." (1+ p))
+                   ,(format "実行時に%d番目以降の引数を `locale-coding-system' でエンコードする." (1+ p))
                    (ad-set-args ,p
                                 (mapcar (lambda (arg)
                                           (if (multibyte-string-p arg)
-                                              (encode-coding-string arg 'cp932)
+                                              (encode-coding-string arg locale-coding-system)
                                             arg))
                                         (ad-get-args ,p)))))))
 

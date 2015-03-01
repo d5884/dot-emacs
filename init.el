@@ -634,25 +634,27 @@ Daemon 起動時以外は表示関数を直接潰す"
   (dolist (func '(compile recompile))
     (eval `(defadvice ,func (around ,(intern (format "init:%s-silently" func)) activate)
              "エラー発生時のみ *compilation* バッファ表示."
-             (cl-letf (((symbol-function 'display-buffer) 'ignore))
-               (let ((compilation-start-hook
-                      compilation-start-hook))    ; compile/recompile から呼ばれたとき専用
-                 (add-hook 'compilation-start-hook
-                           (lambda (proc)
-                             (add-hook 'compilation-finish-functions
-                                       (lambda (buffer msg)
-                                         (with-current-buffer buffer
-                                           (font-lock-mode -1)
-                                           (font-lock-fontify-buffer)
-                                           (font-lock-mode 1)
-                                           (if (or (not (string-match "finished" msg))
-                                                   (text-property-not-all
-                                                    (point-min) (point-max)
-                                                    'compilation-message nil))
-                                               (display-buffer buffer)
-                                             (when (get-buffer-window buffer)
-                                               (delete-window (get-buffer-window buffer))))))
-                                       nil t)))
+             (let ((compilation-start-hook
+                    compilation-start-hook)) ; compile/recompile から呼ばれたとき専用
+               (add-hook 'compilation-start-hook
+                         (lambda (proc)
+                           (add-hook 'compilation-finish-functions
+                                     (lambda (buffer msg)
+                                       (with-current-buffer buffer
+                                         (font-lock-mode -1)
+                                         (font-lock-fontify-buffer)
+                                         (font-lock-mode 1)
+                                         (if (or (not (string-match "finished" msg))
+                                                 (text-property-not-all
+                                                  (point-min) (point-max)
+                                                  'compilation-message nil))
+                                             (display-buffer buffer)
+                                           (when (get-buffer-window buffer)
+                                             (delete-window (get-buffer-window buffer))))))
+                                     nil t)))
+               (cl-letf (((symbol-function 'display-buffer) 'ignore)
+                         ((symbol-function 'set-window-start) 'ignore)
+                         ((symbol-function 'set-window-point) 'ignore))
                  ad-do-it))))))
 
 ;; cua-mode

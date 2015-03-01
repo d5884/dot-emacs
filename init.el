@@ -333,7 +333,8 @@ ORIGINAL が non-nil であれば最後に連結される."
               (p (cdr pair)))
           (eval `(defadvice ,f (before ,(intern (format "init:%s-encode-setup" f))
                                        activate)
-                   ,(format "実行時に%d番目以降の引数を `locale-coding-system' でエンコードする." (1+ p))
+                   ,(format "実行時に%d番目以降の引数を `locale-coding-system' でエンコードする."
+                            (1+ p))
                    (ad-set-args ,p
                                 (mapcar (lambda (arg)
                                           (if (multibyte-string-p arg)

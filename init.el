@@ -326,6 +326,10 @@ ORIGINAL が non-nil であれば最後に連結される."
 
       ;; NTEmacs の場合、プロセスの引数は起動した環境のコードページに依存するため
       ;; プロセス呼び出し時に引数のみ locale-coding-system へ強制変換する
+      ;; クォート処理は elisp 側で行う (ダメ文字対策)
+      (remove-hook 'after-init-hook 'w32-check-shell-configuration)
+      (setq w32-quote-process-args nil)
+
       (dolist (pair '((call-process-region . 6)
                       (call-process . 4)
                       (start-process . 3)))
@@ -337,6 +341,11 @@ ORIGINAL が non-nil であれば最後に連結される."
                             (1+ p))
                    (ad-set-args ,p
                                 (mapcar (lambda (arg)
+                                          (setq arg
+                                                (concat "\""
+                                                        (replace-regexp-in-string
+                                                         "[\"\\\\]" "\\\\\\&" arg)
+                                                        "\""))
                                           (if (multibyte-string-p arg)
                                               (encode-coding-string arg locale-coding-system)
                                             arg))

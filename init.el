@@ -581,10 +581,6 @@ Daemon 起動時以外は表示関数を直接潰す"
   (when (require 'pos-tip nil t)
     (setq ac-quick-help-prefer-pos-tip t)))
 
-;; bookmark
-(with-eval-after-load "bookmark"
-  (setq bookmark-default-file (init:emacs-d "bookmark")))
-
 ;; calculator
 (global-set-key (kbd "C-z C-c") 'calculator)
 
@@ -1007,8 +1003,7 @@ Daemon 起動時以外は表示関数を直接潰す"
 
 ;; man & woman
 (with-eval-after-load "woman"
-  (setq woman-fill-frame t
-        woman-cache-filename (init:emacs-d "woman-cache")))
+  (setq woman-fill-frame t))
 
 ;; markdown-mode / (package-install 'markdown-mode)
 (when (package-installed-p 'markdown-mode)
@@ -1163,11 +1158,6 @@ Daemon 起動時以外は表示関数を直接潰す"
 ;; quail-japanese
 (with-eval-after-load "japanese"
   (setq quail-japanese-use-double-n t))
-
-;; recentf
-(with-eval-after-load "recentf"
-  ;; 基本的に使わないがファイルをホームに作らないよう設定
-  (setq recentf-save-file (init:emacs-d "recentf")))
 
 ;; ruby-mode
 ;; rubydb, etc... / (package-install 'ruby-additional)

@@ -68,7 +68,7 @@ ORIGINAL が non-nil であれば最後に連結される."
 
 (defmacro init:emacs-d (file)
   "~/.emacs.d 以下の FILE を返す."
-  `(eval-when-compile (locate-user-emacs-file ,file)))
+  `(locate-user-emacs-file ,file))
 
 (defmacro init:locate-directory (directory)
   "DIRECTORY が存在するなら返す."

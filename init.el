@@ -29,22 +29,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 設定ファイル向け関数/マクロ等
 
-(defmacro init:aif (pred then &rest else)
-  "PRED を評価し、結果が non-nil ならば THEN、nil ならば ELSE の評価結果を返す.
-THEN、ELSE 内では PRED の評価結果を `it' で参照出来る."
-  (declare (indent 2))
-  `(let ((it ,pred))
-     (if it ,then ,@else)))
-
 (defmacro init:awhen (pred &rest body)
   "PRED を評価し、結果が non-nil ならば BODY を評価し、最後の式の結果を返す.
 BODY 内では PRED の評価結果を `it' で参照出来る."
   (declare (indent 1))
-  `(init:aif ,pred (progn ,@body)))
+  `(let ((it ,pred))
+     (when it ,@body)))
 
 (font-lock-add-keywords 'emacs-lisp-mode
-                        `((,(regexp-opt '("init:aif" "init:awhen"))
-                           . 'font-lock-keyword-face)))
+                        '(("\\<init:awhen\\>" . font-lock-keyword-face)))
 
 (defmacro init:system-file-name (name &optional directory)
   "NAME をシステムで認識可能なファイルパスに変換する.

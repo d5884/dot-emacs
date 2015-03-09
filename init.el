@@ -166,8 +166,7 @@ ORIGINAL が non-nil であれば最後に連結される."
                                 (cl-find-if (lambda (f) (find-font (font-spec :name f)))
                                             font-list)))
     (let ((fontset "fontset-standard")
-          (inhibit-redisplay t)
-          width1-charset-list)
+          width-adjustment-alist)
       ;; ベースとなる ASCII フォント
       (init:awhen (font-candidate "Consolas:pixelsize=15:weight=normal:slant=normal"
                                   "DejaVu Sans Mono-11:weight=normal:slant=normal")
@@ -185,9 +184,10 @@ ORIGINAL が non-nil であれば最後に連結される."
                              cyrillic-iso8859-5
                              greek-iso8859-7))
             (set-fontset-font fontset charset it)
-            (push charset width1-charset-list)))
+            ;; 幅1に矯正
+            (push (cons charset 1) width-adjustment-alist)))
 
-        ;; 日本語 / meiryoKe_602r1.ttc
+        ;; 日本語その他 / meiryoKe_602r1.ttc
         ;; http://okrchicagob.blog4.fc2.com/blog-entry-121.html
         (init:awhen (font-candidate "MeiryoKe_Console"
                                     "VL ゴシック"
@@ -200,14 +200,23 @@ ORIGINAL が non-nil であれば最後に連結される."
           (set-fontset-font fontset 'unicode
                             `(,it . "iso10646-1") nil 'append))
 
+        ;; ローマ数字は幅2
+        (push '((#x2160 . #x216f) . 2) width-adjustment-alist) ; Ⅰ .. Ⅿ
+        (push '((#x2170 . #x217f) . 2) width-adjustment-alist) ; ⅰ .. ⅿ
+
         ;; 文字幅調整
-        (when width1-charset-list
+        (when width-adjustment-alist
           (let ((table (make-char-table nil)))
-            (dolist (charset width1-charset-list)
-              (map-charset-chars
-               (lambda (range _a)
-                 (set-char-table-range table range 1))
-               charset))
+            (dolist (pair width-adjustment-alist)
+              (let ((target (car pair))
+                    (width (cdr pair)))
+                (cond
+                 ((symbolp target)
+                  (map-charset-chars (lambda (range _arg)
+                                       (set-char-table-range table range width))
+                                     target))
+                 (t
+                  (set-char-table-range table target width)))))
             (optimize-char-table table)
             (set-char-table-parent table char-width-table)
             (setq char-width-table table)))

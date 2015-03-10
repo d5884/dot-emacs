@@ -811,6 +811,9 @@ Daemon 起動時以外は表示関数を直接潰す"
                         'init:byte-compile-current-file-if-necessary
                         nil t))))
 
+;; eval-expression
+(add-hook 'eval-expression-minibuffer-setup-hook 'eldoc-mode)
+
 ;; eww
 (with-eval-after-load "eww"
   (setq eww-search-prefix "http://www.google.co.jp/search?q=")

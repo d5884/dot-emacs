@@ -204,6 +204,9 @@ ORIGINAL が non-nil であれば最後に連結される."
         (push '((#x2160 . #x216f) . 2) width-adjustment-alist) ; Ⅰ .. Ⅿ
         (push '((#x2170 . #x217f) . 2) width-adjustment-alist) ; ⅰ .. ⅿ
 
+        ;; PinYin 発音記号
+        (push '((#x01cd . #x01dc) . 2) width-adjustment-alist) ; Ǎ .. ǜ
+
         ;; 文字幅調整
         (when width-adjustment-alist
           (let ((table (make-char-table nil)))

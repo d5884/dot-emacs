@@ -72,11 +72,13 @@ ORIGINAL が non-nil であれば最後に連結される."
 
 (defmacro init:locate-directory (directory)
   "DIRECTORY が存在するなら返す."
-  `(locate-file "." (delq nil (list ,directory)) nil (lambda (p) (when (file-exists-p p) 'dir-ok))))
+  `(locate-file "." (delq nil (list ,directory)) nil
+                (lambda (p) (when (file-exists-p p) 'dir-ok))))
 
 (defmacro init:find-directory (directories)
   "DIRECTORIES のうち最初に見付かったディレクトリを返す."
-  `(locate-file "." (delq nil (copy-sequence ,directories)) nil (lambda (p) (when (file-exists-p p) 'dir-ok))))
+  `(locate-file "." (delq nil (copy-sequence ,directories)) nil
+                (lambda (p) (when (file-exists-p p) 'dir-ok))))
 
 (defmacro init:make-silently-loading (func)
   "FUNC 内の `load' のメッセージ出力を強制的に抑制する."
@@ -1044,7 +1046,8 @@ Daemon 起動時以外は表示関数を直接潰す"
     (setq migemo-use-frequent-pattern-alist t)
     (setq migemo-pattern-alist-length 1024)
     (setq migemo-pattern-alist-file (init:emacs-d "migemo-pattern"))
-    (define-key isearch-mode-map (kbd "M-k") 'migemo-isearch-toggle-migemo) ; compatible with kogiku
+    ;; compatible key with kogiku
+    (define-key isearch-mode-map (kbd "M-k") 'migemo-isearch-toggle-migemo)
 
     ;; pty を消費しない
     (let ((process-connection-type nil))

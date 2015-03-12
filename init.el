@@ -1780,6 +1780,14 @@ RENEW が non-nil の場合は新しい状態を作る.
     (set-face-attribute 'mozc-cand-overlay-description-face nil
                         :foreground "gray46"))
 
+  ;; term 用 face に ansi-color の設定をコピー
+  (with-eval-after-load "term"
+    (require 'ansi-color nil t)
+    (dotimes (i (length ansi-color-names-vector))
+      (let ((color (aref ansi-color-names-vector i)))
+        (set-face-attribute (aref ansi-term-color-vector (1+ i)) nil
+                            :foreground color :background color))))
+
   ;; カーソルカラー
   (let ((ime-color "dark red"))
     ;; input method 全般

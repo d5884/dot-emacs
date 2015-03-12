@@ -594,7 +594,7 @@ Daemon 起動時以外は表示関数を直接潰す"
 (with-eval-after-load "calculator"
   (declare-function calculator-save-and-quit "calculator")
   ;; C-ret は cua-mode に上書きされてるので
-  (define-key calculator-mode-map (kbd "C-i")
+  (define-key calculator-mode-map [remap calculator]
     (defun init:calculator-quit-and-yank ()
       "`calculator' を終了して結果を `yank' する."
       (interactive)

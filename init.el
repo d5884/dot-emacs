@@ -989,6 +989,11 @@ Daemon 起動時以外は表示関数を直接潰す"
   (init:awhen (init:locate-directory (init:emacs-d "info"))
     (add-to-list 'Info-additional-directory-list it)))
 
+;; isearch
+(with-eval-after-load "isearch"
+  (setq isearch-allow-scroll t)
+  (setq lazy-highlight-initial-delay 0))
+
 ;; ispell
 (with-eval-after-load "ispell"
   ;; from http://www.an.econ.kobe-u.ac.jp/~namba/meadow/words.lzh

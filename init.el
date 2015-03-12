@@ -1703,7 +1703,11 @@ ARG が non-nil の場合は再度 `smart-compile' を呼び出す."
             (add-hook 'kill-buffer-query-functions
                       (lambda ()
                         (if (equal (buffer-name) "*scratch*")
-                            (progn (init:refresh-scratch-buffer) nil) t)))))
+                            (progn (init:refresh-scratch-buffer) nil) t)))
+            (add-hook 'after-save-hook
+                      (lambda ()
+                        (unless (member "*scratch*" (mapcar 'buffer-name (buffer-list)))
+                          (init:refresh-scratch-buffer))))))
 
 (defun init:flip-window-state (&optional renew)
   "ウィンドウ分割状態を切り替える.

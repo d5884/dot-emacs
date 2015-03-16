@@ -334,29 +334,53 @@ ORIGINAL が non-nil であれば最後に連結される."
       ;; NTEmacs の場合、プロセスの引数は起動した環境のコードページに依存するため
       ;; プロセス呼び出し時に引数のみ locale-coding-system へ強制変換する
       ;; クォート処理は elisp 側で行う (ダメ文字対策)
-      (remove-hook 'after-init-hook 'w32-check-shell-configuration)
-      (setq w32-quote-process-args nil)
+      (defvar init:cygcheck-cache nil
+        "cygcheck の結果のキャッシュ.")
 
-      (dolist (pair '((call-process-region . 6)
-                      (call-process . 4)
-                      (start-process . 3)))
-        (let ((f (car pair))
-              (p (cdr pair)))
-          (eval `(defadvice ,f (before ,(intern (format "init:%s-encode-setup" f))
+      (defun init:cygwin-program-p (filename)
+        "FILENAME が cygwin のプログラムかどうか判定する."
+        (let* ((target (executable-find filename))
+               (cache (assoc target init:cygcheck-cache))
+               (w32-quote-process-args nil)) ; クォート時の判定につかうので advice 中で再帰しないよう nil
+          (when target
+            (unless cache
+              (setq cache
+                    (cons target (eq 0 (call-process "bash" nil nil nil ; 自前で cygwin タイプのクォートを行う
+                                                     (concat "\"-c\" \"cygcheck \\\""
+                                                             (executable-find filename) "\\\" | grep cygwin > /dev/null\"")))))
+              (push cache init:cygcheck-cache))
+            (cdr cache))))
+
+      ;; func / prog / arg
+      (dolist (desc '((call-process-region 2 6)
+                      (call-process 0 4)
+                      (start-process 0 3)))
+        (let ((f (car desc))
+              (p (nth 1 desc))
+              (a (nth 2 desc)))
+          (eval `(defadvice ,f (around ,(intern (format "init:%s-encode-setup" f))
                                        activate)
                    ,(format "実行時に%d番目以降の引数を `locale-coding-system' でエンコードする."
-                            (1+ p))
-                   (ad-set-args ,p
-                                (mapcar (lambda (arg)
-                                          (setq arg
-                                                (concat "\""
-                                                        (replace-regexp-in-string
-                                                         "[\"\\\\]" "\\\\\\&" arg)
-                                                        "\""))
-                                          (if (multibyte-string-p arg)
-                                              (encode-coding-string arg locale-coding-system)
-                                            arg))
-                                        (ad-get-args ,p)))))))
+                            (1+ a))
+                   (let ((cygwin-quote (and w32-quote-process-args ; cygwin-program-p の再帰防止
+                                            (init:cygwin-program-p (ad-get-arg ,p)))))
+                     (ad-set-args ,a
+                                  (mapcar (lambda (arg)
+                                            (when w32-quote-process-args
+                                              (setq arg
+                                                    (concat "\""
+                                                            (if cygwin-quote
+                                                                (replace-regexp-in-string
+                                                                 "[\"\\\\]" "\\\\\\&" arg)
+                                                              (replace-regexp-in-string
+                                                               "\\(\\(\\\\\\)*\\)\"" "\\1\\1\\\\\"" arg))
+                                                            "\"")))
+                                            (if (multibyte-string-p arg)
+                                                (encode-coding-string arg locale-coding-system)
+                                              arg))
+                                          (ad-get-args ,a)))
+                     (let ((w32-quote-process-args nil))
+                       ad-do-it))))))
 
       (when (version<= "24.4" emacs-version) ; 24.4 「から」発生
         (defconst w32-pipe-limit 4096

@@ -341,13 +341,16 @@ ORIGINAL が non-nil であれば最後に連結される."
         "FILENAME が cygwin のプログラムかどうか判定する."
         (let* ((target (executable-find filename))
                (cache (assoc target init:cygcheck-cache))
-               (w32-quote-process-args nil)) ; クォート時の判定につかうので advice 中で再帰しないよう nil
+               (w32-quote-process-args nil)) ; advice 中で再帰しないよう nil
           (when target
             (unless cache
               (setq cache
-                    (cons target (eq 0 (call-process "bash" nil nil nil ; 自前で cygwin タイプのクォートを行う
-                                                     (concat "\"-c\" \"cygcheck \\\""
-                                                             (executable-find filename) "\\\" | grep cygwin > /dev/null\"")))))
+                    (cons target
+                          (eq 0 (call-process "bash"
+                                              nil nil nil ; 自前で cygwin タイプのクォートを行う
+                                              (concat "\"-c\" \"cygcheck \\\""
+                                                      (executable-find filename)
+                                                      "\\\" | grep cygwin > /dev/null\"")))))
               (push cache init:cygcheck-cache))
             (cdr cache))))
 

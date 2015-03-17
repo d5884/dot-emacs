@@ -361,7 +361,7 @@ ORIGINAL が non-nil であれば最後に連結される."
         (let ((f (car desc))
               (p (nth 1 desc))
               (a (nth 2 desc)))
-          (eval `(defadvice ,f (around ,(intern (format "init:%s-encode-setup" f))
+          (eval `(defadvice ,f (around ,(intern (format "init:%s-arguments-setup" f))
                                        activate)
                    ,(format "実行時に%d番目以降の引数を `locale-coding-system' でエンコードする."
                             (1+ a))

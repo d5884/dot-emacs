@@ -357,7 +357,7 @@ ORIGINAL が non-nil であれば最後に連結される."
       ;; func / prog / arg
       (dolist (desc '((call-process-region 2 6)
                       (call-process 0 4)
-                      (start-process 0 3)))
+                      (start-process 2 3)))
         (let ((f (car desc))
               (p (nth 1 desc))
               (a (nth 2 desc)))

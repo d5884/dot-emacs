@@ -344,13 +344,13 @@ ORIGINAL が non-nil であれば最後に連結される."
                (w32-quote-process-args nil)) ; advice 中で再帰しないよう nil
           (when target
             (unless cache
-              (setq cache
-                    (cons target
-                          (eq 0 (call-process "bash"
-                                              nil nil nil ; 自前で cygwin タイプのクォートを行う
-                                              (concat "\"-c\" \"cygcheck \\\""
-                                                      (executable-find filename)
-                                                      "\\\" | grep cygwin > /dev/null\"")))))
+              (setq cache (cons target
+                                (with-temp-buffer ; cygwin のライブラリをロードしているか判定
+                                  (when (eq 0 (call-process "ldd" nil t nil
+                                                            (concat "\"" target "\"")))
+                                    (goto-char (point-min))
+                                    (number-or-marker-p
+                                     (re-search-forward "cygwin[0-9]+\.dll" nil t))))))
               (push cache init:cygcheck-cache))
             (cdr cache))))
 

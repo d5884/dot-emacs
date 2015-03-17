@@ -39,6 +39,7 @@ BODY 内では PRED の評価結果を `it' で参照出来る."
 (font-lock-add-keywords 'emacs-lisp-mode
                         '(("\\<init:awhen\\>" . font-lock-keyword-face)))
 
+(declare-function cygwin-convert-file-name-to-windows "cygw32.c")
 (defmacro init:system-file-name (name &optional directory)
   "NAME をシステムで認識可能なファイルパスに変換する.
 `expand-file-name' により DIRECTORY を基準にして絶対パスに変換される.
@@ -47,11 +48,7 @@ BODY 内では PRED の評価結果を `it' で参照出来る."
     ((eq system-type 'windows-nt)
      (subst-char-in-string ?/ ?\\ (expand-file-name ,name ,directory)))
     ((eq system-type 'cygwin)
-     (replace-regexp-in-string "\r?\n" ""
-                               (shell-command-to-string
-                                (format "cygpath -w \"%s\""
-                                        (shell-quote-argument
-                                         (expand-file-name ,name ,directory))))))
+     (cygwin-convert-file-name-to-windows (expand-file-name ,name ,directory)))
     (t
      (expand-file-name ,name ,directory))))
 

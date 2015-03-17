@@ -368,20 +368,21 @@ ORIGINAL が non-nil であれば最後に連結される."
                    (let ((cygwin-quote (and w32-quote-process-args ; cygwin-program-p の再帰防止
                                             (init:cygwin-program-p (ad-get-arg ,p)))))
                      (ad-set-args ,a
-                                  (mapcar (lambda (arg)
-                                            (when w32-quote-process-args
-                                              (setq arg
-                                                    (concat "\""
-                                                            (if cygwin-quote
-                                                                (replace-regexp-in-string
-                                                                 "[\"\\\\]" "\\\\\\&" arg)
-                                                              (replace-regexp-in-string
-                                                               "\\(\\(\\\\\\)*\\)\"" "\\1\\1\\\\\"" arg))
-                                                            "\"")))
-                                            (if (multibyte-string-p arg)
-                                                (encode-coding-string arg locale-coding-system)
-                                              arg))
-                                          (ad-get-args ,a)))
+                                  (mapcar
+                                   (lambda (arg)
+                                     (when w32-quote-process-args
+                                       (setq arg
+                                             (concat "\""
+                                                     (if cygwin-quote
+                                                         (replace-regexp-in-string
+                                                          "[\"\\\\]" "\\\\\\&" arg)
+                                                       (replace-regexp-in-string
+                                                        "\\(\\(\\\\\\)*\\)\"" "\\1\\\\\\&" arg))
+                                                     "\"")))
+                                     (if (multibyte-string-p arg)
+                                         (encode-coding-string arg locale-coding-system)
+                                       arg))
+                                   (ad-get-args ,a)))
                      (let ((w32-quote-process-args nil))
                        ad-do-it))))))
 

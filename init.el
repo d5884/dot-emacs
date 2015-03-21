@@ -537,6 +537,7 @@ ARG が non-nil の場合はフレームの数に関係なく emacs を終了す
 (setq truncate-partial-width-windows nil)
 (setq visible-bell t)
 (setq disabled-command-function nil)
+(setq history-length 1000)
 
 ;; バックアップ関係
 (setq make-backup-files nil)

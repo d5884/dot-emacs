@@ -1035,12 +1035,7 @@ Daemon 起動時以外は表示関数を直接潰す"
   (global-set-key (kbd "C-z C-m") 'magit-status)
 
   (with-eval-after-load "magit"
-    (setq magit-auto-revert-mode-lighter ""))
-
-  (with-eval-after-load "session"
-    (setq session-set-file-name-exclude-regexp
-          (concat session-set-file-name-exclude-regexp
-                  "\\|" (regexp-opt '("COMMIT_EDITMSG"))))))
+    (setq magit-auto-revert-mode-lighter "")))
 
 ;; man & woman
 (with-eval-after-load "woman"
@@ -1227,29 +1222,22 @@ Daemon 起動時以外は表示関数を直接潰す"
   (when (package-installed-p 'flycheck)
     (add-hook 'ruby-mode-hook 'flycheck-mode)))
 
-;; session / (package-install 'session)
-(when (require 'session nil t)
-  (add-hook 'after-init-hook 'session-initialize)
-  (setq session-initialize '(de-saveplace session places))
-  (setq session-save-file (init:emacs-d "session-data"))
-  (setq session-globals-include '((kill-ring 50)
-                                  (read-expression-history 100)
-                                  (session-file-alist 500 t)
-                                  (file-name-history 10000)))
-  (setq session-globals-max-string 100000000)
-  (setq session-undo-check -1)
-  (setq history-length t)
+;; savehist
+(savehist-mode 1)
+(add-hook 'savehist-save-hook
+          (lambda ()
+            ;; 保存したくないファイル名パターン
+            (setq file-name-history
+                  (cl-delete-if (apply-partially 'string-match-p
+                                                 (concat "\\<"
+                                                         (regexp-opt '("COMMIT_EDITMSG"))
+                                                         "\\'"))
+                                file-name-history))))
 
-  ;; magit の commit log が emacsclient 経由で開かれるので exclude されない対策
-  (add-hook 'session-after-load-save-file-hook
-            (lambda ()
-              (setq file-name-history
-                    (cl-remove-if
-                     (lambda (f)
-                       (string-match-p session-set-file-name-exclude-regexp f))
-                     file-name-history))))
-
-  (init:make-silently-loading session-initialize-do))
+;; saveplace
+(when (require 'saveplace nil t)
+  (setq save-place-file (init:emacs-d "places"))
+  (setq-default save-place t))
 
 ;; sdic / http://www.namazu.org/~tsuchiya/sdic/
 (when (locate-library "sdic")

@@ -536,6 +536,7 @@ ARG が non-nil の場合はフレームの数に関係なく emacs を終了す
 (setq search-invisible t)
 (setq truncate-partial-width-windows nil)
 (setq visible-bell t)
+(setq disabled-command-function nil)
 
 ;; バックアップ関係
 (setq make-backup-files nil)
@@ -1144,10 +1145,6 @@ Daemon 起動時以外は表示関数を直接潰す"
              (require 'mozc-popup nil t))
     (setq mozc-candidate-style 'popup)))
 
-;; narrowing
-(put 'narrow-to-region 'disabled nil)
-(put 'narrow-to-page 'disabled nil)
-
 ;; nxml-mode
 (fset 'html-mode 'nxml-mode)
 (fset 'xml-mode 'nxml-mode)
@@ -1533,10 +1530,6 @@ ARG が non-nil の場合は再度 `smart-compile' を呼び出す."
 (when (require 'uniquify nil t)
   (setq uniquify-buffer-name-style 'post-forward-angle-brackets)
   (setq uniquify-ignore-buffers-re "*[^*]+*"))
-
-;; upcase/downcase
-(put 'upcase-region 'disabled nil)
-(put 'downcase-region 'disabled nil)
 
 ;; view-mode
 (setq view-read-only t)

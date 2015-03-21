@@ -331,13 +331,13 @@ ORIGINAL が non-nil であれば最後に連結される."
       ;; NTEmacs の場合、プロセスの引数は起動した環境のコードページに依存するため
       ;; プロセス呼び出し時に引数のみ locale-coding-system へ強制変換する
       ;; クォート処理は elisp 側で行う (ダメ文字対策)
-      (defvar init:cygcheck-cache nil
-        "cygcheck の結果のキャッシュ.")
+      (defvar init:ldd-cache nil
+        "ldd の結果のキャッシュ.")
 
       (defun init:cygwin-program-p (filename)
         "FILENAME が cygwin のプログラムかどうか判定する."
         (let* ((target (and filename (executable-find filename)))
-               (cache (assoc target init:cygcheck-cache))
+               (cache (assoc target init:ldd-cache))
                (w32-quote-process-args nil)) ; advice 中で再帰しないよう nil
           (when target
             (unless cache
@@ -348,7 +348,7 @@ ORIGINAL が non-nil であれば最後に連結される."
                                     (goto-char (point-min))
                                     (number-or-marker-p
                                      (re-search-forward "cygwin[0-9]+\.dll" nil t))))))
-              (push cache init:cygcheck-cache))
+              (push cache init:ldd-cache))
             (cdr cache))))
 
       ;; func / prog / arg

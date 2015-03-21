@@ -336,7 +336,7 @@ ORIGINAL が non-nil であれば最後に連結される."
 
       (defun init:cygwin-program-p (filename)
         "FILENAME が cygwin のプログラムかどうか判定する."
-        (let* ((target (executable-find filename))
+        (let* ((target (and filename (executable-find filename)))
                (cache (assoc target init:cygcheck-cache))
                (w32-quote-process-args nil)) ; advice 中で再帰しないよう nil
           (when target

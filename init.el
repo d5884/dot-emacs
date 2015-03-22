@@ -174,42 +174,40 @@ ORIGINAL が non-nil であれば最後に連結される."
   (setq vertical-centering-font-regexp ".*")
 
   (cl-macrolet ((font-candidate (&rest font-list)
-                                (cl-find-if (lambda (f) (find-font (font-spec :name f)))
+                                (cl-find-if (lambda (f) (find-font (font-spec :family f)))
                                             font-list)))
     (let ((fontset "fontset-standard")
+          (base-option "pixelsize=15:weight=normal:slant=normal")
           width-adjustment-alist)
-      ;; ベースとなる ASCII フォント
-      (init:awhen (font-candidate "Consolas:pixelsize=15:weight=normal:slant=normal"
-                                  "DejaVu Sans Mono-11:weight=normal:slant=normal")
+      (init:acond
+       ;; 単一フォント系
+       ;; Ricty / https://github.com/yascentur/Ricty
+       ;; Ricty Diminished / https://github.com/yascentur/RictyDiminished
+       ((font-candidate "Ricty" "Ricty Diminished")
+        (set-fontset-font fontset 'unicode (concat it ":" base-option)))
+       ;; 和文/欧文別フォント系
+       ((font-candidate "Inconsolata" "Consolas" "DejaVu Sans Mono")
+        ;; ASCII/アクセント付きアルファベット類/ロシア語/ギリシャ語
+        (dolist (charset '(ascii
+                           latin-iso8859-1
+                           latin-iso8859-2
+                           latin-iso8859-3
+                           latin-iso8859-4
+                           latin-iso8859-14
+                           cyrillic-iso8859-5
+                           greek-iso8859-7))
+          (set-fontset-font fontset charset (concat it ":" base-option))
+          ;; 幅1に矯正
+          (push (cons charset 1) width-adjustment-alist))
 
-        ;; ASCII
-        (set-fontset-font fontset 'ascii it)
-
-        ;; アクセント付きアルファベット類/ロシア語/ギリシャ語
-        (init:awhen (font-candidate "Consolas"
-                                    "DefaVu Sans Mono")
-          (dolist (charset '(latin-iso8859-1
-                             latin-iso8859-2
-                             latin-iso8859-3
-                             latin-iso8859-4
-                             cyrillic-iso8859-5
-                             greek-iso8859-7))
-            (set-fontset-font fontset charset it)
-            ;; 幅1に矯正
-            (push (cons charset 1) width-adjustment-alist)))
-
-        ;; 日本語その他 / meiryoKe_602r1.ttc
-        ;; http://okrchicagob.blog4.fc2.com/blog-entry-121.html
-        (init:awhen (font-candidate "MeiryoKe_Console"
-                                    "VL ゴシック"
-                                    "ＭＳ ゴシック")
-          (set-fontset-font fontset 'unicode
-                            `(,it . "iso10646-1") nil 'append))
+        ;; 日本語その他
+        ;; MeiryoKe_Console / http://okrchicagob.blog4.fc2.com/blog-entry-121.html
+        (init:awhen (font-candidate "MeiryoKe_Console" "ＭＳ ゴシック" "IPAGothic")
+          (set-fontset-font fontset 'unicode `(,it . "iso10646-1") nil 'append))
 
         ;; fallback font
         (init:awhen (font-candidate "Arial Unicode MS")
-          (set-fontset-font fontset 'unicode
-                            `(,it . "iso10646-1") nil 'append))
+          (set-fontset-font fontset 'unicode `(,it . "iso10646-1") nil 'append))
 
         ;; ローマ数字は幅2
         (push '((#x2160 . #x216f) . 2) width-adjustment-alist) ; Ⅰ .. Ⅿ
@@ -217,26 +215,27 @@ ORIGINAL が non-nil であれば最後に連結される."
 
         ;; PinYin 発音記号
         (push '((#x01cd . #x01dc) . 2) width-adjustment-alist) ; Ǎ .. ǜ
+        ))
 
-        ;; 文字幅調整
-        (when width-adjustment-alist
-          (let ((table (make-char-table nil)))
-            (dolist (pair width-adjustment-alist)
-              (let ((target (car pair))
-                    (width (cdr pair)))
-                (cond
-                 ((symbolp target)
-                  (map-charset-chars (lambda (range _arg)
-                                       (set-char-table-range table range width))
-                                     target))
-                 (t
-                  (set-char-table-range table target width)))))
-            (optimize-char-table table)
-            (set-char-table-parent table char-width-table)
-            (setq char-width-table table)))
+      ;; 文字幅調整
+      (when width-adjustment-alist
+        (let ((table (make-char-table nil)))
+          (dolist (pair width-adjustment-alist)
+            (let ((target (car pair))
+                  (width (cdr pair)))
+              (cond
+               ((symbolp target)
+                (map-charset-chars (lambda (range _arg)
+                                     (set-char-table-range table range width))
+                                   target))
+               (t
+                (set-char-table-range table target width)))))
+          (optimize-char-table table)
+          (set-char-table-parent table char-width-table)
+          (setq char-width-table table)))
 
-        ;; フレームに設定
-        (add-to-list 'default-frame-alist (cons 'font fontset)))))
+      ;; フレームに設定
+      (add-to-list 'default-frame-alist (cons 'font fontset))))
 
   ;; ウィンドウサイズ
   ;; w32-resume-frame / git clone https://github.com/d5884/w32-resume-frame

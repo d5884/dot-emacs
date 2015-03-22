@@ -1075,7 +1075,7 @@ Daemon 起動時以外は表示関数を直接潰す"
       (setq migemo-regex-dictionary nil)
       (setq migemo-coding-system 'utf-8)
       (setq migemo-dictionary
-            (init:system-file-name (locate-file "utf-8/migemo-dict"
+            (init:system-file-name (locate-file (format "%S/migemo-dict" migemo-coding-system)
                                                 `(,(init:emacs-d "share/migemo")
                                                   "/usr/local/share/migemo"
                                                   "/usr/share/migemo")))))

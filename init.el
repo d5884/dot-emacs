@@ -36,8 +36,20 @@ BODY 内では PRED の評価結果を `it' で参照出来る."
   `(let ((it ,pred))
      (when it ,@body)))
 
+(defmacro init:acond (&rest clauses)
+  "CLAUSES を結果が真になるまで評価する.
+CLAUSES は (CONDITION BODY..) で構成され、CONDITION の結果は BODY 内で `it' で参照できる."
+  (if (null clauses)
+      nil
+    (let ((clause (car clauses))
+          (sym (cl-gensym)))
+      `(let ((,sym ,(car clause)))
+         (if ,sym
+             (let ((it ,sym)) ,@(cdr clause))
+           (init:acond ,@(cdr clauses)))))))
+
 (font-lock-add-keywords 'emacs-lisp-mode
-                        '(("\\<init:awhen\\>" . font-lock-keyword-face)))
+                        '(("\\<init:awhen\\|init:acond\\>" . font-lock-keyword-face)))
 
 (declare-function cygwin-convert-file-name-to-windows "cygw32.c")
 (defmacro init:system-file-name (name &optional directory)

@@ -177,14 +177,13 @@ ORIGINAL が non-nil であれば最後に連結される."
                                 (cl-find-if (lambda (f) (find-font (font-spec :family f)))
                                             font-list)))
     (let ((fontset "fontset-standard")
-          (base-option "pixelsize=15:weight=normal:slant=normal")
           width-adjustment-alist)
       (init:acond
        ;; 単一フォント系
        ;; Ricty / https://github.com/yascentur/Ricty
        ;; Ricty Diminished / https://github.com/yascentur/RictyDiminished
        ((font-candidate "Ricty" "Ricty Diminished")
-        (set-fontset-font fontset 'unicode (concat it ":" base-option)))
+        (set-fontset-font fontset 'unicode (concat it ":pixelsize=16:weight=normal:slant=normal")))
        ;; 和文/欧文別フォント系
        ((font-candidate "Inconsolata" "Consolas" "DejaVu Sans Mono")
         ;; ASCII/アクセント付きアルファベット類/ロシア語/ギリシャ語
@@ -196,7 +195,7 @@ ORIGINAL が non-nil であれば最後に連結される."
                            latin-iso8859-14
                            cyrillic-iso8859-5
                            greek-iso8859-7))
-          (set-fontset-font fontset charset (concat it ":" base-option))
+          (set-fontset-font fontset charset (concat it ":pixelsize=15:weight=normal:slant=normal"))
           ;; 幅1に矯正
           (push (cons charset 1) width-adjustment-alist))
 

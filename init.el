@@ -250,7 +250,7 @@ ORIGINAL が non-nil であれば最後に連結される."
   ;; cygwin へのパス等が通されていない前提で emacs 内で諸々を設定する
 
   ;; パイプ間の待ち時間を減らす
-  (setq w32-pipe-read-delay 5)
+  (setq w32-pipe-read-delay 10)
 
   ;; インストールルート検索
   (let* ((cygdll (locate-file "cygwin1.dll" exec-path))

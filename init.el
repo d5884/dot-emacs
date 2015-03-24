@@ -1588,6 +1588,9 @@ ARG が non-nil の場合は再度 `smart-compile' を呼び出す."
   (setq yas-verbosity 1)
   (setq yas-prompt-functions (delq 'yas-x-prompt yas-prompt-functions))
 
+  (define-key yas-minor-mode-map (kbd "TAB") nil)
+  (define-key yas-minor-mode-map [(tab)] nil)
+
   (when (fboundp 'yas--load-yas-setup-file)
     (init:make-silently-loading yas--load-yas-setup-file))
 

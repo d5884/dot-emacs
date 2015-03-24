@@ -1225,9 +1225,8 @@ Daemon 起動時以外は表示関数を直接潰す"
                    "\\<end\\>\\|}"
                    "#"
                    ruby-move-to-block
-                   nil)))
-
-  (add-hook 'ruby-mode-hook 'hs-minor-mode)
+                   nil))
+    (add-hook 'ruby-mode-hook 'hs-minor-mode))
 
   ;; flycheck
   (when (package-installed-p 'flycheck)

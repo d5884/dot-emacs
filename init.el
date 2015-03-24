@@ -1210,11 +1210,6 @@ Daemon 起動時以外は表示関数を直接潰す"
   (when (require 'ruby-electric nil t)
     (add-hook 'ruby-mode-hook 'ruby-electric-mode))
 
-  (when (and (require 'yasnippet nil t)
-             (require 'auto-complete nil t))
-    (defun ac-ruby-mode-setup ()
-      (setq ac-sources (cons 'ac-source-yasnippet ac-sources))))
-
   (when (require 'hideshow nil t)
     (add-to-list 'hs-special-modes-alist
                  `(ruby-mode
@@ -1587,9 +1582,6 @@ ARG が non-nil の場合は再度 `smart-compile' を呼び出す."
   (setq yas-verbosity 1)
   (setq yas-prompt-functions (delq 'yas-x-prompt yas-prompt-functions))
 
-  (define-key yas-minor-mode-map (kbd "TAB") nil)
-  (define-key yas-minor-mode-map [(tab)] nil)
-
   (when (fboundp 'yas--load-yas-setup-file)
     (init:make-silently-loading yas--load-yas-setup-file))
 
@@ -1598,6 +1590,13 @@ ARG が non-nil の場合は再度 `smart-compile' を呼び出す."
   (with-eval-after-load "term"
     (add-hook 'term-mode-hook
               (lambda () (yas-minor-mode -1))))
+
+  ;; auto-complete
+  (with-eval-after-load "auto-complete"
+    (define-key yas-minor-mode-map (kbd "TAB") nil)
+    (define-key yas-minor-mode-map [(tab)] nil)
+
+    (setq-default ac-sources (cons 'ac-source-yasnippet ac-sources)))
 
   ;; auto insert
   (add-hook 'find-file-hook 'auto-insert)

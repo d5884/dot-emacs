@@ -346,8 +346,13 @@ ORIGINAL が non-nil であれば最後に連結される."
 
       ;; cygwin で追加される Info
       (with-eval-after-load "info"
-        (init:awhen (init:locate-directory "/usr/share/info")
-          (add-to-list 'Info-additional-directory-list it)))
+        (mapc (lambda (p)
+                (init:awhen (init:locate-directory p)
+                  (add-to-list 'Info-directory-list it t)))
+              (if (getenv "INFOPATH")   ; cygwin のターミナルから起動した場合など
+                  (append (Info-default-dirs)
+                          (split-string (getenv "INFOPATH") ":" t))
+                '("/usr/local/info" "/usr/share/info" "/usr/info"))))
 
       ;; NTEmacs の場合、プロセスの引数は起動した環境のコードページに依存するため
       ;; プロセス呼び出し時に引数のみ locale-coding-system へ強制変換する

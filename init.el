@@ -686,6 +686,19 @@ Daemon 起動時以外は表示関数を直接潰す"
   (define-key compilation-mode-map (kbd "n") 'next-error)
   (define-key compilation-mode-map (kbd "p") 'previous-error)
 
+  (defconst init:compile-command-max-length 80
+    "`compile' 時に表示するコマンドの最大長.")
+
+  (defadvice compilation-start (before init:trim-compile-command activate)
+    "長すぎるコンパイルコマンドを短縮する."
+    (let ((target (ad-get-arg 0)))
+      (when (> (length target) init:compile-command-max-length)
+        (ad-set-arg 0
+                    (propertize target
+                                'display (concat
+                                          (substring target 0 init:compile-command-max-length)
+                                          " ..."))))))
+
   (dolist (func '(compile recompile))
     (eval `(defadvice ,func (around ,(intern (format "init:%s-silently" func)) activate)
              "エラー発生時のみ *compilation* バッファ表示."

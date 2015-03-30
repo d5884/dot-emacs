@@ -315,12 +315,12 @@ ORIGINAL が non-nil であれば最後に連結される."
       (when (boundp 'w32-unicode-filenames)
         (set-file-name-coding-system 'utf-8))
 
-      ;; shell
-      (setq shell-file-name "bash")
-      (setq shell-command-switch "-c")
-      (setq system-uses-terminfo nil)
+      ;; shell が設定されてなければ bash へ
+      (when (w32-shell-dos-semantics)
+        (setq shell-file-name "/bin/bash")
+        (setq shell-command-switch "-c")
 
-      (setenv "SHELL" shell-file-name)
+        (setenv "SHELL" shell-file-name))
 
       (with-eval-after-load "term"
         (defadvice cd (around init:cd-accept-multibyte activate)
@@ -335,7 +335,7 @@ ORIGINAL が non-nil であれば最後に連結される."
             ad-do-it)))
 
       (with-eval-after-load "tramp"
-        (setq tramp-encoding-shell "bash"))
+        (setq tramp-encoding-shell shell-file-name))
 
       ;; gdb 使用時のエラー回避
       (with-eval-after-load "gdb-mi"

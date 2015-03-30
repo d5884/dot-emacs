@@ -276,7 +276,7 @@ ORIGINAL が non-nil であれば最後に連結される."
           (setenv "PATH" (init:concat-system-file-names cygwin-exec-path nil (getenv "PATH")))
           (setq exec-path (append cygwin-exec-path exec-path))))
 
-      ;; emacs のみで使用
+      ;; ~/.emacs.d/bin は emacs のみで使用なので環境変数に出さない
       (add-to-list 'exec-path (expand-file-name (init:emacs-d "bin")))
 
       (unless (getenv "CYGWIN")

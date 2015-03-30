@@ -1470,6 +1470,9 @@ ARG が non-nil の場合は再度 `smart-compile' を呼び出す."
 (when (locate-library "ssh-agent")
   (autoload 'ssh-agent-add-key "ssh-agent" nil t)
 
+  (with-eval-after-load "ssh-agent"
+    (setq ssh-agent-kill-on-exit nil))
+
   (with-eval-after-load "magit"
     (defadvice magit-push-dwim (before init:ssh-agent-with-magit-push activate)
       "git push 前に ssh-add 実行."

@@ -284,6 +284,17 @@ ORIGINAL が non-nil であれば最後に連結される."
 
       (setq null-device "/dev/null")
 
+      ;; cygwin-mount / (package-install 'cygwin-mount)
+      (when (require 'cygwin-mount nil t)
+        (cygwin-mount-activate))
+
+      ;; fakecygpty
+      ;; gcc -o fakecygpty.exe fakecygpty.c
+      ;; gcc -o qkill.exe qkill.c
+      ;; git clone https://github.com/d5884/fakecygpty
+      (when (require 'fakecygpty nil t)
+        (fakecygpty-activate))
+
       ;; DOSコマンド混在のためプロセスでの出力のコードを未定に
       (setq default-process-coding-system
             (cons (coding-system-change-text-conversion
@@ -411,18 +422,7 @@ ORIGINAL が non-nil であれば最後に連結される."
                 ad-do-it
                 (setq rest (substring rest w32-pipe-limit)))
               (ad-set-arg 1 rest)
-              ad-do-it))))
-
-      ;; cygwin-mount / (package-install 'cygwin-mount)
-      (when (require 'cygwin-mount nil t)
-        (cygwin-mount-activate))
-
-      ;; fakecygpty
-      ;; gcc -o fakecygpty.exe fakecygpty.c
-      ;; gcc -o qkill.exe qkill.c
-      ;; git clone https://github.com/d5884/fakecygpty
-      (when (require 'fakecygpty nil t)
-        (fakecygpty-activate)))))
+              ad-do-it)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; パス追加

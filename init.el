@@ -319,7 +319,6 @@ ORIGINAL が non-nil であれば最後に連結される."
       (when (w32-shell-dos-semantics)
         (setq shell-file-name "/bin/bash")
         (setq shell-command-switch "-c")
-
         (setenv "SHELL" shell-file-name))
 
       (with-eval-after-load "term"

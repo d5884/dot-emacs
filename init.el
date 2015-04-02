@@ -460,16 +460,16 @@ ORIGINAL が non-nil であれば最後に連結される."
 (when (display-mouse-p)
   ;; フレーム外/モードラインでのホイール回しでエラーを出さない
   (dolist (pos '("nil" "mode-line" "right-fringe" "left-fringe"))
-    (global-set-key (kbd (format "<%s> <wheel-up>" pos)) 'ignore)
-    (global-set-key (kbd (format "<%s> <wheel-down>" pos)) 'ignore))
+    (global-set-key (kbd (format "<%s> <%s>" pos mouse-wheel-down-event)) 'ignore)
+    (global-set-key (kbd (format "<%s> <%s>" pos mouse-wheel-up-event)) 'ignore))
 
   ;; ミニバッファでもホイール回しでエラーを出さない
   (add-hook 'minibuffer-setup-hook
             (lambda ()
-              (local-set-key (kbd "<wheel-up>") 'ignore)
-              (local-set-key (kbd "<wheel-down>") 'ignore)))
-  (define-key minibuffer-inactive-mode-map (kbd "<wheel-up>") 'ignore)
-  (define-key minibuffer-inactive-mode-map (kbd "<wheel-down>") 'ignore)
+              (local-set-key (kbd (format "<%s>" mouse-wheel-down-event)) 'ignore)
+              (local-set-key (kbd (format "<%s>" mouse-wheel-up-event)) 'ignore)))
+  (define-key minibuffer-inactive-mode-map (kbd (format "<%s>" mouse-wheel-down-event)) 'ignore)
+  (define-key minibuffer-inactive-mode-map (kbd (format "<%s>" mouse-wheel-up-event)) 'ignore)
 
   ;; ホイールクリックで貼り付けは使わない
   (dolist (key '("<mouse-2>" "<down-mouse-2>"
@@ -490,8 +490,8 @@ ORIGINAL が non-nil であれば最後に連結される."
 
   ;; Ctrl+Wheel で文字サイズ変更
   (when (display-multi-font-p)
-    (global-set-key (kbd "<C-wheel-up>") 'text-scale-increase)
-    (global-set-key (kbd "<C-wheel-down>") 'text-scale-decrease)
+    (global-set-key (kbd (format "<C-%s>" mouse-wheel-down-event)) 'text-scale-increase)
+    (global-set-key (kbd (format "<C-%s>" mouse-wheel-up-event)) 'text-scale-decrease)
     (global-unset-key (kbd "<C-down-mouse-2>"))
     (global-set-key (kbd "<C-mouse-2>") (defun init:text-scale-reset ()
                                           "テキストのスケーリングをリセットする."

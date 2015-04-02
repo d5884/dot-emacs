@@ -527,15 +527,22 @@ ARG が non-nil の場合はフレームの数に関係なく emacs を終了す
 (global-set-key (kbd "C-z C-;") 'suspend-frame)
 
 ;; IME関連キーの整理
-(global-set-key (kbd "<enlw>") 'toggle-input-method)  ; 半角/全角
-(global-set-key (kbd "<auto>") 'toggle-input-method)  ; 半角/全角
-(global-set-key (kbd "<kanji>") 'toggle-input-method) ; 半角/全角
-(global-set-key (kbd "<M-kanji>") 'ignore)            ; Alt+半角/全角
-(global-set-key (kbd "<convert>") 'ignore)            ; 無変換
-(global-set-key (kbd "<muhenkan>") 'ignore)           ; 無変換
-(global-set-key (kbd "<non-convert>") 'ignore)        ; 変換
-(global-set-key (kbd "<henkan>") 'ignore)             ; 変換
-(global-set-key (kbd "<copy>") 'ignore)               ; カタカナ/ひらがな/ローマ字
+; 全角/半角は IME トグルに
+(global-set-key (kbd "<enlw>") 'toggle-input-method)
+(global-set-key (kbd "<auto>") 'toggle-input-method)
+(global-set-key (kbd "<kanji>") 'toggle-input-method)
+(global-set-key (kbd "<zenkaku-hankaku>") ''toggle-input-method)
+
+; M-全角/半角はネイティブへスルー
+(global-set-key (kbd "<M-kanji>") 'ignore)
+
+; 無変換/変換/カタカナ/ひらがな/ローマ字は無効化
+(global-set-key (kbd "<convert>") 'ignore)
+(global-set-key (kbd "<muhenkan>") 'ignore)
+(global-set-key (kbd "<non-convert>") 'ignore)
+(global-set-key (kbd "<henkan>") 'ignore)
+(global-set-key (kbd "<copy>") 'ignore)
+(global-set-key (kbd "<hiragana-katakana>") 'ignore)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 各種機能/パッケージ別

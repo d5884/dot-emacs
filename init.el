@@ -592,18 +592,6 @@ Daemon 起動時以外は表示関数を直接潰す"
 
 ;; ansi-color
 (with-eval-after-load "comint"
-  (require 'ansi-color nil t)
-  (when (eq 'light (frame-parameter nil 'background-mode))
-    (setq ansi-color-names-vector
-          ["black"          ; black
-           "dark red"       ; red
-           "dark green"     ; green
-           "dark goldenrod" ; yellow
-           "dark blue"      ; blue
-           "dark magenta"   ; magenta
-           "dark cyan"      ; cyan
-           "white"])        ; white
-    (setq ansi-color-map (ansi-color-make-color-map)))
   (ansi-color-for-comint-mode-on))
 
 ;; apropos

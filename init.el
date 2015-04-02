@@ -307,7 +307,7 @@ ORIGINAL が non-nil であれば最後に連結される."
         (init:awhen (get-buffer-process (current-buffer))
           (set-process-coding-system it
                                      (coding-system-change-text-conversion
-                                      (car default-process-coding-system) 'undecided)
+                                      (car (process-coding-system it)) 'undecided)
                                      (cdr (process-coding-system it)))))
 
       ;; ファイル名のエンコーディングを実態とあわせる

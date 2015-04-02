@@ -183,7 +183,7 @@ ORIGINAL が non-nil であれば最後に連結される."
        ;; Ricty / https://github.com/yascentur/Ricty
        ;; Ricty Diminished / https://github.com/yascentur/RictyDiminished
        ((font-candidate "Ricty" "Ricty Diminished")
-        (set-fontset-font fontset 'unicode (concat it ":pixelsize=16:weight=normal:slant=normal")))
+        (set-fontset-font fontset 'ascii (concat it ":pixelsize=16:weight=normal:slant=normal")))
        ;; 和文/欧文別フォント系
        ((font-candidate "Inconsolata" "Consolas" "DejaVu Sans Mono")
         ;; ASCII/アクセント付きアルファベット類/ロシア語/ギリシャ語

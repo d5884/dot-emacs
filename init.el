@@ -1776,72 +1776,69 @@ RENEW が non-nil の場合は新しい状態を作る.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 色設定
-(cl-flet ((color-candidate (&rest colors)
-                           (cl-find-if #'color-defined-p colors)))
-  (require 'color)
+(require 'color)
 
-  (load-theme 'wombat t)
+(load-theme 'wombat t)
 
-  (with-eval-after-load "cua-base"
-    (face-spec-reset-face 'cua-rectangle)
-    (set-face-attribute 'cua-rectangle nil :inherit 'region)
-    (face-spec-reset-face 'cua-global-mark)
-    (set-face-attribute 'cua-global-mark nil :inherit 'region
-                        :weight 'bold))
+(with-eval-after-load "cua-base"
+  (face-spec-reset-face 'cua-rectangle)
+  (set-face-attribute 'cua-rectangle nil :inherit 'region)
+  (face-spec-reset-face 'cua-global-mark)
+  (set-face-attribute 'cua-global-mark nil :inherit 'region
+                      :weight 'bold))
 
-  (with-eval-after-load "paren"
-    (face-spec-reset-face 'show-paren-match)
-    (set-face-attribute 'show-paren-match nil :inherit 'highlight))
+(with-eval-after-load "paren"
+  (face-spec-reset-face 'show-paren-match)
+  (set-face-attribute 'show-paren-match nil :inherit 'highlight))
 
-  (when (> (display-color-cells nil) 256)
-    (with-eval-after-load "stripe-buffer"
-      (set-face-attribute 'stripe-highlight nil
-                          :background
-                          (if (eq 'light (frame-parameter nil 'background-mode))
-                              (color-darken-name (face-background 'default) 3)
-                            (color-lighten-name (face-background 'default) 3)))))
+(when (> (display-color-cells nil) 256)
+  (with-eval-after-load "stripe-buffer"
+    (set-face-attribute 'stripe-highlight nil
+                        :background
+                        (if (eq 'light (frame-parameter nil 'background-mode))
+                            (color-darken-name (face-background 'default) 3)
+                          (color-lighten-name (face-background 'default) 3)))))
 
-  (with-eval-after-load "mozc"
-    (set-face-attribute 'mozc-cand-overlay-even-face nil
-                        :foreground "black"
-                        :background "gray80")
-    (face-spec-reset-face 'mozc-cand-overlay-odd-face)
-    (set-face-attribute 'mozc-cand-overlay-odd-face nil
-                        :inherit 'mozc-cand-overlay-even-face)
-    (set-face-attribute 'mozc-cand-overlay-footer-face nil
-                        :foreground "white"
-                        :background "gray50")
-    (set-face-attribute 'mozc-cand-overlay-focused-face nil
-                        :foreground "white"
-                        :background "gray30"))
-  (with-eval-after-load "mozc-popup"
-    (set-face-attribute 'mozc-cand-overlay-description-face nil
-                        :foreground "gray46"))
+(with-eval-after-load "mozc"
+  (set-face-attribute 'mozc-cand-overlay-even-face nil
+                      :foreground "black"
+                      :background "gray80")
+  (face-spec-reset-face 'mozc-cand-overlay-odd-face)
+  (set-face-attribute 'mozc-cand-overlay-odd-face nil
+                      :inherit 'mozc-cand-overlay-even-face)
+  (set-face-attribute 'mozc-cand-overlay-footer-face nil
+                      :foreground "white"
+                      :background "gray50")
+  (set-face-attribute 'mozc-cand-overlay-focused-face nil
+                      :foreground "white"
+                      :background "gray30"))
+(with-eval-after-load "mozc-popup"
+  (set-face-attribute 'mozc-cand-overlay-description-face nil
+                      :foreground "gray46"))
 
-  ;; term 用 face に ansi-color の設定をコピー
-  (with-eval-after-load "term"
-    (require 'ansi-color nil t)
-    (dotimes (i (length ansi-color-names-vector))
-      (let ((color (aref ansi-color-names-vector i)))
-        (set-face-attribute (aref ansi-term-color-vector (1+ i)) nil
-                            :foreground color :background color))))
+;; term 用 face に ansi-color の設定をコピー
+(with-eval-after-load "term"
+  (require 'ansi-color nil t)
+  (dotimes (i (length ansi-color-names-vector))
+    (let ((color (aref ansi-color-names-vector i)))
+      (set-face-attribute (aref ansi-term-color-vector (1+ i)) nil
+                          :foreground color :background color))))
 
-  ;; カーソルカラー
-  (let ((ime-color "dark red"))
-    ;; input method 全般
-    ;; ccc / (package-install 'ccc)
-    (when (require 'ccc nil t)
-      (ccc-setup)
-      (add-hook 'input-method-activate-hook
-                (eval `(lambda () (ccc-set-buffer-local-cursor-color ,ime-color))))
-      (add-hook 'input-method-deactivate-hook
-                (lambda () (ccc-set-cursor-color-buffer-local nil))))
+;; カーソルカラー
+(let ((ime-color "dark red"))
+  ;; input method 全般
+  ;; ccc / (package-install 'ccc)
+  (when (require 'ccc nil t)
+    (ccc-setup)
+    (add-hook 'input-method-activate-hook
+              (eval `(lambda () (ccc-set-buffer-local-cursor-color ,ime-color))))
+    (add-hook 'input-method-deactivate-hook
+              (lambda () (ccc-set-cursor-color-buffer-local nil))))
 
-    ;; skk
-    (when (package-installed-p 'ddskk)
-      (eval-after-load "skk"
-        `(setq skk-cursor-hiragana-color ,ime-color)))))
-
+  ;; skk
+  (when (package-installed-p 'ddskk)
+    (eval-after-load "skk"
+      `(setq skk-cursor-hiragana-color ,ime-color))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; カスタマイズファイル読み込み

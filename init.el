@@ -120,6 +120,7 @@ ORIGINAL が non-nil であれば最後に連結される."
   (let ((this-file (or (buffer-file-name) load-file-name)))
     ;; .emacs.d を init.el が置いてある場所にする
     (setq user-emacs-directory (file-name-directory this-file))
+    (setq user-init-file this-file)
 
     ;; -l init.el で起動したときも after-init-hook を実行する
     (setq after-init-hook nil)

@@ -945,6 +945,7 @@ Daemon 起動時以外は表示関数を直接潰す"
   (setq gnus-ignored-newsgroups "^to\\.\\|^[0-9. ]+\\( \\|$\\)\\|^[\"]\"[#'()]"))
 
 (with-eval-after-load "message"
+  (setq message-directory (init:emacs-d "gnus/mail"))
   (setq message-send-mail-function 'smtpmail-send-it)
   (setq message-auto-save-directory nil))
 
@@ -952,6 +953,7 @@ Daemon 起動時以外は表示関数を直接潰す"
   (setq send-mail-function 'smtpmail-send-it))
 
 (with-eval-after-load "smtpmail"
+  (setq smtpmail-queue-dir (init:emacs-d "gnus/mail/queued-mail"))
   (setq smtpmail-smtp-server "smtp.gmail.com")
   (setq smtpmail-smtp-service 465)
   (setq smtpmail-stream-type 'tls)

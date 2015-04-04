@@ -482,11 +482,7 @@ ORIGINAL が non-nil であれば最後に連結される."
   (dolist (key '("<mouse-3>" "<down-mouse-3>" "<drag-mouse-3>"))
     (global-unset-key (kbd key)))
   (when (display-popup-menus-p)
-    (global-set-key (kbd "<mouse-3>")
-                    (defun init:show-edit-menu (event &optional prefix)
-                      "編集メニューを表示する."
-                      (interactive "@e")
-                      (popup-menu menu-bar-edit-menu event prefix))))
+    (global-set-key (kbd "<mouse-3>") menu-bar-edit-menu))
 
   ;; Ctrl+Wheel で文字サイズ変更
   (when (display-multi-font-p)

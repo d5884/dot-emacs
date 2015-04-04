@@ -101,6 +101,18 @@ ORIGINAL が non-nil であれば最後に連結される."
                     (funcall org-load file noerror t nosuffix must-suffix))))
          ad-do-it))))
 
+(defun init:package-install-all ()
+  "`init.el' にコメントで記述してあるパッケージを一括インストールする."
+  (interactive)
+  (package-refresh-contents)
+  (with-temp-buffer
+    (insert-file-contents user-init-file)
+    (goto-char (point-min))
+    (save-match-data
+      (while (re-search-forward "\\((package-install\s+'[^)]*)\\)" nil t)
+        (eval (read (match-string 1))))))
+  (message "Done."))
+
 ;; before emacs-24.4
 (unless (fboundp 'with-eval-after-load)
   (defmacro with-eval-after-load (file &rest body)

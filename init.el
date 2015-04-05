@@ -269,17 +269,15 @@ ORIGINAL が non-nil であれば最後に連結される."
          (root-dir (or (and cygdll
                             (expand-file-name ".." (file-name-directory cygdll)))
                        (init:find-directory
-                        (apply 'append
-                               (mapcar (lambda (p)
-                                         (list (expand-file-name "cygwin64" p)
-                                               (expand-file-name "cygwin" p)))
-                                       (list "c:/"
-                                             "c:/gnupack/app/cygwin"
-                                             (getenv "HOME")
-                                             (getenv "USERPROFILE")
-                                             (getenv "LOCALAPPDATA")
-                                             (getenv "APPDATA")
-                                             (getenv "ProgramFiles"))))))))
+                        (cl-loop for name in '("cygwin64" "cygwin")
+                                 nconc (cl-loop for base in `("c:/"
+                                                              "c:/gnupack/app/cygwin"
+                                                              ,(getenv "HOME")
+                                                              ,(getenv "USERPROFILE")
+                                                              ,(getenv "LOCALAPPDATA")
+                                                              ,(getenv "APPDATA")
+                                                              ,(getenv "ProgramFiles"))
+                                                collect (expand-file-name name base)))))))
     (when root-dir
       ;; パスが通ってなければ通す
       (unless cygdll
@@ -390,36 +388,33 @@ ORIGINAL が non-nil であれば最後に連結される."
             (cdr cache))))
 
       ;; func / prog / arg
-      (dolist (desc '((call-process-region 2 6)
-                      (call-process 0 4)
-                      (start-process 2 3)))
-        (let ((f (car desc))
-              (p (nth 1 desc))
-              (a (nth 2 desc)))
-          (eval `(defadvice ,f (around ,(intern (format "init:%s-arguments-setup" f))
-                                       activate)
-                   ,(format "実行時に%d番目以降の引数を `locale-coding-system' でエンコードする."
-                            (1+ a))
-                   (let ((cygwin-quote (and w32-quote-process-args ; cygwin-program-p の再帰防止
-                                            (init:cygwin-program-p (ad-get-arg ,p)))))
-                     (ad-set-args ,a
-                                  (mapcar
-                                   (lambda (arg)
-                                     (when w32-quote-process-args
-                                       (setq arg
-                                             (concat "\""
-                                                     (if cygwin-quote
-                                                         (replace-regexp-in-string
-                                                          "[\"\\\\]" "\\\\\\&" arg)
-                                                       (replace-regexp-in-string
-                                                        "\\(\\(\\\\\\)*\\)\"" "\\1\\\\\\&" arg))
-                                                     "\"")))
-                                     (if (multibyte-string-p arg)
-                                         (encode-coding-string arg locale-coding-system)
-                                       arg))
-                                   (ad-get-args ,a)))
-                     (let ((w32-quote-process-args nil))
-                       ad-do-it))))))
+      (cl-loop for (f p a) in '((call-process-region 2 6)
+                                (call-process 0 4)
+                                (start-process 2 3))
+               do (eval `(defadvice ,f (around ,(intern (format "init:%s-arguments-setup" f))
+                                               activate)
+                           ,(format "実行時に%d番目以降の引数を `locale-coding-system' でエンコードする."
+                                    (1+ a))
+                           (let ((cygwin-quote (and w32-quote-process-args ; cygwin-program-p の再帰防止
+                                                    (init:cygwin-program-p (ad-get-arg ,p)))))
+                             (ad-set-args ,a
+                                          (mapcar
+                                           (lambda (arg)
+                                             (when w32-quote-process-args
+                                               (setq arg
+                                                     (concat "\""
+                                                             (if cygwin-quote
+                                                                 (replace-regexp-in-string
+                                                                  "[\"\\\\]" "\\\\\\&" arg)
+                                                               (replace-regexp-in-string
+                                                                "\\(\\(\\\\\\)*\\)\"" "\\1\\\\\\&" arg))
+                                                             "\"")))
+                                             (if (multibyte-string-p arg)
+                                                 (encode-coding-string arg locale-coding-system)
+                                               arg))
+                                           (ad-get-args ,a)))
+                             (let ((w32-quote-process-args nil))
+                               ad-do-it)))))
 
       (when (version<= "24.4" emacs-version) ; 24.4 「から」発生
         (defconst w32-pipe-limit 4096
@@ -1425,15 +1420,13 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
 
                 ;; 追加の通常辞書 (あれば)
                 (setq skk-extra-jisyo-file-list
-                      (cl-remove-if-not #'file-exists-p
-                                        (mapcar
-                                         (lambda (f)
-                                           (expand-file-name
-                                            (concat "SKK-JISYO." f) dict-dir))
-                                         '("JIS2" "JIS2004" "JIS3_4"
-                                           "assoc" "geo" "jinmei" "station"
-                                           "law" "fullname" "propernoun"
-                                           "okinawa" "edict")))))
+                      (cl-loop for type in '("JIS2" "JIS2004" "JIS3_4"
+                                             "assoc" "geo" "jinmei" "station"
+                                             "law" "fullname" "propernoun"
+                                             "okinawa" "edict")
+                               for name = (expand-file-name (concat "SKK-JISYO." type)
+                                                            dict-dir)
+                               when (file-exists-p name) collect name)))
 
               (when (require 'skk-study nil t)
                 (setq skk-study-backup-file nil))
@@ -1574,21 +1567,14 @@ ARG が non-nil の場合は再度 `smart-compile' を呼び出す."
 
 (defadvice undo (after init:undo-highlight-string activate)
   "アンドゥで再挿入された文字列をハイライト表示する."
-  (catch 'return
-    (dolist (entry buffer-undo-list)
-      (let ((beg (car entry))
-            (end (cdr entry)))
-        (cond
-         ((null entry)) ;; boundary. skip it.
-         ((and (integerp beg)
-               (integerp end))
-          (let ((ol (make-overlay beg end)))
-            (unwind-protect
-                (progn (overlay-put ol 'face 'highlight)
-                       (sit-for 0.5))
-              (delete-overlay ol)
-              (throw 'return nil))))
-         (t (throw 'return nil)))))))
+  (cl-loop for (beg . end) in buffer-undo-list
+	   when (and (integerp beg) (integerp end))
+	   return (let ((ol (make-overlay beg end)))
+		    (unwind-protect
+			(progn (overlay-put ol 'face 'highlight)
+			       (sit-for 0.5))
+		      (delete-overlay ol)))
+	   until (or beg end)))
 
 ;; yascroll / (package-install 'yascroll)
 (when (package-installed-p 'yascroll)

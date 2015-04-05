@@ -109,7 +109,8 @@ ORIGINAL が non-nil であれば最後に連結される."
     (insert-file-contents user-init-file)
     (goto-char (point-min))
     (save-match-data
-      (while (re-search-forward "\\((package-install\s+'[^)]*)\\)" nil t)
+      (while (re-search-forward "\\((package-install\s+'\\([^)]*\\))\\)" nil t)
+        (message "Installing %s..." (match-string 2))
         (eval (read (match-string 1))))))
   (message "Done."))
 

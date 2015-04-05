@@ -1732,7 +1732,7 @@ ARG が non-nil の場合は再度 `smart-compile' を呼び出す."
             (widen)
             (write-region (point-min) (point-max)
                           (expand-file-name init:scratch-save-file)
-                          nil 'slient)))))))
+                          nil 'silent)))))))
 
 (add-hook 'after-init-hook
           (lambda ()

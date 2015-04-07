@@ -933,7 +933,7 @@ Daemon 起動時以外は表示関数を直接潰す"
                              (gdb-many-windows)
                              (gud-tooltip-mode))))
 
-;; gnus and mail (for gmail)
+;; gnus
 (setq mail-user-agent 'gnus-user-agent)
 (setq read-mail-command 'gnus)
 
@@ -941,13 +941,73 @@ Daemon 起動時以外は表示関数を直接潰す"
   (setq gnus-startup-file (init:emacs-d "gnus/newsrc"))
   (setq gnus-directory (init:emacs-d "gnus/news"))
   (setq gnus-save-newsrc-file nil)
+  (setq gnus-use-scoring nil)
+  (setq gnus-check-new-newsgroups nil)
 
+  (setq gnus-asynchronous t)
+  (setq gnus-view-pseudo-asynchronously t)
 
-  (setq gnus-select-method '(nnimap "gmail"
+  ;; 全てキャッシュする
+  (setq gnus-use-cache t)
+  (setq gnus-cache-directory (init:emacs-d "gnus/news/cache"))
+  (setq gnus-cache-enter-articles '(ticked dormant read unread))
+  (setq gnus-cacheable-groups ".*")
+  (setq gnus-cache-remove-articles nil)
+
+  ;; サマリバッファは新着順表示
+  (setq gnus-thread-sort-functions '(gnus-thread-sort-by-most-recent-date))
+  (setq gnus-article-sort-functions '(gnus-thread-sort-by-most-recent-date))
+
+  ;; サマリバッファの移動系を未読のみ/全てで入れ替える
+  (with-eval-after-load "gnus-sum"
+    (define-key gnus-summary-mode-map (kbd "n") 'gnus-summary-next-article)
+    (define-key gnus-summary-mode-map (kbd "p") 'gnus-summary-prev-article)
+    (define-key gnus-summary-mode-map (kbd "N") 'gnus-summary-next-unread-article)
+    (define-key gnus-summary-mode-map (kbd "P") 'gnus-summary-prev-unread-article))
+
+  ;; サマリバッファ表示系
+  (setq gnus-summary-line-format "%U%R%z %&user-date; %[%-20,20f%] %B%S\n")
+  (setq gnus-user-date-format-alist '((t . "%Y/%02m/%02d %02H:%02M")))
+  (setq gnus-sum-thread-tree-false-root "")
+  (setq gnus-sum-thread-tree-root "")
+  (setq gnus-sum-thread-tree-indent " ")
+  (setq gnus-sum-thread-tree-leaf-with-other"├")
+  (setq gnus-sum-thread-tree-single-indent "")
+  (setq gnus-sum-thread-tree-single-leaf "└")
+  (setq gnus-sum-thread-tree-vertical "│")
+
+  ;; [Gmail] 表記のグループを認識させる
+  (setq gnus-ignored-newsgroups "^to\\.\\|^[0-9. ]+\\( \\|$\\)\\|^[\"]\"[#'()]")
+
+  ;; 記事バッファでは html メールは表示しない
+  (setq mm-automatic-display (remove "text/html" mm-automatic-display))
+  (setq gnus-buttonized-mime-types '("multipart/alternative" "multipart/signed"))
+
+  ;; gravatar
+  (setq gnus-treat-mail-gravatar 'head)
+  (setq gnus-treat-from-gravatar 'head)
+  (setq gnus-gravatar-size 24)
+
+  ;; gmail
+  (setq gnus-select-method '(nnimap ""
                                     (nnimap-address "imap.gmail.com")
                                     (nnimap-server-port 993)
-                                    (nnimap-stream ssl)))
-  (setq gnus-ignored-newsgroups "^to\\.\\|^[0-9. ]+\\( \\|$\\)\\|^[\"]\"[#'()]"))
+                                    (nnimap-stream ssl)
+                                    ;; (nnimap-fetch-partial-articles "text/")
+                                    ))
+  ;; gmane
+  (setq gnus-secondary-select-methods
+        '((nntp "" (nntp-address  "news.gmane.org"))))
+
+  ;; stripe-buffer / (package-install 'stripe-buffer)
+  (when (package-installed-p 'stripe-buffer)
+    (dolist (m '(gnus-summary-mode-hook
+                 gnus-group-mode-hook
+                 gnus-server-mode-hook
+                 gnus-browse-mode-hook))
+      (add-hook m (lambda ()
+                    (turn-on-stripe-buffer-mode)
+                    (hl-line-mode))))))
 
 (with-eval-after-load "message"
   (setq message-directory (init:emacs-d "gnus/mail"))
@@ -959,6 +1019,8 @@ Daemon 起動時以外は表示関数を直接潰す"
 
 (with-eval-after-load "smtpmail"
   (setq smtpmail-queue-dir (init:emacs-d "gnus/mail/queued-mail"))
+
+  ;; send by gmail
   (setq smtpmail-smtp-server "smtp.gmail.com")
   (setq smtpmail-smtp-service 465)
   (setq smtpmail-stream-type 'tls)

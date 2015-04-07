@@ -750,10 +750,14 @@ Daemon 起動時以外は表示関数を直接潰す"
 
   (add-hook 'dired-mode-hook
             (lambda ()
-              ;; dired 上でのみゴミ箱使用
               (toggle-truncate-lines t)
-              (setq-local delete-by-moving-to-trash t)
-              (hl-line-mode t)))
+              (hl-line-mode t)
+              ;; dired 上でのみゴミ箱使用
+              (setq-local delete-by-moving-to-trash t)))
+
+  ;; stripe-buffer / (package-install 'stripe-buffer)
+  (when (package-installed-p 'stripe-buffer)
+    (add-hook 'dired-mode-hook 'turn-on-stripe-buffer-mode))
 
   (autoload 'browse-url-default-browser "browse-url")
   (define-key dired-mode-map (kbd "E")
@@ -1568,7 +1572,6 @@ ARG が non-nil の場合は再度 `smart-compile' を呼び出す."
 
 ;; stripe-buffer / (package-install 'stripe-buffer)
 (when (package-installed-p 'stripe-buffer)
-  (add-hook 'dired-mode-hook 'turn-on-stripe-buffer-mode)
   (add-hook 'tabulated-list-mode-hook 'turn-on-stripe-buffer-mode))
 
 ;; temp-buffer-resize

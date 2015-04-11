@@ -1801,21 +1801,14 @@ RENEW が non-nil の場合は新しい状態を作る.
       (set-face-attribute (aref ansi-term-color-vector (1+ i)) nil
                           :foreground color :background color))))
 
-;; カーソルカラー
-(let ((ime-color "dark red"))
-  ;; input method 全般
-  ;; ccc / (package-install 'ccc)
-  (when (require 'ccc nil t)
-    (ccc-setup)
-    (add-hook 'input-method-activate-hook
-              (eval `(lambda () (ccc-set-buffer-local-cursor-color ,ime-color))))
-    (add-hook 'input-method-deactivate-hook
-              (lambda () (ccc-set-cursor-color-buffer-local nil))))
-
-  ;; skk
-  (when (package-installed-p 'ddskk)
-    (eval-after-load "skk"
-      `(setq skk-cursor-hiragana-color ,ime-color))))
+;; input method カーソルカラー
+;; ccc / (package-install 'ccc)
+(when (require 'ccc nil t)
+  (ccc-setup)
+  (add-hook 'input-method-activate-hook
+            (lambda () (ccc-set-buffer-local-cursor-color "dark red")))
+  (add-hook 'input-method-deactivate-hook
+            (lambda () (ccc-set-cursor-color-buffer-local nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; カスタマイズファイル読み込み

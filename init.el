@@ -1224,9 +1224,12 @@ Daemon 起動時以外は表示関数を直接潰す"
       (setq ad-return-value (mozc-helper-process-recv-response))))
 
   ;; mozc-popup / (package-install 'mozc-popup)
-  (when (and (require 'popup nil t)
-             (require 'mozc-popup nil t))
-    (setq mozc-candidate-style 'popup)))
+  (when (require 'mozc-popup nil t)
+    (setq mozc-candidate-style 'popup))
+
+  ;; mozc-im / git clone https://github.com/d5884/mozc-im
+  (when (require 'mozc-im nil t)
+    (setq default-input-method "japanese-mozc-im")))
 
 ;; nxml-mode
 (fset 'html-mode 'nxml-mode)

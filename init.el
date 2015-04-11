@@ -624,6 +624,7 @@ Daemon 起動時以外は表示関数を直接潰す"
   (define-key ac-completing-map (kbd "C-g") 'ac-stop)
 
   (setq ac-use-menu-map t)
+  (setq ac-delay 0.4)
 
   (when (require 'pos-tip nil t)
     (setq ac-quick-help-prefer-pos-tip t)))

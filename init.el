@@ -1188,13 +1188,6 @@ Daemon 起動時以外は表示関数を直接潰す"
                           init:org-isearch-lazy-highlight-search))
                  ad-do-it))))
 
-    (with-eval-after-load "isearch"
-      ;; isearch 中に leim を使用しない
-      (define-key isearch-mode-map [remap toggle-input-method] 'undefined)
-      (define-key isearch-mode-map [remap isearch-toggle-input-method] 'undefined)
-      (define-key isearch-mode-map [remap isearch-toggle-specified-input-method]
-        'undefined))
-
     (defadvice isearch-lazy-highlight-update (around init:suppress-error-isearch-regexp activate)
       "正規表現検索時のエラー回避."
       (ignore-errors

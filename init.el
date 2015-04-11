@@ -126,7 +126,7 @@ ORIGINAL が non-nil であれば最後に連結される."
                           '(("with-eval-after-load" . 'font-lock-keyword-face))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; ロードパス追加
+;; Package 初期化/ロードパス追加
 
 ;; ポータブル化
 (when after-init-time
@@ -143,23 +143,22 @@ ORIGINAL が non-nil であれば最後に連結される."
     (unless (getenv "HOME")
       (setenv "HOME" (expand-file-name ".." user-emacs-directory)))))
 
-;; (存在するなら) ~/.emacs.d/lisp および直下のディレクトリを load-path へ追加
-;; データフォルダ等もあるので再帰的には追加しない
-;; normal-top-level-add-subdirs-to-load-path は地味に遅いから使わない
-(setq load-path
-      (append
-       (init:awhen (init:locate-directory (init:emacs-d "lisp"))
-         (cons it (cl-remove-if-not #'file-directory-p (directory-files it t "^[^.]"))))
-       load-path))
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Package 初期化
 (package-initialize)
 (setq package-enable-at-startup nil)
 (setq package-archives (append
                         '(("melpa" . "http://melpa.milkbox.net/packages/"))
                         package-archives))
+
+;; (存在するなら) ~/.emacs.d/lisp および直下のディレクトリを load-path へ追加
+;; データフォルダ等もあるので再帰的には追加しない
+;; normal-top-level-add-subdirs-to-load-path は地味に遅いから使わない
+;; package のライブラリを上書きすることもあるので追加は最後
+(setq load-path
+      (append
+       (init:awhen (init:locate-directory (init:emacs-d "lisp"))
+         (cons it (cl-remove-if-not #'file-directory-p (directory-files it t "^[^.]"))))
+       load-path))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 言語設定

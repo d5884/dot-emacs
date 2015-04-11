@@ -805,12 +805,7 @@ Daemon 起動時以外は表示関数を直接潰す"
       (defadvice find-grep-dired (around init:find-grep-replace activate)
         "lgrep がちゃんと動かないので普通の grep に置き換え."
         (let ((grep-program "grep"))
-          ad-do-it))))
-
-  ;; dired-x は導入するが C-x C-j は skk 等で使用
-  (let ((cxcj (key-binding (kbd "C-x C-j"))))
-    (when (require 'dired-x nil t)
-      (global-set-key (kbd "C-x C-j") cxcj))))
+          ad-do-it)))))
 
 ;; ediff
 (with-eval-after-load "ediff"
@@ -1457,81 +1452,6 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
 ;; show-paren
 (setq show-paren-delay 0)
 (show-paren-mode t)
-
-;; skk / (package-install 'ddskk)
-;; 辞書 / cvs -d:pserver:guest@openlab.jp:/circus/cvsroot login [guest]
-;;        cvs -d:pserver:guest@openlab.jp:/circus/cvsroot co -d ~/.emacs.d/share/skk skk/dic
-(when (require 'skk-leim nil t)
-  (setq skk-user-directory user-emacs-directory)
-  (setq skk-init-file (expand-file-name "skk-init.el" skk-user-directory))
-
-  (global-set-key (kbd "C-x C-j") (defun init:force-skk-activate ()
-                                    "強制的に `current-input-method' を `skk-mode' にする."
-                                    (interactive)
-                                    (if (equal current-input-method "japanese-skk")
-                                        (deactivate-input-method)
-                                      (when current-input-method
-                                        (deactivate-input-method))
-                                      (set-input-method "japanese-skk"))))
-
-  (add-hook 'skk-load-hook
-            (lambda ()
-              ;; ローカルの辞書設定
-              (let ((dict-dir (init:emacs-d "share/skk")))
-                (init:awhen (locate-file "SKK-JISYO.L" (list dict-dir))
-                  (setq skk-large-jisyo it
-                        skk-aux-large-jisyo it))
-
-                ;; 追加の通常辞書 (あれば)
-                (setq skk-extra-jisyo-file-list
-                      (cl-loop for type in '("JIS2" "JIS2004" "JIS3_4"
-                                             "assoc" "geo" "jinmei" "station"
-                                             "law" "fullname" "propernoun"
-                                             "okinawa" "edict")
-                               for name = (expand-file-name (concat "SKK-JISYO." type)
-                                                            dict-dir)
-                               when (file-exists-p name) collect name)))
-
-              (when (require 'skk-study nil t)
-                (setq skk-study-backup-file nil))
-              (when (require 'skk-tankan nil t) ; Tan@ or /10@ or /@@
-                (add-to-list 'skk-search-prog-list
-                             '(skk-tankan-search 'skk-search-jisyo-file
-                                                 skk-large-jisyo 10000)))
-              (require 'skk-hint nil t) ; ▽はやま<SPC>;はし<SPC>
-              ;; (require 'context-skk)
-
-              (setq skk-latin-mode-string "A")
-              (setq skk-abbrev-mode-string "@")
-              (setq skk-hiragana-mode-string "あ")
-              (setq skk-katakana-mode-string "ア")
-              (setq skk-jisx0208-latin-mode-string "Ａ")
-              (setq skk-jisx0201-mode-string "ｱｧ")
-              (setq skk-indicator-use-cursor-color nil)
-
-              (defadvice skk-mode-string-to-indicator (before init:skk-mode-elimit-hyphen
-                                                              activate)
-                "SKKインジケータの先頭のハイフン削除."
-                (ad-set-arg 1 (replace-regexp-in-string "^-+" ":" (ad-get-arg 1))))
-
-              (setq skk-use-jisx0201-input-method t)
-              (setq skk-share-private-jisyo t)
-              (setq skk-search-sagyo-henkaku 'anything)
-              (setq skk-egg-like-newline t)
-              (setq skk-delete-implies-kakutei nil)
-              (setq skk-isearch-mode-enable nil)
-              ;; (setq skk-isearch-start-mode 'latin)
-              (setq skk-check-okurigana-on-touroku 'ask)
-              ;; (setq skk-henkan-okuri-strictly t)
-              (setq skk-henkan-strict-okuri-precedence t)
-              (setq skk-backup-jisyo nil)
-              (setq skk-keep-record nil)
-              (setq skk-dcomp-activate t)
-              (setq skk-show-annotation t)
-              (setq skk-show-tooltip t)
-
-              (when (require 'pos-tip nil t)
-                (setq skk-tooltip-function 'pos-tip-show)))))
 
 ;; smart-compile / (package-install 'smart-compile)
 (when (package-installed-p 'smart-compile)

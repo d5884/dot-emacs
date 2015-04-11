@@ -503,7 +503,7 @@ ORIGINAL が non-nil であれば最後に連結される."
                                           (text-scale-set 0)))))
 
 (when (display-multi-frame-p)
-  (global-set-key [remap save-buffers-kill-emacs]
+  (global-set-key [remap save-buffers-kill-terminal]
                   (defun init:close-or-exit-emacs (&optional arg)
                     "フレームが一つなら emacs を終了、それ以外はフレームを閉じる.
 ARG が non-nil の場合はフレームの数に関係なく emacs を終了する."

@@ -958,6 +958,9 @@ Daemon 起動時以外は表示関数を直接潰す"
   (setq gnus-cacheable-groups ".*")
   (setq gnus-cache-remove-articles nil)
 
+  ;; グループバッファはトピックモードで
+  (add-hook 'gnus-group-mode-hook 'gnus-topic-mode)
+
   ;; サマリバッファは新着順表示
   (setq gnus-thread-sort-functions '(gnus-thread-sort-by-most-recent-date))
   (setq gnus-article-sort-functions '(gnus-thread-sort-by-most-recent-date))
@@ -984,13 +987,14 @@ Daemon 起動時以外は表示関数を直接潰す"
   (setq gnus-ignored-newsgroups "^to\\.\\|^[0-9. ]+\\( \\|$\\)\\|^[\"]\"[#'()]")
 
   ;; 記事バッファでは html メールは表示しない
-  (setq mm-automatic-display (remove "text/html" mm-automatic-display))
-  (setq gnus-buttonized-mime-types '("multipart/alternative" "multipart/signed"))
+  (with-eval-after-load "gnus-art"
+    (setq mm-automatic-display (remove "text/html" mm-automatic-display))
+    (setq gnus-buttonized-mime-types '("multipart/alternative" "multipart/signed"))
 
-  ;; gravatar
-  (setq gnus-treat-mail-gravatar 'head)
-  (setq gnus-treat-from-gravatar 'head)
-  (setq gnus-gravatar-size 24)
+    ;; gravatar
+    (setq gnus-treat-mail-gravatar 'head)
+    (setq gnus-treat-from-gravatar 'head)
+    (setq gnus-gravatar-size 24))
 
   ;; gmail
   (setq gnus-select-method '(nnimap ""

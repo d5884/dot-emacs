@@ -1145,10 +1145,6 @@ Daemon 起動時以外は表示関数を直接潰す"
 ;; cmigemo / http://www.kaoriya.net/software/cmigemo
 (init:awhen (or (executable-find "cmigemo")
                 (executable-find "migemo"))
-  (defvar init:org-isearch-lazy-highlight-search
-    (symbol-function 'isearch-lazy-highlight-search)
-    "migemo に置き換えられる前の `isearch-lazy-highlight-search'.")
-
   (when (require 'migemo nil t)
     (setq migemo-command it)
 
@@ -1170,23 +1166,7 @@ Daemon 起動時以外は表示関数を直接潰す"
     ;; compatible key with kogiku
     (define-key isearch-mode-map (kbd "M-k") 'migemo-isearch-toggle-migemo)
 
-    ;; pty を消費しない
-    (let ((process-connection-type nil))
-      (migemo-init))
-
-    ;; query-replace 系での lazy-highlight 対応
-    (dolist (fn '(query-replace query-replace-regexp))
-      (eval `(defadvice ,fn (around ,(intern (format "init:%s-with-migemo"
-                                                     fn)) activate)
-               "migemo 導入時でもハイライトを有効にする."
-               (cl-letf (((symbol-function 'isearch-lazy-highlight-search)
-                          init:org-isearch-lazy-highlight-search))
-                 ad-do-it))))
-
-    (defadvice isearch-lazy-highlight-update (around init:suppress-error-isearch-regexp activate)
-      "正規表現検索時のエラー回避."
-      (ignore-errors
-        ad-do-it))))
+    (migemo-init)))
 
 ;; mozc / (package-install 'mozc)
 ;;    and http://www49.atwiki.jp/ntemacs?cmd=upload&act=open&pageid=50&file=mozc_emacs_helper.zip

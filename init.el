@@ -1264,11 +1264,21 @@ Daemon 起動時以外は表示関数を直接潰す"
            (help-mode :stick t)
            (dired-mode :stick t))
          popwin:special-display-config))
+
+  (defvar init:popwin-exclude-special-modes '(magit-status-mode)
+    "popwin 管轄下に自動で置きたくない special-mode 派生のメジャーモード.")
+
   ;; special-mode 派生はとりえあえず全部 popwin 管轄下へ
   (add-to-list 'popwin:special-display-config
                (list (lambda (b)
                        (with-current-buffer b
-                         (derived-mode-p 'special-mode)))) t)
+                         (and (derived-mode-p 'special-mode)
+                              (not (memq major-mode init:popwin-exclude-special-modes)))))) t)
+
+  ;; completion バッファが閉じる前に C-g すると壊れる問題対策
+  (defadvice minibuffer-hide-completions (after init:completion-hide-workaround activate )
+    (popwin:close-popup-window-if-necessary))
+
   (popwin-mode 1))
 
 ;; quail-japanese

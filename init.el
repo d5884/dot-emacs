@@ -932,6 +932,18 @@ Daemon 起動時以外は表示関数を直接潰す"
                              (gdb-many-windows)
                              (gud-tooltip-mode))))
 
+;; git-gutter-fringe / (package-install 'git-gutter-fringe)
+(when (package-installed-p 'git-gutter-fringe)
+  (require 'git-gutter-fringe)
+
+  (global-set-key (kbd "C-z C-d") 'git-gutter:popup-hunk)
+  (global-git-gutter-mode)
+
+  (when (package-installed-p 'popwin)
+    (with-eval-after-load "popwin"
+      (push '("*git-gutter:diff*" :noselect t)
+            popwin:special-display-config))))
+
 ;; gnus
 (setq mail-user-agent 'gnus-user-agent)
 (setq read-mail-command 'gnus)

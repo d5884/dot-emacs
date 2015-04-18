@@ -933,11 +933,11 @@ Daemon 起動時以外は表示関数を直接潰す"
                              (gud-tooltip-mode))))
 
 ;; git-gutter-fringe / (package-install 'git-gutter-fringe)
-(when (package-installed-p 'git-gutter-fringe)
-  (require 'git-gutter-fringe)
+(when (require 'git-gutter-fringe nil t)
+  (diminish 'git-gutter-mode)
 
-  (global-set-key (kbd "C-z C-d") 'git-gutter:popup-hunk)
   (global-git-gutter-mode)
+  (global-set-key (kbd "C-z C-d") 'git-gutter:popup-hunk)
 
   (when (package-installed-p 'popwin)
     (with-eval-after-load "popwin"

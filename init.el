@@ -1757,6 +1757,12 @@ RENEW が non-nil の場合は新しい状態を作る.
 
 (load-theme 'wombat t)
 
+(set-cursor-color "gray55")
+
+(set-face-attribute 'isearch nil
+                    :background "gray77"
+                    :foreground "black")
+
 (with-eval-after-load "cua-base"
   (face-spec-reset-face 'cua-rectangle)
   (set-face-attribute 'cua-rectangle nil :inherit 'region)

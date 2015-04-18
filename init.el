@@ -1175,8 +1175,6 @@ Daemon 起動時以外は表示関数を直接潰す"
     (setq migemo-use-frequent-pattern-alist t)
     (setq migemo-pattern-alist-length 1024)
     (setq migemo-pattern-alist-file (init:emacs-d "migemo-pattern"))
-    ;; compatible key with kogiku
-    (define-key isearch-mode-map (kbd "M-k") 'migemo-isearch-toggle-migemo)
 
     (migemo-init)))
 

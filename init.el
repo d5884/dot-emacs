@@ -1175,11 +1175,11 @@ Daemon 起動時以外は表示関数を直接潰す"
 
     (migemo-init)))
 
-;; mozc / (package-install 'mozc)
+;; mozc-im / (package-install 'mozc-im)
 ;;    and http://www49.atwiki.jp/ntemacs?cmd=upload&act=open&pageid=50&file=mozc_emacs_helper.zip
 (when (and (executable-find "mozc_emacs_helper")
-           (require 'mozc nil t))
-  (setq default-input-method "japanese-mozc")
+           (require 'mozc-im nil t))
+  (setq default-input-method "japanese-mozc-im")
   (setq mozc-leim-title "[あ]")
 
   (when (memq system-type '(windows-nt cygwin))
@@ -1188,23 +1188,6 @@ Daemon 起動時以外は表示関数を直接潰す"
       (if (eq (ad-get-arg 0) 'CreateSession)
           (mozc-session-sendkey '(hiragana)))))
 
-  (defadvice mozc-mode (after init:mozc-minibuffer-workaround activate)
-    "ミニバッファから抜ける際に正しく input-method を無効化する."
-    (when (and mozc-mode
-               (eq (selected-window) (minibuffer-window)))
-      (add-hook 'minibuffer-exit-hook 'mozc-exit-from-minibuffer)))
-
-  (defun mozc-exit-from-minibuffer ()
-    "`minibuffer' から抜ける際に `deactivate-input-method' を呼び出す."
-    (when (equal current-input-method "japanese-mozc")
-      (deactivate-input-method)
-      (if (<= (minibuffer-depth) 1)
-          (remove-hook 'minibuffer-exit-hook 'mozc-exit-from-minibuffer))))
-
-  (defadvice mozc-leim-deactivate (around init:mozc-deactive-workaround activate)
-    "正しく `mozc-mode' を終了させる."
-    (mozc-mode -1))
-
   (defadvice mozc-helper-process-recv-response (after init:mozc-accept-output-workaround activate)
     "他プロセスが終了した際に accept-process-output がタイムアウトする問題対策."
     (unless ad-return-value
@@ -1212,11 +1195,7 @@ Daemon 起動時以外は表示関数を直接潰す"
 
   ;; mozc-popup / (package-install 'mozc-popup)
   (when (require 'mozc-popup nil t)
-    (setq mozc-candidate-style 'popup))
-
-  ;; mozc-im / git clone https://github.com/d5884/mozc-im
-  (when (require 'mozc-im nil t)
-    (setq default-input-method "japanese-mozc-im")))
+    (setq mozc-candidate-style 'popup)))
 
 ;; nxml-mode
 (fset 'html-mode 'nxml-mode)

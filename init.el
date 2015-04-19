@@ -472,10 +472,8 @@ ORIGINAL が non-nil であれば最後に連結される."
     (global-set-key (kbd (format "<%s> <%s>" pos mouse-wheel-up-event)) 'ignore))
 
   ;; ミニバッファでもホイール回しでエラーを出さない
-  (add-hook 'minibuffer-setup-hook
-            (lambda ()
-              (local-set-key (kbd (format "<%s>" mouse-wheel-down-event)) 'ignore)
-              (local-set-key (kbd (format "<%s>" mouse-wheel-up-event)) 'ignore)))
+  (define-key minibuffer-local-map (kbd (format "<%s>" mouse-wheel-down-event)) 'ignore)
+  (define-key minibuffer-local-map (kbd (format "<%s>" mouse-wheel-up-event)) 'ignore)
   (define-key minibuffer-inactive-mode-map (kbd (format "<%s>" mouse-wheel-down-event)) 'ignore)
   (define-key minibuffer-inactive-mode-map (kbd (format "<%s>" mouse-wheel-up-event)) 'ignore)
 
@@ -483,8 +481,7 @@ ORIGINAL が non-nil であれば最後に連結される."
   (dolist (key '("<mouse-2>" "<down-mouse-2>"
                  "<left-fringe> <mouse-2>" "<right-fringe> <mouse-2>"))
     (global-unset-key (kbd key)))
-  (with-eval-after-load "ffap"
-    (global-set-key (kbd "<mouse-2>") 'ffap-at-mouse))
+  (global-set-key (kbd "<mouse-2>") 'ffap-at-mouse)
 
   ;; 右クリックは編集メニュー表示
   (dolist (key '("<mouse-3>" "<down-mouse-3>" "<drag-mouse-3>"))

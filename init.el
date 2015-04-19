@@ -695,31 +695,33 @@ Daemon 起動時以外は表示関数を直接潰す"
                                           (substring target 0 init:compile-command-max-length)
                                           " ..."))))))
 
+  (defun init:register-compilation-buffer-finish-hook (proc)
+    "`compilation-finish-functions' に登録を行う."
+    (add-hook 'compilation-finish-functions
+              'init:display-compilation-buffer-on-error nil t)
+    ;; remove self
+    (remove-hook 'compilation-start-hook 'init:register-compilation-buffer-finish-hook))
+
+  (defun init:display-compilation-buffer-on-error (buffer msg)
+    "エラー発生時のみ *compilation* バッファを表示する."
+    (with-current-buffer buffer
+      (if (or (not (string-match "finished" msg))
+              (text-property-not-all (point-min) (point-max) 'compilation-message nil))
+          (display-buffer buffer) ;; error occurred
+        (when (get-buffer-window buffer)
+          (delete-window (get-buffer-window buffer)))))
+    ;; remove self
+    (remove-hook 'compilation-finish-functions 'init:display-compilation-buffer-on-error))
+
   (dolist (func '(compile recompile))
     (eval `(defadvice ,func (around ,(intern (format "init:%s-silently" func)) activate)
-             "エラー発生時のみ *compilation* バッファ表示."
-             (let ((compilation-start-hook
-                    compilation-start-hook)) ; compile/recompile から呼ばれたとき専用
-               (add-hook 'compilation-start-hook
-                         (lambda (proc)
-                           (add-hook 'compilation-finish-functions
-                                     (lambda (buffer msg)
-                                       (with-current-buffer buffer
-                                         (font-lock-mode -1)
-                                         (font-lock-fontify-buffer)
-                                         (font-lock-mode 1)
-                                         (if (or (not (string-match "finished" msg))
-                                                 (text-property-not-all
-                                                  (point-min) (point-max)
-                                                  'compilation-message nil))
-                                             (display-buffer buffer)
-                                           (when (get-buffer-window buffer)
-                                             (delete-window (get-buffer-window buffer))))))
-                                     nil t)))
-               (cl-letf (((symbol-function 'display-buffer) 'ignore)
-                         ((symbol-function 'set-window-start) 'ignore)
-                         ((symbol-function 'set-window-point) 'ignore))
-                 ad-do-it))))))
+             "エラー発生時以外 *compilation* バッファを隠す."
+             (add-hook 'compilation-start-hook
+                       'init:register-compilation-buffer-finish-hook)
+             (let ((display-buffer-alist (cons '("\\`\\*compilation\\*\\'"
+                                                 display-buffer-no-window)
+                                               display-buffer-alist)))
+               ad-do-it)))))
 
 ;; cua-mode
 (when (require 'cua-base nil t)

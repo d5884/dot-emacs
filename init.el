@@ -1277,6 +1277,13 @@ Daemon 起動時以外は表示関数を直接潰す"
   (defadvice minibuffer-hide-completions (after init:completion-hide-workaround activate )
     (popwin:close-popup-window-if-necessary))
 
+  ;; popwin 管理下のバッファは非選択状態時にカーソル非表示にする
+  (add-hook 'popwin:after-popup-hook
+            (lambda ()
+              (when (buffer-live-p popwin:popup-buffer)
+                (with-current-buffer popwin:popup-buffer
+                  (setq cursor-in-non-selected-windows nil)))))
+
   (popwin-mode 1))
 
 ;; quail-japanese

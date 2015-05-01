@@ -444,8 +444,7 @@ ORIGINAL が non-nil であれば最後に連結される."
 ;; キーバインド変更
 
 ;; Ctrl-h を DEL に
-(when (load "term/bobcat" nil t)
-  (terminal-init-bobcat))
+(define-key key-translation-map (kbd "C-h") (kbd "<DEL>"))
 
 ;; ignore はヘルプ等に表示しない
 (put 'ignore 'suppress-keymap t)

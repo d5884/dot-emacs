@@ -571,9 +571,7 @@ ARG が non-nil の場合はフレームの数に関係なく emacs を終了す
 
 (defadvice display-startup-echo-area-message (around init:shut-up-echo-message activate)
   "起動時のエコーエリアのメッセージを表示しない.
-`inhibit-startup-echo-area-message' はユーザ名をリテラルで書く必要があるので
-Daemon 起動時以外は表示関数を直接潰す"
-  (when (daemonp) ad-do-it))
+`inhibit-startup-echo-area-message' はユーザ名をリテラルで書く必要があるので関数を直接潰す")
 
 ;; スクロール関係
 (setq scroll-preserve-screen-position t)

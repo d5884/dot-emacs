@@ -678,6 +678,12 @@ ARG が non-nil の場合はフレームの数に関係なく emacs を終了す
   (define-key compilation-mode-map (kbd "n") 'next-error)
   (define-key compilation-mode-map (kbd "p") 'previous-error)
 
+  (add-hook 'compilation-filter-hook
+            (lambda ()
+              ;; compile バッファでもエスケープシーケンスを有効化
+              (let ((inhibit-read-only t))
+                (ansi-color-apply-on-region (point-min) (point-max)))))
+
   (defconst init:compile-command-max-length 80
     "`compile' 時に表示するコマンドの最大長.")
 

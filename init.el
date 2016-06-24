@@ -1165,12 +1165,12 @@ ARG が non-nil の場合はフレームの数に関係なく emacs を終了す
     (setq migemo-pattern-alist-length 1024)
     (setq migemo-pattern-alist-file (init:emacs-d "migemo-pattern"))
 
-    (migemo-init)))
+    (migemo-init)
 
-;; migemo-completion
-;; git clone https://github.com/d5884/migemo-completion
-(when (require 'migemo-completion nil t)
-  (add-to-list 'completion-category-overrides '(file (styles migemo))))
+    ;; migemo-completion
+    ;; git clone https://github.com/d5884/migemo-completion
+    (when (require 'migemo-completion nil t)
+      (add-to-list 'completion-category-overrides '(file (styles migemo))))))
 
 ;; mozc-im / (package-install 'mozc-im)
 ;;    and http://www49.atwiki.jp/ntemacs?cmd=upload&act=open&pageid=50&file=mozc_emacs_helper.zip

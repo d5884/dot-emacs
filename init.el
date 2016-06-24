@@ -844,6 +844,9 @@ ARG が non-nil の場合はフレームの数に関係なく emacs を終了す
 (with-eval-after-load "eldoc"
   (diminish 'eldoc-mode))
 
+;; electric-pair
+(electric-pair-mode 1)
+
 ;; elisps
 (defun init:byte-compile-current-file-if-necessary ()
   "開いているファイルをバイトコンパイルする.
@@ -897,21 +900,6 @@ ARG が non-nil の場合はフレームの数に関係なく emacs を終了す
 ;; ffap
 (when (require 'ffap nil t)
   (ffap-bindings))
-
-;; flex-autopair / (package-install 'flex-autopair)
-(if (require 'flex-autopair nil t)
-    (progn
-      (diminish 'flex-autopair-mode)
-      (setq flex-autopair-echo-actionp nil)
-      (flex-autopair-mode))
-  ;; or skeleton
-  (when (require 'skeleton nil t)
-    (setq skeleton-pair t)
-    (global-set-key (kbd "(") 'skeleton-pair-insert-maybe)
-    (global-set-key (kbd "[") 'skeleton-pair-insert-maybe)
-    (global-set-key (kbd "{") 'skeleton-pair-insert-maybe)
-    ;; (global-set-key (kbd "`") 'skeleton-pair-insert-maybe)
-    (global-set-key (kbd "\"") 'skeleton-pair-insert-maybe)))
 
 ;; flycheck / (package-install 'flycheck)
 (when (package-installed-p 'flycheck)

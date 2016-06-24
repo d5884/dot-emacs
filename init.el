@@ -912,7 +912,7 @@ ARG が non-nil の場合はフレームの数に関係なく emacs を終了す
 
     ;; flycheck-pos-tip / (package-install 'flycheck-pos-tip)
     (when (package-installed-p 'flycheck-pos-tip)
-      (setq flycheck-display-errors-function 'flycheck-pos-tip-error-messages))))
+      (flycheck-pos-tip-mode))))
 
 ;; gdb
 (with-eval-after-load "gdb-mi"

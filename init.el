@@ -3,24 +3,19 @@
 ;;; Commentary:
 ;;
 ;; ユーザ設定初期化ファイル.
-;; Emacs 24.3 以降用
+;; Emacs 29.1 以降用
 ;;
 
 ;;; Code:
+
+;; 一時的なGC
+(setq gc-cons-threshold most-positive-fixnum)
+(setq read-process-output-max (* 1024 1024))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; メールアドレス等
 (setq user-full-name "Daisuke Kobayashi")
 (setq user-mail-address "d5884jp@gmail.com")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; GC 設定
-(setq gc-cons-threshold (* 40 1024 1024))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; コンパイル時のワーニング抑制
-(eval-when-compile
-  (setq byte-compile-warnings '(not free-vars)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; cl
@@ -36,44 +31,8 @@ BODY 内では PRED の評価結果を `it' で参照出来る."
   `(let ((it ,pred))
      (when it ,@body)))
 
-(defmacro init:acond (&rest clauses)
-  "CLAUSES を結果が真になるまで評価する.
-CLAUSES は (CONDITION BODY..) で構成され、CONDITION の結果は BODY 内で `it' で参照できる."
-  (if (null clauses)
-      nil
-    (let ((clause (car clauses))
-          (sym (cl-gensym)))
-      `(let ((,sym ,(car clause)))
-         (if ,sym
-             (let ((it ,sym)) ,@(cdr clause))
-           (init:acond ,@(cdr clauses)))))))
-
 (font-lock-add-keywords 'emacs-lisp-mode
-                        '(("\\<init:awhen\\|init:acond\\>" . font-lock-keyword-face)))
-
-(declare-function cygwin-convert-file-name-to-windows "cygw32.c")
-(defmacro init:system-file-name (name &optional directory)
-  "NAME をシステムで認識可能なファイルパスに変換する.
-`expand-file-name' により DIRECTORY を基準にして絶対パスに変換される.
-環境変数などの Emacs 外のプログラムに参照される場合に用いる."
-  `(cond
-    ((eq system-type 'windows-nt)
-     (subst-char-in-string ?/ ?\\ (expand-file-name ,name ,directory)))
-    ((eq system-type 'cygwin)
-     (cygwin-convert-file-name-to-windows (expand-file-name ,name ,directory)))
-    (t
-     (expand-file-name ,name ,directory))))
-
-(defmacro init:concat-system-file-names (names &optional directory original)
-  "NAMES をシステムで認識可能なファイルパスの連結に変換する.
-NAMES の各要素は自身と DIRECTORY を引数に `init:system-file-name' で処理される.
-セパレータには `path-separator' が用いられる.
-ORIGINAL が non-nil であれば最後に連結される."
-  `(apply 'concat
-          (mapconcat (lambda (name) (init:system-file-name name ,directory))
-                     ,names path-separator)
-          (if ,original
-              (list path-separator ,original))))
+                        '(("\\<init:awhen\\>" . font-lock-keyword-face)))
 
 (defmacro init:emacs-d (file)
   "~/.emacs.d 以下の FILE を返す."
@@ -84,76 +43,18 @@ ORIGINAL が non-nil であれば最後に連結される."
   `(locate-file "." (delq nil (list ,directory)) nil
                 (lambda (p) (when (file-exists-p p) 'dir-ok))))
 
-(defmacro init:find-directory (directories)
-  "DIRECTORIES のうち最初に見付かったディレクトリを返す."
-  `(locate-file "." (delq nil (copy-sequence ,directories)) nil
-                (lambda (p) (when (file-exists-p p) 'dir-ok))))
-
-(defmacro init:make-silently-loading (func)
-  "FUNC 内の `load' のメッセージ出力を強制的に抑制する."
-  `(defadvice ,func (around
-                     ,(intern (format "init:make-silently-loading-in-%s" (quote func)))
-                     activate)
-     "`load' 時のメッセージを抑制する."
-     (let ((org-load (symbol-function 'load)))
-       (cl-letf (((symbol-function 'load)
-                  (lambda (file &optional noerror _nomessage nosuffix must-suffix)
-                    (funcall org-load file noerror t nosuffix must-suffix))))
-         ad-do-it))))
-
-(defun init:package-install-all ()
-  "`init.el' にコメントで記述してあるパッケージを一括インストールする."
-  (interactive)
-  (package-refresh-contents)
-  (with-temp-buffer
-    (insert-file-contents user-init-file)
-    (goto-char (point-min))
-    (save-match-data
-      (while (re-search-forward "\\((package-install\s+'\\([^)]*\\))\\)" nil t)
-        (message "Installing %s..." (match-string 2))
-        (eval (read (match-string 1))))))
-  (message "Done."))
-
-;; before emacs-24.4
-(unless (fboundp 'with-eval-after-load)
-  (defmacro with-eval-after-load (file &rest body)
-    "FILE をロード後に BODY を評価する."
-    (declare (indent 1))
-    `(eval-after-load ,file
-       `(funcall ,(lambda () ,@body))))
-
-  (font-lock-add-keywords 'emacs-lisp-mode
-                          '(("with-eval-after-load" . 'font-lock-keyword-face))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Package 初期化/ロードパス追加
-
-;; ポータブル化
-(when after-init-time
-  (let ((this-file (or (buffer-file-name) load-file-name)))
-    ;; .emacs.d を init.el が置いてある場所にする
-    (setq user-emacs-directory (file-name-directory this-file))
-    (setq user-init-file this-file)
-
-    ;; -l init.el で起動したときも after-init-hook を実行する
-    (setq after-init-hook nil)
-    (with-eval-after-load this-file (run-hooks 'after-init-hook))
-
-    ;; HOME 設定
-    (unless (getenv "HOME")
-      (setenv "HOME" (expand-file-name ".." user-emacs-directory)))))
 
 ;; Package 初期化
 (package-initialize)
 (setq package-enable-at-startup nil)
 (setq package-archives (append
-                        '(("melpa" . "http://melpa.milkbox.net/packages/"))
+                        '(("melpa" . "http://melpa.org/packages/")
+                          ("jcs-elpa" . "https://jcs-emacs.github.io/jcs-elpa/packages/"))
                         package-archives))
 
-;; (存在するなら) ~/.emacs.d/lisp および直下のディレクトリを load-path へ追加
-;; データフォルダ等もあるので再帰的には追加しない
-;; normal-top-level-add-subdirs-to-load-path は地味に遅いから使わない
-;; package のライブラリを上書きすることもあるので追加は最後
+;; ~/.emacs.d/lisp および直下のディレクトリを load-path へ追加
 (setq load-path
       (append
        (init:awhen (init:locate-directory (init:emacs-d "lisp"))
@@ -162,9 +63,6 @@ ORIGINAL が non-nil であれば最後に連結される."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 言語設定
-(when (or (equal (getenv "LANG") "JPN") ;; windows default
-          (and (null (getenv "LANG")) (null (getenv "LC_ALL"))))
-  (set-locale-environment (setenv "LANG" "ja_JP.UTF-8")))
 
 ;; coding-system の優先度設定
 (set-coding-system-priority 'utf-8 'cp932) ; shift_jis より cp932 優先
@@ -175,266 +73,22 @@ ORIGINAL が non-nil であれば最後に連結される."
     (coding-system-put coding-system :decode-translation-table table)
     (coding-system-put coding-system :encode-translation-table table)))
 
-;; 改行コードの表示を変更
-(setq eol-mnemonic-dos "d")
-(setq eol-mnemonic-unix "u")
-(setq eol-mnemonic-mac "m")
-(setq eol-mnemonic-undecided "?")
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; フォント/ウィンドウサイズ設定
 (when (display-graphic-p)
   (setq vertical-centering-font-regexp ".*")
+  (init:awhen (cl-find-if (lambda (f)
+                            (find-font (font-spec :family f)))
+                          '("HackGen Console NF""Ricty" "Ricty Diminished"))
+    (set-fontset-font "fontset-standard" 'ascii (font-spec :family "HackGen Console NF"
+                                                           :size 12.0
+                                                           :weight 'normal :slant 'normal))
+    (setq-default line-spacing 0.2)
+    )
 
-  (cl-macrolet ((font-candidate (&rest font-list)
-                                (cl-find-if (lambda (f) (find-font (font-spec :family f)))
-                                            font-list)))
-    (let ((fontset "fontset-standard")
-          width-adjustment-alist)
-      (init:acond
-       ;; 単一フォント系
-       ;; Ricty / https://github.com/yascentur/Ricty
-       ;; Ricty Diminished / https://github.com/yascentur/RictyDiminished
-       ((font-candidate "Ricty" "Ricty Diminished")
-        (set-fontset-font fontset 'ascii (concat it ":pixelsize=16:weight=normal:slant=normal")))
-       ;; 和文/欧文別フォント系
-       ((font-candidate "Inconsolata" "Consolas" "DejaVu Sans Mono")
-        ;; ASCII/アクセント付きアルファベット類/ロシア語/ギリシャ語
-        (dolist (charset '(ascii
-                           latin-iso8859-1
-                           latin-iso8859-2
-                           latin-iso8859-3
-                           latin-iso8859-4
-                           latin-iso8859-14
-                           cyrillic-iso8859-5
-                           greek-iso8859-7))
-          (set-fontset-font fontset charset (concat it ":pixelsize=15:weight=normal:slant=normal"))
-          ;; 幅1に矯正
-          (push (cons charset 1) width-adjustment-alist))
+  ;; フレームに設定
+  (add-to-list 'default-frame-alist (cons 'font "fontset-standard")))
 
-        ;; 日本語その他
-        ;; MeiryoKe_Console / http://okrchicagob.blog4.fc2.com/blog-entry-121.html
-        (init:awhen (font-candidate "MeiryoKe_Console" "ＭＳ ゴシック" "IPAGothic")
-          (set-fontset-font fontset 'unicode `(,it . "iso10646-1") nil 'append))
-
-        ;; fallback font
-        (init:awhen (font-candidate "Arial Unicode MS")
-          (set-fontset-font fontset 'unicode `(,it . "iso10646-1") nil 'append))
-
-        ;; ローマ数字は幅2
-        (push '((#x2160 . #x216f) . 2) width-adjustment-alist) ; Ⅰ .. Ⅿ
-        (push '((#x2170 . #x217f) . 2) width-adjustment-alist) ; ⅰ .. ⅿ
-
-        ;; PinYin 発音記号
-        (push '((#x01cd . #x01dc) . 2) width-adjustment-alist) ; Ǎ .. ǜ
-        ))
-
-      ;; 文字幅調整
-      (when width-adjustment-alist
-        (let ((table (make-char-table nil)))
-          (dolist (pair width-adjustment-alist)
-            (let ((target (car pair))
-                  (width (cdr pair)))
-              (cond
-               ((symbolp target)
-                (map-charset-chars (lambda (range _arg)
-                                     (set-char-table-range table range width))
-                                   target))
-               (t
-                (set-char-table-range table target width)))))
-          (optimize-char-table table)
-          (set-char-table-parent table char-width-table)
-          (setq char-width-table table)))
-
-      ;; フレームに設定
-      (add-to-list 'default-frame-alist (cons 'font fontset))))
-
-  ;; ウィンドウサイズ
-  ;; w32-resume-frame / git clone https://github.com/d5884/w32-resume-frame
-  (if (require 'w32-resume-frame nil t)
-      (w32-resume-frame-activate)
-    (setq initial-frame-alist `((top . 60) (left . 120) ,@initial-frame-alist)))
-  (setq default-frame-alist `((width . 100) (height . 40) ,@default-frame-alist)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Cygwin 連携
-(when (eq system-type 'windows-nt)
-  ;; cygwin へのパス等が通されていない前提で emacs 内で諸々を設定する
-
-  ;; パイプ間の待ち時間を減らす
-  (setq w32-pipe-read-delay 10)
-
-  ;; インストールルート検索
-  (let* ((cygdll (locate-file "cygwin1.dll" exec-path))
-         (root-dir (or (and cygdll
-                            (expand-file-name ".." (file-name-directory cygdll)))
-                       (init:find-directory
-                        (cl-loop for name in '("cygwin64" "cygwin")
-                                 nconc (cl-loop for base in `("c:/"
-                                                              "c:/gnupack/app/cygwin"
-                                                              ,(getenv "HOME")
-                                                              ,(getenv "USERPROFILE")
-                                                              ,(getenv "LOCALAPPDATA")
-                                                              ,(getenv "APPDATA")
-                                                              ,(getenv "ProgramFiles"))
-                                                collect (expand-file-name name base)))))))
-    (when root-dir
-      ;; パスが通ってなければ通す
-      (unless cygdll
-        (let ((cygwin-exec-path
-               (mapcar (lambda (path) (expand-file-name path root-dir))
-                       '("~/bin" "usr/local/bin" "usr/bin" "bin"))))
-          (setenv "PATH" (init:concat-system-file-names cygwin-exec-path nil (getenv "PATH")))
-          (setq exec-path (append cygwin-exec-path exec-path))))
-
-      ;; ~/.emacs.d/bin は emacs のみで使用なので環境変数に出さない
-      (add-to-list 'exec-path (expand-file-name (init:emacs-d "bin")))
-
-      (unless (getenv "CYGWIN")
-        (setenv "CYGWIN" "nodosfilewarning winsymlinks"))
-
-      (setq null-device "/dev/null")
-
-      ;; cygwin-mount / (package-install 'cygwin-mount)
-      (when (require 'cygwin-mount nil t)
-        (cygwin-mount-activate))
-
-      ;; fakecygpty
-      ;; gcc -o fakecygpty.exe fakecygpty.c
-      ;; gcc -o qkill.exe qkill.c
-      ;; git clone https://github.com/d5884/fakecygpty
-      (when (require 'fakecygpty nil t)
-        (fakecygpty-activate))
-
-      ;; DOSコマンド混在のためプロセスでの出力のコードを未定に
-      (setq default-process-coding-system
-            (cons (coding-system-change-text-conversion
-                   (car default-process-coding-system) 'undecided)
-                  (cdr default-process-coding-system)))
-
-      ;; comint での出力コード自動判別設定 (undecided なだけだと判定後変更されてしまう)
-      (defadvice comint-send-input (before init:comint-send-detect-coding activate)
-        "出力時の文字コードを自動判断に毎回戻す."
-        (init:awhen (get-buffer-process (current-buffer))
-          (set-process-coding-system it
-                                     (coding-system-change-text-conversion
-                                      (car (process-coding-system it)) 'undecided)
-                                     (cdr (process-coding-system it)))))
-
-      ;; ファイル名のエンコーディングを実態とあわせる
-      ;; ls-lisp-use-insert-directory-program が non-nil な場合向け
-      (when (boundp 'w32-unicode-filenames)
-        (set-file-name-coding-system 'utf-8))
-
-      ;; shell が設定されてなければ bash へ
-      (when (w32-shell-dos-semantics)
-        (setq shell-file-name "/bin/bash")
-        (setq shell-command-switch "-c")
-        (setenv "SHELL" shell-file-name))
-
-      (with-eval-after-load "term"
-        (defadvice cd (around init:cd-accept-multibyte activate)
-          "`term' で/proc等に移動時の強制終了を防ぐ."
-          (unless (ignore-errors ad-do-it)
-            (ad-set-arg 0 "~/")
-            ad-do-it))
-
-        (defadvice term-emulate-terminal (around init:terminal-detect-coding activate)
-          "`term' で複数のコーディング出力を受け付ける."
-          (let ((locale-coding-system 'undecided))
-            ad-do-it)))
-
-      (with-eval-after-load "tramp"
-        (setq tramp-encoding-shell shell-file-name))
-
-      ;; gdb 使用時のエラー回避
-      (with-eval-after-load "gdb-mi"
-        (declare-function gdb-input "gdb-mi")
-        (add-hook 'gdb-mode-hook
-                  (lambda ()
-                    (gdb-input "-gdb-set interactive-mode auto" 'ignore))))
-
-      ;; cygwin で追加される Info
-      (with-eval-after-load "info"
-        (mapc (lambda (p)
-                (init:awhen (init:locate-directory p)
-                  (add-to-list 'Info-directory-list it t)))
-              (if (getenv "INFOPATH")   ; cygwin のターミナルから起動した場合など
-                  (append (Info-default-dirs)
-                          (split-string (getenv "INFOPATH") ":" t))
-                '("/usr/local/info" "/usr/share/info" "/usr/info"))))
-
-      ;; NTEmacs の場合、プロセスの引数は起動した環境のコードページに依存するため
-      ;; プロセス呼び出し時に引数のみ locale-coding-system へ強制変換する
-      ;; クォート処理は elisp 側で行う (ダメ文字対策)
-      (defvar init:ldd-cache nil
-        "ldd の結果のキャッシュ.")
-
-      (defun init:cygwin-program-p (filename)
-        "FILENAME が cygwin のプログラムかどうか判定する."
-        (let* ((target (and filename (executable-find filename)))
-               (cache (assoc target init:ldd-cache))
-               (w32-quote-process-args nil)) ; advice 中で再帰しないよう nil
-          (when target
-            (unless cache
-              (setq cache (cons target
-                                (with-temp-buffer ; cygwin のライブラリをロードしているか判定
-                                  (when (eq 0 (call-process "ldd" nil t nil
-                                                            (concat "\"" target "\"")))
-                                    (goto-char (point-min))
-                                    (number-or-marker-p
-                                     (re-search-forward "cygwin[0-9]+\.dll" nil t))))))
-              (push cache init:ldd-cache))
-            (cdr cache))))
-
-      ;; func / prog / arg
-      (cl-loop for (f p a) in '((call-process-region 2 6)
-                                (call-process 0 4)
-                                (start-process 2 3))
-               do (eval `(defadvice ,f (around ,(intern (format "init:%s-arguments-setup" f))
-                                               activate)
-                           ,(format "実行時に%d番目以降の引数を `locale-coding-system' でエンコードする."
-                                    (1+ a))
-                           (let ((cygwin-quote (and w32-quote-process-args ; cygwin-program-p の再帰防止
-                                                    (init:cygwin-program-p (ad-get-arg ,p)))))
-                             (ad-set-args ,a
-                                          (mapcar
-                                           (lambda (arg)
-                                             (when w32-quote-process-args
-                                               (setq arg
-                                                     (concat "\""
-                                                             (if cygwin-quote
-                                                                 (replace-regexp-in-string
-                                                                  "[\"\\\\]" "\\\\\\&" arg)
-                                                               (replace-regexp-in-string
-                                                                "\\(\\(\\\\\\)*\\)\"" "\\1\\\\\\&" arg))
-                                                             "\"")))
-                                             (if (multibyte-string-p arg)
-                                                 (encode-coding-string arg locale-coding-system)
-                                               arg))
-                                           (ad-get-args ,a)))
-                             (let ((w32-quote-process-args nil))
-                               ad-do-it)))))
-
-      (when (version<= "24.4" emacs-version) ; 24.4 「から」発生
-        (defconst w32-pipe-limit 4096
-          "Windows でのパイプバッファサイズ.")
-
-        (defadvice process-send-string (around init:workaround-for-process-send-string activate)
-          "4096 バイト超を一度に送信すると cygwin の select が停止する問題への対処."
-          (if (not (eq (process-type (ad-get-arg 0)) 'real))
-              ad-do-it
-            (let* ((proc (get-process (or (ad-get-arg 0)
-                                          (get-buffer-process (current-buffer)))))
-                   (rest (encode-coding-string (ad-get-arg 1)
-                                               (cdr (process-coding-system proc))))
-                   (inhibit-eol-conversion t))
-              (while (> (length rest) w32-pipe-limit)
-                (ad-set-arg 1 (substring rest 0 w32-pipe-limit))
-                ad-do-it
-                (setq rest (substring rest w32-pipe-limit)))
-              (ad-set-arg 1 rest)
-              ad-do-it)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; パス追加
@@ -446,36 +100,19 @@ ORIGINAL が non-nil であれば最後に連結される."
 ;; Ctrl-h を DEL に
 (define-key key-translation-map (kbd "C-h") (kbd "<DEL>"))
 
-;; ignore はヘルプ等に表示しない
-(put 'ignore 'suppress-keymap t)
+(autoload 'ibuffer-bs-show "ibuffer" nil t)
 
 (global-set-key (kbd "C-x ?") 'help-command)
 (global-set-key (kbd "C-x 7") 'toggle-truncate-lines)
 (global-set-key (kbd "C-x C-z") 'compile)
 (global-unset-key (kbd "C-z"))
-(global-set-key (kbd "<pause>") 'toggle-debug-on-error)
-(global-set-key [remap list-buffers] 'bs-show)
+(global-set-key [remap list-buffers] 'ibuffer-bs-show)
 (global-set-key (kbd "C-z z") (defun init:ansi-term ()
                                 "`ansi-term' を実行する."
                                 (interactive)
                                 (ansi-term shell-file-name)))
-(global-set-key (kbd "<apps>") (defun init:show-apps-menu ()
-                                 "編集メニューを表示する."
-                                 (interactive)
-                                 (popup-menu menu-bar-edit-menu)))
 
 (when (display-mouse-p)
-  ;; フレーム外/モードラインでのホイール回しでエラーを出さない
-  (dolist (pos '("nil" "mode-line" "right-fringe" "left-fringe"))
-    (global-set-key (kbd (format "<%s> <%s>" pos mouse-wheel-down-event)) 'ignore)
-    (global-set-key (kbd (format "<%s> <%s>" pos mouse-wheel-up-event)) 'ignore))
-
-  ;; ミニバッファでもホイール回しでエラーを出さない
-  (define-key minibuffer-local-map (kbd (format "<%s>" mouse-wheel-down-event)) 'ignore)
-  (define-key minibuffer-local-map (kbd (format "<%s>" mouse-wheel-up-event)) 'ignore)
-  (define-key minibuffer-inactive-mode-map (kbd (format "<%s>" mouse-wheel-down-event)) 'ignore)
-  (define-key minibuffer-inactive-mode-map (kbd (format "<%s>" mouse-wheel-up-event)) 'ignore)
-
   ;; ホイールクリックで貼り付けは使わない
   (dolist (key '("<mouse-2>" "<down-mouse-2>"
                  "<left-fringe> <mouse-2>" "<right-fringe> <mouse-2>"))
@@ -486,75 +123,23 @@ ORIGINAL が non-nil であれば最後に連結される."
   (dolist (key '("<mouse-3>" "<down-mouse-3>" "<drag-mouse-3>"))
     (global-unset-key (kbd key)))
   (when (display-popup-menus-p)
-    (global-set-key (kbd "<mouse-3>") menu-bar-edit-menu))
-
-  ;; Ctrl+Wheel で文字サイズ変更
-  (when (display-multi-font-p)
-    (global-set-key (kbd (format "<C-%s>" mouse-wheel-down-event)) 'text-scale-increase)
-    (global-set-key (kbd (format "<C-%s>" mouse-wheel-up-event)) 'text-scale-decrease)
-    (global-unset-key (kbd "<C-down-mouse-2>"))
-    (global-set-key (kbd "<C-mouse-2>") (defun init:text-scale-reset ()
-                                          "テキストのスケーリングをリセットする."
-                                          (interactive)
-                                          (text-scale-set 0)))))
-
-(when (display-multi-frame-p)
-  (global-set-key [remap save-buffers-kill-terminal]
-                  (defun init:close-or-exit-emacs (&optional arg)
-                    "フレームが一つなら emacs を終了、それ以外はフレームを閉じる.
-ARG が non-nil の場合はフレームの数に関係なく emacs を終了する."
-                    (interactive "P")
-                    (if (or arg (eq 1 (length (frame-list))))
-                        (save-buffers-kill-terminal)
-                      (delete-frame))))
-
-  (global-set-key (kbd "C-z C-:")
-                  (if (fboundp 'toggle-frame-maximized)
-                      'toggle-frame-maximized
-                    (defun toggle-frame-maximized ()
-                      "フレームサイズの最大化状態を切り替える."
-                      (interactive)
-                      (if (not (frame-parameter nil 'fullscreen))
-                          (progn
-                            (and (fboundp 'w32-send-sys-command)
-                                 (w32-send-sys-command #xf030))
-                            (set-frame-parameter nil 'fullscreen 'maximized))
-                        (and (fboundp 'w32-send-sys-command)
-                             (w32-send-sys-command #xf120))
-                        (set-frame-parameter nil 'fullscreen nil))))))
-
-(global-set-key (kbd "C-z C-;") 'suspend-frame)
+    (global-set-key (kbd "<mouse-3>") menu-bar-edit-menu)))
 
 ;; IME関連キーの整理
 ; 全角/半角は IME トグルに
-(global-set-key (kbd "<enlw>") 'toggle-input-method)
-(global-set-key (kbd "<auto>") 'toggle-input-method)
-(global-set-key (kbd "<kanji>") 'toggle-input-method)
-(global-set-key (kbd "<zenkaku-hankaku>") ''toggle-input-method)
-
-; M-全角/半角はネイティブへスルー
-(global-set-key (kbd "<M-kanji>") 'ignore)
+(global-set-key (kbd "<zenkaku-hankaku>") 'toggle-input-method)
 
 ; 無変換/変換/カタカナ/ひらがな/ローマ字は無効化
-(global-set-key (kbd "<convert>") 'ignore)
-(global-set-key (kbd "<muhenkan>") 'ignore)
-(global-set-key (kbd "<non-convert>") 'ignore)
-(global-set-key (kbd "<henkan>") 'ignore)
-(global-set-key (kbd "<copy>") 'ignore)
-(global-set-key (kbd "<hiragana-katakana>") 'ignore)
+(dolist (key '("<muhenkan>" "<henkan>" "<hiragana-katakana>"))
+  (global-set-key (kbd key) 'ignore))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 各種機能/パッケージ別
-
-;; diminish / (package-install 'diminish)
-(unless (package-installed-p 'diminish)
-  (defalias 'diminish 'ignore))
 
 ;; 編集系色々
 (setq comment-style 'multi-line)
 (setq kill-do-not-save-duplicates t)
 (setq require-final-newline t)
-(setq search-invisible t)
 (setq truncate-partial-width-windows nil)
 (setq visible-bell t)
 (setq disabled-command-function nil)
@@ -569,9 +154,7 @@ ARG が non-nil の場合はフレームの数に関係なく emacs を終了す
 (setq inhibit-startup-screen t)
 (setq initial-scratch-message nil)
 
-(defadvice display-startup-echo-area-message (around init:shut-up-echo-message activate)
-  "起動時のエコーエリアのメッセージを表示しない.
-`inhibit-startup-echo-area-message' はユーザ名をリテラルで書く必要があるので関数を直接潰す")
+(advice-add 'display-startup-echo-area-message :override 'ignore)
 
 ;; スクロール関係
 (setq scroll-preserve-screen-position t)
@@ -580,174 +163,99 @@ ARG が non-nil の場合はフレームの数に関係なく emacs を終了す
 (setq scroll-step 1)
 (setq next-screen-context-lines 1)
 (setq mouse-wheel-scroll-amount '(1 ((shift) . 5)))
-(setq recenter-positions '(middle top))
+(setq recenter-positions '(middle))
 
 ;; フレーム/カーソル関連
 (setq frame-title-format "%b")
 (blink-cursor-mode -1)
 (tool-bar-mode -1)
 (menu-bar-mode -1)
-(when (featurep 'scroll-bar)
-  (scroll-bar-mode -1))
-(mouse-avoidance-mode 'exile)
+(scroll-bar-mode -1)
 
 ;; モードライン関係
 (column-number-mode t)
+
+;; ffap
+(ffap-bindings)
 
 ;; ansi-color
 (with-eval-after-load "comint"
   (ansi-color-for-comint-mode-on))
 
-;; apropos
-(with-eval-after-load "apropos"
-  (setq apropos-do-all t)
-  (define-key apropos-mode-map (kbd "n") 'forward-button)
-  (define-key apropos-mode-map (kbd "p") 'backward-button))
+;; corfu
+(when (require 'corfu nil t)
+  (setq corfu-cycle t)
+  (setq corfu-auto t)
+  (setq corfu-auto-delay 0.1)
+  (setq corfu-auto-prefix 1)
+  (setq corfu-preselect 'prompt)
+  (global-corfu-mode)
+  (when (require 'kind-icon nil t)
+    (setq corfu-margin-formatters '(kind-icon-margin-formatter))
+    (setq kind-icon-default-face 'corfu-default))
 
-;; auth-source
-(with-eval-after-load "auth-source"
-  (setq auth-sources (cons (init:emacs-d "authinfo.gpg") auth-sources)))
+  (when (require 'corfu-popupinfo nil t)
+    (setq corfu-popupinfo-delay 0)
+    (corfu-popupinfo-mode)))
 
-;; auto-complete-mode / (package-install 'auto-complete)
-(when (require 'auto-complete-config nil t)
-  (diminish 'auto-complete-mode)
 
-  (ac-config-default)
+;; js-mode
+(setq auto-mode-alist (append '(("\\.js\\'" . js-ts-mode)
+                                ("\\.ts\\'"  . typescript-ts-mode)
+                                ("\\.jsx\\'" . js-jsx-mode)
+                                ("\\.tsx\\'" . tsx-ts-mode))
+                              auto-mode-alist))
+(with-eval-after-load "js"
+  (define-key js-mode-map (kbd "M-.") 'xref-find-definitions)
 
-  (define-key ac-mode-map (kbd "M-TAB") 'auto-complete)
-  (define-key ac-completing-map (kbd "C-g") 'ac-stop)
+  (dolist (mode '(js-ts-mode-hook js-jsx-mode-hook typescript-ts-mode-hook tsx-ts-mode-hook))
+    ;; eglot
+    (when (package-installed-p 'eglot)
+      (add-hook mode 'eglot-ensure)
+      ;; flymake-eslint
+      (when (package-installed-p 'flymake-eslint)
+        (add-hook mode (lambda ()
+                         (add-hook 'eglot-managed-mode-hook 'flymake-eslint-enable)))))
+    ;; prettier
+    (when (package-installed-p 'prettier)
+      (add-hook mode 'prettier-mode))))
 
-  (setq ac-use-menu-map t)
+;; python-mode
+(setq auto-mode-alist (append '(("\\.py\\'" . python-ts-mode))
+                              auto-mode-alist))
 
-  (when (require 'pos-tip nil t)
-    (setq ac-quick-help-prefer-pos-tip t)))
+(with-eval-after-load "python"
+  (add-hook 'python-ts-mode-hook 'eglot-ensure))
+
+;; editor-config
+(when (require 'editorconfig nil t)
+  (editorconfig-mode 1))
+
+;; flymake-diagnostic-at-point
+(when (package-installed-p 'flymake-diagnostic-at-point)
+  (with-eval-after-load "flymake"
+    (require 'flymake-diagnostic-at-point nil t)
+    (add-hook 'flymake-mode-hook 'flymake-diagnostic-at-point-mode)))
+
 
 ;; calculator
 (global-set-key (kbd "C-z C-c") 'calculator)
 
-(with-eval-after-load "calculator"
-  (declare-function calculator-save-and-quit "calculator")
-  ;; C-ret は cua-mode に上書きされてるので
-  (define-key calculator-mode-map [remap calculator]
-    (defun init:calculator-quit-and-yank ()
-      "`calculator' を終了して結果を `yank' する."
-      (interactive)
-      (calculator-save-and-quit)
-      (yank))))
-
-;; calendar
-(with-eval-after-load "calendar"
-  ;; solor / geocode from http://api.knecht.jp/geocoding
-  (setq calendar-latitude 35.6894875)
-  (setq calendar-longitude 139.6917064)
-  (setq calendar-location-name "Tokyo, JP")
-  (setq calendar-time-display-form '((format "%2s:%2s%s" 12-hours minutes am-pm)))
-  (setq calendar-date-display-form '((format "%2s/%2s/%2s" year month day)))
-  (setq calendar-mark-holidays-flag t)
-  (add-hook 'calendar-today-visible-hook 'calendar-mark-today)
-
-  (setq diary-file (init:emacs-d "diary"))
-  (setq diary-entry-marker 'link)
-  (setq diary-list-include-blanks t)
-  (setq calendar-mark-diary-entries-flag t)
-
-  ;; 日本の祝日表示 / (package-install 'japanese-holidays)
-  (when (require 'japanese-holidays nil t)
-    (setq calendar-holidays
-          (append japanese-holidays holiday-local-holidays holiday-other-holidays))
-
-    (add-hook 'today-visible-calendar-hook 'japanese-holiday-mark-weekend)
-    (add-hook 'today-invisible-calendar-hook 'japanese-holiday-mark-weekend)))
-
-;; cc-mode
-(with-eval-after-load "cc-mode"
-  (add-hook 'c-mode-common-hook
-            (lambda ()
-              (hs-minor-mode t)
-              (hide-ifdef-mode t)))
-  ;; flycheck
-  (when (package-installed-p 'flycheck)
-    (add-hook 'c-mode-common-hook 'flycheck-mode)))
-
 ;; completion
 (setq completion-show-help nil)
 
-;; compile
-(with-eval-after-load "compile"
-  (setq compilation-scroll-output t)
-  (define-key compilation-mode-map (kbd "n") 'next-error)
-  (define-key compilation-mode-map (kbd "p") 'previous-error)
-
-  (add-hook 'compilation-filter-hook
-            (lambda ()
-              ;; compile バッファでもエスケープシーケンスを有効化
-              (let ((inhibit-read-only t))
-                (ansi-color-apply-on-region (point-min) (point-max)))))
-
-  (defconst init:compile-command-max-length 80
-    "`compile' 時に表示するコマンドの最大長.")
-
-  (defadvice compilation-start (before init:trim-compile-command activate)
-    "長すぎるコンパイルコマンドを短縮する."
-    (let ((target (ad-get-arg 0)))
-      (when (> (length target) init:compile-command-max-length)
-        (ad-set-arg 0
-                    (propertize target
-                                'display (concat
-                                          (substring target 0 init:compile-command-max-length)
-                                          " ..."))))))
-
-  (defun init:register-compilation-buffer-finish-hook (proc)
-    "`compilation-finish-functions' に登録を行う."
-    (add-hook 'compilation-finish-functions
-              'init:display-compilation-buffer-on-error nil t)
-    ;; remove self
-    (remove-hook 'compilation-start-hook 'init:register-compilation-buffer-finish-hook))
-
-  (defun init:display-compilation-buffer-on-error (buffer msg)
-    "エラー発生時のみ *compilation* バッファを表示する."
-    (with-current-buffer buffer
-      (if (or (not (string-match "finished" msg))
-              (text-property-not-all (point-min) (point-max) 'compilation-message nil))
-          (display-buffer buffer) ;; error occurred
-        (when (get-buffer-window buffer)
-          (delete-window (get-buffer-window buffer)))))
-    ;; remove self
-    (remove-hook 'compilation-finish-functions 'init:display-compilation-buffer-on-error))
-
-  (dolist (func '(compile recompile))
-    (eval `(defadvice ,func (around ,(intern (format "init:%s-silently" func)) activate)
-             "エラー発生時以外 *compilation* バッファを隠す."
-             (add-hook 'compilation-start-hook
-                       'init:register-compilation-buffer-finish-hook)
-             (let ((display-buffer-alist (cons '("\\`\\*compilation\\*\\'"
-                                                 display-buffer-no-window)
-                                               display-buffer-alist)))
-               ad-do-it)))))
-
-;; cua-mode
-(when (require 'cua-base nil t)
-  (cua-selection-mode t))
+;; delete-selection-mode
+(delete-selection-mode 1)
 
 ;; dired
 (global-set-key (kbd "C-x C-d") 'dired-other-window)
-
 (with-eval-after-load "dired"
-  (declare-function browse-url-default-browser "browse-url")
-  (declare-function dired-get-file-for-visit "dired")
-
   (setq dired-dwim-target t)
   (setq dired-isearch-filenames t)
-  (setq dired-listing-switches "-lAF")
-  (if (and (featurep 'ls-lisp)
-           (not ls-lisp-use-insert-directory-program))
-      (progn
-        (setq ls-lisp-dirs-first t)
-        (setq ls-lisp-format-time-list '("%Y-%m-%d %H:%M" "%Y-%m-%d %H:%M"))
-        (setq ls-lisp-use-localized-time-format t))
-    (setq dired-listing-switches (concat "--time-style=long-iso "
-                                         "--group-directories-first "
-                                         dired-listing-switches)))
+  (setq dired-listing-switches
+        (concat "-oglAF "
+                "--time-style=long-iso "
+                "--group-directories-first "))
 
   (add-hook 'dired-mode-hook
             (lambda ()
@@ -756,96 +264,113 @@ ARG が non-nil の場合はフレームの数に関係なく emacs を終了す
               ;; dired 上でのみゴミ箱使用
               (setq-local delete-by-moving-to-trash t)))
 
-  ;; stripe-buffer / (package-install 'stripe-buffer)
-  (when (package-installed-p 'stripe-buffer)
-    (add-hook 'dired-mode-hook 'turn-on-stripe-buffer-mode))
-
-  (autoload 'browse-url-default-browser "browse-url")
-  (define-key dired-mode-map (kbd "E")
-    (defun init:dired-execute (arg)
-      "ファイルを関連付けされたプログラムで開く.
-プリフィクスキーが入力されている場合はカレントディレクトリを開く."
-      (interactive "P")
-      (browse-url-default-browser (if arg "." (dired-get-file-for-visit)))))
-
-  (define-key dired-mode-map (kbd "v")
-    (defun init:dired-view-other-window ()
-      "別ウィンドウでファイルを閲覧する."
-      (interactive)
-      (view-file-other-window (dired-get-file-for-visit))))
-
   (define-key dired-mode-map (kbd "q") 'kill-this-buffer)
-
-  ;; dired のバッファを無駄に増やさないため、移動時に移動前のバッファを消す
-  (dolist (f '(dired-find-file dired-up-directory))
-    (eval `(defadvice ,f (around ,(intern
-                                   (format "init:%s-and-kill" f))
-                                 activate)
-             "移動前のディレクトリバッファ削除およびソート順序保持."
-             (let ((prev-buffer (current-buffer))
-                   (switch dired-actual-switches))
-               ad-do-it
-               (if (and (not (eq prev-buffer (current-buffer)))
-                        (not (string= (buffer-name prev-buffer) "*Find*"))
-                        (eq major-mode 'dired-mode))
-                   (progn
-                     ;; popwin 管理下の場合はバッファの差し替えを通知する
-                     (if (and (boundp 'popwin:popup-buffer)
-                              (eq popwin:popup-buffer prev-buffer))
-                         (setq popwin:popup-buffer (current-buffer)))
-                     (kill-buffer prev-buffer)
-                     (dired-sort-other (setq dired-actual-switches switch))))))))
 
   ;; find-dired
   (with-eval-after-load "find-dired"
-    (setq find-ls-option (cons (format "-exec ls %sd --time-style=long-iso {} +"
+    (setq find-ls-option (cons (format "-exec ls -d %s {} +"
                                        dired-listing-switches)
-                               (format "%sd" dired-listing-switches)))
+                               (format "-d %s" dired-listing-switches)))))
 
-    (when (require 'grep nil t)
-      (defadvice find-grep-dired (around init:find-grep-replace activate)
-        "lgrep がちゃんと動かないので普通の grep に置き換え."
-        (let ((grep-program "grep"))
-          ad-do-it)))))
+;; nerd-icons-dired
+(when (package-installed-p 'nerd-icons-dired)
+  (when (package-installed-p 'dired-sidebar)
+    (defalias 'all-the-icons-dired--refresh 'nerd-icons-dired--refresh))
+  (add-hook 'dired-mode-hook 'nerd-icons-dired-mode))
 
-;; ediff
-(with-eval-after-load "ediff"
-  (declare-function ediff-with-current-buffer "ediff")
+;; nerd-icons-dired
+(when (package-installed-p 'nerd-icons-completion)
+  (add-hook 'after-init-hook 'nerd-icons-completion-mode)
+  (when (package-installed-p 'marginalia)
+    (add-hook 'marginalia-mode-hook 'nerd-icons-completion-marginalia-setup)))
 
-  (setq ediff-window-setup-function 'ediff-setup-windows-plain)
-  (setq ediff-split-window-function 'split-window-horizontally)
+;; nerd-icons-ibuffer
+(when (package-installed-p 'nerd-icons-ibuffer)
+  (add-hook 'ibuffer-mode-hook 'nerd-icons-ibuffer-mode))
 
-  (defadvice ediff-find-file (around init:ediff-mark-newly-opened activate)
-    "ediff が開いたファイルを quit 時に削除できるようフラグを付ける."
-    (let ((existing-p (and find-file-existing-other-name
-                           (find-buffer-visiting (symbol-value (ad-get-arg 0))))))
-      ad-do-it
-      (unless existing-p
-        (ediff-with-current-buffer (symbol-value (ad-get-arg 1))
-          (setq-local init:ediff-kill-on-quit t)))))
-
-  (defvar init:ediff-window-configuration-stash nil
-    "`ediff' 実行前のウィンドウ状態の一時保存先.")
-
-  (add-hook 'ediff-before-setup-hook
-            (lambda ()
-              (setq init:ediff-window-configuration-stash
-                    (current-window-configuration))))
-  (add-hook 'ediff-quit-hook
-            (lambda ()
-              (dolist (buf (list ediff-buffer-A ediff-buffer-B ediff-ancestor-buffer))
-                (ediff-with-current-buffer buf
-                  (when (and (boundp 'init:ediff-kill-on-quit)
-                             init:ediff-kill-on-quit)
-                    (kill-buffer))))
-              (set-window-configuration init:ediff-window-configuration-stash))))
-
-;; eldoc
-(with-eval-after-load "eldoc"
-  (diminish 'eldoc-mode))
+;; doom-modeline
+(when (require 'doom-modeline nil t)
+  (doom-modeline-mode 1))
 
 ;; electric-pair
 (electric-pair-mode 1)
+
+;; show-paren
+(setq show-paren-delay 0)
+(show-paren-mode t)
+
+;; indent-guid
+(when (package-installed-p 'indent-guide)
+  (indent-guide-global-mode))
+
+;; magit / (package-install 'magit)
+(when (package-installed-p 'magit)
+  (global-set-key (kbd "C-z C-m") 'magit-status)
+
+  (with-eval-after-load "magit"
+    (setq magit-auto-revert-mode-lighter "")))
+
+;; diff-hl
+(when (require 'diff-hl nil t)
+  (global-diff-hl-mode 1)
+  (add-hook 'dired-mode-hook 'diff-hl-dired-mode)
+  (global-set-key (kbd "C-z C-d") 'diff-hl-show-hunk)
+  (with-eval-after-load "magit"
+    (add-hook 'magit-pre-refresh-hook 'diff-hl-magit-pre-refresh)
+    (add-hook 'magit-post-refresh-hook 'diff-hl-magit-post-refresh)))
+
+;; blamer
+(when (require 'blamer nil t)
+  (global-blamer-mode t))
+
+;; grep
+(with-eval-after-load "grep"
+  (declare-function grep-apply-setting "grep")
+
+  (when (executable-find "rg")
+    ;; ripgrep
+    (setq grep-program "rg")
+    ; grep
+    (grep-apply-setting 'grep-command "rg -Hnuu --no-heading ")
+    ; lgrep
+    (grep-apply-setting 'grep-template
+                        (format "%s<C> -g '<F>' <R>" grep-command))
+    ; rgrep XXX broken...
+    (grep-apply-setting 'grep-find-template
+                        (format "%s<C> -g '<F>' <R> <D>" grep-command))))
+
+;; vertico and more
+(when (require 'vertico nil t)
+  (setq read-file-name-completion-ignore-case t)
+  (setq read-buffer-completion-ignore-case t)
+
+  (vertico-mode)
+
+  (when (require 'vertico-posframe nil t)
+    (vertico-posframe-mode))
+
+  (when (require 'vertico-directory nil t)
+    (define-key vertico-map (kbd "RET") 'vertico-directory-enter)
+    (define-key vertico-map (kbd "DEL") 'vertico-directory-delete-char)
+    (define-key vertico-map (kbd "M-DEL") 'vertico-directory-delete-word)
+    (add-hook 'rfn-eshadow-update-overlay-hook #'vertico-directory-tidy))
+
+  (when (require 'marginalia nil t)
+    (marginalia-mode)))
+
+;; imenu
+(global-set-key (kbd "C-z C-j") 'imenu)
+(with-eval-after-load "imenu"
+  (setq imenu-auto-rescan t))
+
+;; imenu-list
+(when (package-installed-p 'imenu-list)
+  (global-set-key (kbd "C-z C-l") 'imenu-list))
+
+;; isearch
+(with-eval-after-load "isearch"
+  (setq isearch-allow-scroll t)
+  (setq lazy-highlight-initial-delay 0))
 
 ;; elisps
 (defun init:byte-compile-current-file-if-necessary ()
@@ -867,7 +392,6 @@ ARG が non-nil の場合はフレームの数に関係なく emacs を終了す
 
   (add-hook 'emacs-lisp-mode-hook
             (lambda ()
-              (hs-minor-mode t)
               (eldoc-mode t)
               (add-hook 'after-save-hook
                         'init:byte-compile-current-file-if-necessary
@@ -876,271 +400,8 @@ ARG が non-nil の場合はフレームの数に関係なく emacs を終了す
 ;; eval-expression
 (add-hook 'eval-expression-minibuffer-setup-hook 'eldoc-mode)
 
-;; eww
-(with-eval-after-load "eww"
-  (setq eww-search-prefix "http://www.google.co.jp/search?q=")
-
-  ;; x-euc-jp は ddskk-ml の過去ログ等で使われているので…
-  (define-coding-system-alias 'x-euc-jp 'euc-jp)
-
-  (defadvice eww-display-html (after init:eww-change-buffer-coding-system activate)
-    "エンコーディングをバッファに記録する."
-    (set-buffer-file-coding-system (ad-get-arg 0)))
-
-  (defadvice eww-submit (around init:eww-override-find-coding-systems-string activate)
-    "バッファと同じエンコーディングで submit する."
-    (cl-letf (((symbol-function 'find-coding-systems-string)
-               (lambda (_string)
-                 (list buffer-file-coding-system))))
-      ad-do-it)))
-
 ;; executable-make-buffer-executable
 (add-hook 'after-save-hook 'executable-make-buffer-file-executable-if-script-p)
-
-;; ffap
-(when (require 'ffap nil t)
-  (ffap-bindings))
-
-;; flycheck / (package-install 'flycheck)
-(when (package-installed-p 'flycheck)
-  (with-eval-after-load "flycheck"
-    (defadvice flycheck-start-command-checker (around init:flycheck-de-localize activate)
-      "認識されないのでローカライズを解除する."
-      (let ((process-environment process-environment))
-        (setenv "LC_ALL" "C")
-        ad-do-it))
-
-    ;; flycheck-pos-tip / (package-install 'flycheck-pos-tip)
-    (when (package-installed-p 'flycheck-pos-tip)
-      (flycheck-pos-tip-mode))))
-
-;; gdb
-(with-eval-after-load "gdb-mi"
-  (declare-function gdb-many-windows "gdb-mi")
-  (add-hook 'gdb-mode-hook (lambda ()
-                             (gdb-many-windows)
-                             (gud-tooltip-mode))))
-
-;; git-gutter-fringe / (package-install 'git-gutter-fringe)
-(when (require 'git-gutter-fringe nil t)
-  (diminish 'git-gutter-mode)
-
-  (global-git-gutter-mode)
-  (global-set-key (kbd "C-z C-d") 'git-gutter:popup-hunk)
-
-  (when (package-installed-p 'popwin)
-    (with-eval-after-load "popwin"
-      (push '("*git-gutter:diff*" :noselect t)
-            popwin:special-display-config))))
-
-;; gnus
-(setq mail-user-agent 'gnus-user-agent)
-(setq read-mail-command 'gnus)
-
-(with-eval-after-load "gnus"
-  (setq gnus-startup-file (init:emacs-d "gnus/newsrc"))
-  (setq gnus-directory (init:emacs-d "gnus/news"))
-  (setq gnus-save-newsrc-file nil)
-  (setq gnus-use-scoring nil)
-  (setq gnus-check-new-newsgroups nil)
-
-  (setq gnus-asynchronous t)
-  (setq gnus-view-pseudo-asynchronously t)
-
-  ;; 全てキャッシュする
-  (setq gnus-use-cache t)
-  (setq gnus-cache-directory (init:emacs-d "gnus/news/cache"))
-  (setq gnus-cache-enter-articles '(ticked dormant read unread))
-  (setq gnus-cacheable-groups ".*")
-  (setq gnus-cache-remove-articles nil)
-
-  ;; グループバッファはトピックモードで
-  (add-hook 'gnus-group-mode-hook 'gnus-topic-mode)
-
-  ;; サマリバッファは新着順表示
-  (setq gnus-thread-sort-functions '(gnus-thread-sort-by-most-recent-date))
-  (setq gnus-article-sort-functions '(gnus-thread-sort-by-most-recent-date))
-
-  ;; サマリバッファの移動系を未読のみ/全てで入れ替える
-  (with-eval-after-load "gnus-sum"
-    (define-key gnus-summary-mode-map (kbd "n") 'gnus-summary-next-article)
-    (define-key gnus-summary-mode-map (kbd "p") 'gnus-summary-prev-article)
-    (define-key gnus-summary-mode-map (kbd "N") 'gnus-summary-next-unread-article)
-    (define-key gnus-summary-mode-map (kbd "P") 'gnus-summary-prev-unread-article))
-
-  ;; サマリバッファ表示系
-  (setq gnus-summary-line-format "%U%R%z %&user-date; %[%-20,20f%] %B%S\n")
-  (setq gnus-user-date-format-alist '((t . "%Y/%02m/%02d %02H:%02M")))
-  (setq gnus-sum-thread-tree-false-root "")
-  (setq gnus-sum-thread-tree-root "")
-  (setq gnus-sum-thread-tree-indent " ")
-  (setq gnus-sum-thread-tree-leaf-with-other"├")
-  (setq gnus-sum-thread-tree-single-indent "")
-  (setq gnus-sum-thread-tree-single-leaf "└")
-  (setq gnus-sum-thread-tree-vertical "│")
-
-  ;; [Gmail] 表記のグループを認識させる
-  (setq gnus-ignored-newsgroups "^to\\.\\|^[0-9. ]+\\( \\|$\\)\\|^[\"]\"[#'()]")
-
-  ;; 記事バッファでは html メールは表示しない
-  (with-eval-after-load "gnus-art"
-    (setq mm-automatic-display (remove "text/html" mm-automatic-display))
-    (setq gnus-buttonized-mime-types '("multipart/alternative" "multipart/signed"))
-
-    ;; gravatar
-    (setq gnus-treat-mail-gravatar 'head)
-    (setq gnus-treat-from-gravatar 'head)
-    (setq gnus-gravatar-size 24))
-
-  ;; gmail
-  (setq gnus-select-method '(nnimap ""
-                                    (nnimap-address "imap.gmail.com")
-                                    (nnimap-server-port 993)
-                                    (nnimap-stream ssl)
-                                    ;; (nnimap-fetch-partial-articles "text/")
-                                    ))
-  ;; gmane
-  (setq gnus-secondary-select-methods
-        '((nntp "" (nntp-address  "news.gmane.org"))))
-
-  ;; stripe-buffer / (package-install 'stripe-buffer)
-  (when (package-installed-p 'stripe-buffer)
-    (dolist (m '(gnus-summary-mode-hook
-                 gnus-group-mode-hook
-                 gnus-server-mode-hook
-                 gnus-browse-mode-hook))
-      (add-hook m (lambda ()
-                    (turn-on-stripe-buffer-mode)
-                    (hl-line-mode))))))
-
-(with-eval-after-load "message"
-  (setq message-directory (init:emacs-d "gnus/mail"))
-  (setq message-send-mail-function 'smtpmail-send-it)
-  (setq message-auto-save-directory nil))
-
-(with-eval-after-load "sendmail"
-  (setq send-mail-function 'smtpmail-send-it))
-
-(with-eval-after-load "smtpmail"
-  (setq smtpmail-queue-dir (init:emacs-d "gnus/mail/queued-mail"))
-
-  ;; send by gmail
-  (setq smtpmail-smtp-server "smtp.gmail.com")
-  (setq smtpmail-smtp-service 465)
-  (setq smtpmail-stream-type 'tls)
-  (setq smtpmail-local-domain "gmail.com"))
-
-;; gnutls
-(when (eq system-type 'windows-nt)
-  (with-eval-after-load "gnutls"
-    ;; gnutls の dll が dos 形式のパスを要求するため.
-    (setq gnutls-trustfiles (mapcar 'expand-file-name gnutls-trustfiles))))
-
-;; grep
-(with-eval-after-load "grep"
-  (declare-function grep-apply-setting "grep")
-
-  (when (executable-find "lgrep")
-    ;; lv 付属の多国語化 grep
-    (setq grep-program "lgrep")
-    (grep-apply-setting 'grep-command "lgrep -n -Au8 -Ia ")
-    (grep-apply-setting 'grep-template
-                        (format "%s <C> <R> - <F>" grep-command))
-    (grep-apply-setting 'grep-find-template
-                        (format "find . <X> -type f <F> -exec %s <C> <R> - <N> {} +"
-                                grep-command))))
-
-;; hideshow
-(with-eval-after-load "hideshow"
-  (diminish 'hs-minor-mode)
-
-  (defvar init:hs-fringe-mark 'right-arrow
-    "隠れた行の fringe に表示する bitmap 名.
-`fringe-bitmaps' 内に設定されているシンボル名から選ぶ.")
-
-  (defun init:hs-mark-fringe (ovr)
-    "`hs-toggle-hiding'で隠された行の OVR を編集して fringe にマークを付ける."
-    (when (eq 'code (overlay-get ovr 'hs))
-      (let ((hiding-text "...")
-            (fringe-anchor (make-string 1 ?x)))
-        (put-text-property 0 1 'display (list 'left-fringe init:hs-fringe-mark) fringe-anchor)
-        (overlay-put ovr 'before-string fringe-anchor)
-        (overlay-put ovr 'display hiding-text))))
-
-  (setq hs-set-up-overlay 'init:hs-mark-fringe)
-  (define-key hs-minor-mode-map (kbd "C-z <C-SPC>") 'hs-toggle-hiding))
-
-;; ido
-(when (require 'ido nil t)
-  (setq ido-default-buffer-method 'selected-window)
-  (setq ido-save-directory-list-file nil)
-  (setcar (nthcdr 2 ido-decorations) ",")
-  (setcar (nthcdr 3 ido-decorations) ", ...")
-  (ido-mode 'buffer)
-
-  (add-hook 'ido-minibuffer-setup-hook
-            (lambda ()
-              ;; disable some keys
-              (dolist (key '("C-f" "C-b" "C-d" "C-x C-f" "C-x C-d"))
-                (define-key ido-buffer-completion-map (kbd key) nil))))
-
-  (defadvice ido-exhibit (after init:ido-exhibit-display-buffer activate)
-    "選択しているバッファをウィンドウに表示する."
-    (when ido-matches
-      (let ((selected (get-buffer-window
-                       (cl-find-if-not #'minibufferp (buffer-list)))))
-        (when selected
-          (select-window selected)
-          (ido-visit-buffer
-           (get-buffer (car ido-matches)) t)
-          (select-window (minibuffer-window)))))))
-
-;; image+ / (package-install 'image+)
-(with-eval-after-load "image"
-  (when (and (executable-find "convert")
-             (require 'image+ nil t))
-    (imagex-auto-adjust-mode t)))
-
-;; imenu
-(global-set-key (kbd "C-z C-j") 'imenu)
-(with-eval-after-load "imenu"
-  (setq imenu-auto-rescan t))
-
-;; info
-(with-eval-after-load "info"
-  (init:awhen (init:locate-directory (init:emacs-d "info"))
-    (add-to-list 'Info-additional-directory-list it)))
-
-;; isearch
-(with-eval-after-load "isearch"
-  (setq isearch-allow-scroll t)
-  (setq lazy-highlight-initial-delay 0))
-
-;; ispell
-(with-eval-after-load "ispell"
-  ;; from http://www.an.econ.kobe-u.ac.jp/~namba/meadow/words.lzh
-  (init:awhen (locate-file "words"
-                           `(,(init:emacs-d "share")
-                             ,user-emacs-directory
-                             "/usr/dict"
-                             "/usr/share/dict"))
-    (setq ispell-alternate-dictionary it)))
-
-;; magit / (package-install 'magit)
-(when (package-installed-p 'magit)
-  (global-set-key (kbd "C-z C-m") 'magit-status)
-
-  (with-eval-after-load "magit"
-    (setq magit-auto-revert-mode-lighter "")))
-
-;; man & woman
-(with-eval-after-load "woman"
-  (setq woman-fill-frame t))
-
-;; markdown-mode / (package-install 'markdown-mode)
-(when (package-installed-p 'markdown-mode)
-  (add-to-list 'auto-mode-alist '("\\.\\(md\\(wn\\|t\\)?\\|markdown\\|text\\)\\'" .
-                                  markdown-mode)))
 
 ;; migemo / (package-install 'migemo)
 ;; cmigemo / http://www.kaoriya.net/software/cmigemo
@@ -1155,10 +416,10 @@ ARG が non-nil の場合はフレームの数に関係なく emacs を終了す
       (setq migemo-regex-dictionary nil)
       (setq migemo-coding-system 'utf-8)
       (setq migemo-dictionary
-            (init:system-file-name (locate-file (format "%S/migemo-dict" migemo-coding-system)
-                                                `(,(init:emacs-d "share/migemo")
-                                                  "/usr/local/share/migemo"
-                                                  "/usr/share/migemo")))))
+            (expand-file-name (locate-file (format "%S/migemo-dict" migemo-coding-system)
+                                           `(,(init:emacs-d "share/migemo")
+                                             "/usr/local/share/migemo"
+                                             "/usr/share/cmigemo")))))
 
     (setq migemo-use-pattern-alist t)
     (setq migemo-use-frequent-pattern-alist t)
@@ -1169,123 +430,47 @@ ARG が non-nil の場合はフレームの数に関係なく emacs を終了す
 
     ;; migemo-completion
     ;; git clone https://github.com/d5884/migemo-completion
-    (when (require 'migemo-completion nil t)
-      (add-to-list 'completion-category-overrides '(file (styles migemo))))))
+    ;; (when (require 'migemo-completion nil t)
+    ;;   (setq completion-category-overrides
+    ;;         (append '((file (styles migemo))
+    ;;                   (buffer (styles migemo)))
+    ;;                 completion-category-overrides)))
+    ))
 
 ;; mozc-im / (package-install 'mozc-im)
 ;;    and http://www49.atwiki.jp/ntemacs?cmd=upload&act=open&pageid=50&file=mozc_emacs_helper.zip
-(when (and (executable-find "mozc_emacs_helper")
-           (require 'mozc-im nil t))
-  (setq default-input-method "japanese-mozc-im")
-  (setq mozc-leim-title "[あ]")
+(init:awhen (or (executable-find "mozc_emacs_helper")
+                (executable-find "mozc-helper.sh"))
+  (when (require 'mozc-im nil t)
+    (setq mozc-helper-program-name it)
+    (setq default-input-method "japanese-mozc-im")
+    (setq mozc-leim-title "[あ]")
 
-  (when (memq system-type '(windows-nt cygwin))
-    (defadvice mozc-session-execute-command (after init:mozc-session-execute-command activate)
-      "`mozc' を有効化した際に自動的にひらがな入力モードに変更する."
-      (if (eq (ad-get-arg 0) 'CreateSession)
-          (mozc-session-sendkey '(hiragana)))))
+    (advice-add 'mozc-session-execute-command :after
+                (lambda (arg1 &rest args)
+                  (when (eq arg1 'CreateSession)
+                    (mozc-session-sendkey '(hiragana)))))
 
-  (defadvice mozc-helper-process-recv-response (after init:mozc-accept-output-workaround activate)
-    "他プロセスが終了した際に accept-process-output がタイムアウトする問題対策."
-    (unless ad-return-value
-      (setq ad-return-value (mozc-helper-process-recv-response))))
+    (advice-add 'mozc-helper-process-recv-response :filter-return
+                (lambda (ret)
+                  (if ret
+                      ret
+                    (mozc-helper-process-recv-response))))
 
-  ;; mozc-popup / (package-install 'mozc-popup)
-  (when (require 'mozc-popup nil t)
-    (setq mozc-candidate-style 'popup)))
-
-;; nxml-mode
-(fset 'html-mode 'nxml-mode)
-(fset 'xml-mode 'nxml-mode)
-
-(setq magic-mode-alist
-      (cons '("<\\?xml" . nxml-mode) magic-mode-alist))
-
-(with-eval-after-load "nxml-mode"
-  (with-eval-after-load "smart-compile"
-    (setq smart-compile-alist (cons
-                               '(nxml-mode browse-url-of-buffer)
-                               smart-compile-alist))))
+    ;; mozc-popup / (package-install 'mozc-popup)
+    (when (require 'mozc-popup nil t)
+      (setq mozc-candidate-style 'popup))))
 
 ;; occur
 (define-key occur-mode-map (kbd "n") 'occur-next)
 (define-key occur-mode-map (kbd "p") 'occur-prev)
 (add-hook 'occur-mode-hook 'next-error-follow-minor-mode)
 
-;; popup-kill-ring / (package-install 'popup-kill-ring)
-(when (require 'popup-kill-ring nil t)
-  (setq popup-kill-ring-interactive-insert t)
-  (global-set-key (kbd "M-y") 'popup-kill-ring)
-  (define-key popup-kill-ring-keymap (kbd "TAB") 'popup-kill-ring-next)
-  (define-key popup-kill-ring-keymap (kbd "M-y") 'popup-kill-ring-next))
+(when (require 'shackle nil t)
+  (setq shackle-default-rule '(:same t))
+  ;; XXX
+  )
 
-;; popwin / (package-install 'popwin)
-(when (require 'popwin nil t)
-  (global-set-key (kbd "C-z C-s") 'popwin:stick-popup-window)
-  (global-set-key [remap view-echo-area-messages] 'popwin:messages)
-  (setq popwin:reuse-window nil)
-  (setq popwin:special-display-config
-        (append
-         '((calendar-mode :stick t)
-           ("*Shell Command Output*" :stick t :noselect t)
-           ("*Occur*" :stick t)         ; not mode because occur-edit
-           (apropos-mode :stick t)
-           (grep-mode :stick t)
-           (compilation-mode :stick t :noselect t)
-           (help-mode :stick t)
-           (dired-mode :stick t))
-         popwin:special-display-config))
-
-  (defvar init:popwin-exclude-special-modes '(magit-status-mode)
-    "popwin 管轄下に自動で置きたくない special-mode 派生のメジャーモード.")
-
-  ;; special-mode 派生はとりえあえず全部 popwin 管轄下へ
-  (add-to-list 'popwin:special-display-config
-               (list (lambda (b)
-                       (with-current-buffer b
-                         (and (derived-mode-p 'special-mode)
-                              (not (memq major-mode init:popwin-exclude-special-modes)))))) t)
-
-  ;; completion バッファが閉じる前に C-g すると壊れる問題対策
-  (defadvice minibuffer-hide-completions (after init:completion-hide-workaround activate )
-    (popwin:close-popup-window-if-necessary))
-
-  ;; popwin 管理下のバッファは非選択状態時にカーソル非表示にする
-  (add-hook 'popwin:after-popup-hook
-            (lambda ()
-              (when (buffer-live-p popwin:popup-buffer)
-                (with-current-buffer popwin:popup-buffer
-                  (setq cursor-in-non-selected-windows nil)))))
-
-  (popwin-mode 1))
-
-;; quail-japanese
-(with-eval-after-load "japanese"
-  (setq quail-japanese-use-double-n t))
-
-;; ruby-mode
-;; rubydb, etc... / (package-install 'ruby-additional)
-;; inf-ruby / (package-install 'inf-ruby)
-(with-eval-after-load "ruby-mode"
-  (when (require 'ruby-electric nil t)
-    (add-hook 'ruby-mode-hook 'ruby-electric-mode))
-
-  (when (require 'hideshow nil t)
-    (add-to-list 'hs-special-modes-alist
-                 `(ruby-mode
-                   ,(concat "\\<"
-                            (regexp-opt '("class" "module" "def" "if" "unless" "loop"
-                                          "case" "while" "until" "for" "begin" "do"))
-                            "\\>\\|{")
-                   "\\<end\\>\\|}"
-                   "#"
-                   ruby-move-to-block
-                   nil))
-    (add-hook 'ruby-mode-hook 'hs-minor-mode))
-
-  ;; flycheck
-  (when (package-installed-p 'flycheck)
-    (add-hook 'ruby-mode-hook 'flycheck-mode)))
 
 ;; savehist
 (savehist-mode 1)
@@ -1293,69 +478,56 @@ ARG が non-nil の場合はフレームの数に関係なく emacs を終了す
           (lambda ()
             ;; 保存したくないファイル名パターン
             (setq file-name-history
-                  (cl-delete-if (apply-partially 'string-match-p
-                                                 (concat "\\<"
-                                                         (regexp-opt '("COMMIT_EDITMSG"))
-                                                         "\\'"))
-                                file-name-history))))
+                  (cl-delete-if
+                   (apply-partially 'string-match-p
+                                    (concat "\\<"
+                                            (regexp-opt '("COMMIT_EDITMSG"))
+                                            "\\'"))
+                   file-name-history))))
 
 ;; saveplace
-(when (require 'saveplace nil t)
-  (setq save-place-file (init:emacs-d "places"))
-  (setq-default save-place t))
+(save-place-mode 1)
 
-;; sdic / http://www.namazu.org/~tsuchiya/sdic/
-(when (locate-library "sdic")
-  (autoload 'sdic-describe-word "sdic" nil t)
-  (autoload 'sdic-describe-word-at-point "sdic" nil t)
-  (global-set-key (kbd "C-z w") 'sdic-describe-word)
-  (global-set-key (kbd "C-z C-w") 'sdic-describe-word-at-point)
+;; google translate / (package-install 'google-translate)
+(when (package-installed-p 'google-translate)
+  (autoload 'google-translate-translate "google-translate")
+  (defun google-translate-auto-at-point ()
+    "カーソル位置の単語をGoogleで翻訳する."
+    (interactive)
+    (google-translate-auto (if (use-region-p)
+                               (buffer-substring-no-properties
+	                        (region-beginning) (region-end))
+                             (or (thing-at-point 'word) ""))))
 
-  (with-eval-after-load "sdic"
-    (setq sdic-default-coding-system 'utf-8-unix)
-    (setq sdic-eiwa-dictionary-list `((sdicf-client ,(init:emacs-d "share/sdic/gene-u.sdic")
-                                                    (strategy direct))))
-    (setq sdic-waei-dictionary-list `((sdicf-client ,(init:emacs-d "share/sdic/jedict-u.sdic")
-                                                    (add-keys-to-headword t)
-                                                    (strategy direct))))
+  (defun google-translate-auto (&optional word)
+    "`word'をGoogleで翻訳する.
+リージョンが選択されている場合はその内容を翻訳する."
+    (interactive (list (read-string "Word: "
+                                    (if (use-region-p)
+                                        (buffer-substring-no-properties
+			                 (region-beginning) (region-end))
+                                      (thing-at-point 'word)))))
+    (if (string-match (format "\\`[%s]+\\'" "[:ascii:]") word)
+        (google-translate-translate "en" "ja" word)
+      (google-translate-translate "ja" "en" word)))
 
-    ;; speak / git clone https://github.com/d5884/speak
-    (when (require 'speak nil t)
-      ;; sdic-mode-map is defined in sdic-mode, not on loading.
-      (add-hook 'sdic-mode-hook
-                (lambda ()
-                  (define-key sdic-mode-map (kbd "s") 'speak-line)
-                  (define-key sdic-mode-map (kbd "S") 'speak))))
+  (advice-add 'google-translate-buffer-insert-translation :after
+              (lambda (_)
+                (save-excursion
+                  (goto-char (point-min))
+                  (forward-line 2)
+                  (delete-region (point-min) (point)))))
 
-    ;; popwin 対応
-    (when (require 'popwin nil t)
-      (add-to-list 'popwin:special-display-config
-                   `(,sdic-buffer-name :height ,sdic-window-height))
+  ;; (setq display-buffer-alist '(("\\*Google Translate\\*"
+  ;;                               display-buffer-in-side-window
+  ;;                               (side . top)
+  ;;                               (slot . 0)
+  ;;                               (window-width . 85)
+  ;;                               (window-parameters
+  ;;                                (no-other-window . t)))))
 
-      ;; バッファ表示系統を popwin が認識可能なシンプルな操作に置き換える
-      (defadvice sdic-other-window (around init:sdic-other-normalize
-                                           activate)
-        "`sdic' のバッファ移動を普通の操作にする."
-        (other-window 1))
-
-      (defadvice sdic-close-window (around init:sdic-close-normalize
-                                           activate)
-        "`sdic' のバッファクローズを普通の操作にする."
-        (bury-buffer sdic-buffer-name))
-
-      (defadvice sdic-display-buffer (around init:sdic-display-normalize
-                                             activate)
-        "`sdic' のバッファ表示を普通の操作にする."
-        (setq ad-return-value (buffer-size))
-        (let ((p (or (ad-get-arg 0)
-                     (point))))
-          (and sdic-warning-hidden-entry
-               (> p (point-min))
-               (message "この前にもエントリがあります。"))
-          (unless (eq (window-buffer) (get-buffer sdic-buffer-name))
-            (display-buffer (get-buffer sdic-buffer-name)))
-          (set-window-start (get-buffer-window sdic-buffer-name) p)
-          (goto-char p))))))
+  (global-set-key (kbd "C-z C-w") 'google-translate-auto-at-point)
+  (global-set-key (kbd "C-z w") 'google-translate-auto))
 
 ;; server
 (when (and (require 'server nil t)
@@ -1369,15 +541,7 @@ ARG が non-nil の場合はフレームの数に関係なく emacs を終了す
     (setq shell-pop-internal-mode "ansi-term")
     (setq shell-pop-internal-mode-buffer "*ansi-term*")
     (setq shell-pop-internal-mode-func (lambda () (ansi-term shell-file-name)))
-    (setq shell-pop-autocd-to-working-dir nil)
-
-    (defadvice shell-pop-out (around init:safe-pop-out activate)
-      "戻り先の window が死んでいたら window を消すだけにする."
-      (if (one-window-p)
-          (switch-to-buffer shell-pop-last-buffer)
-        (if (window-live-p shell-pop-last-window)
-            ad-do-it
-          (delete-window))))))
+    (setq shell-pop-autocd-to-working-dir nil)))
 
 ;; shell/term
 (defun init:add-process-sentinel (process sentinel)
@@ -1415,8 +579,10 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
   (setq comint-prompt-read-only t)
 
   (add-hook 'shell-mode-hook 'init:set-process-cleaner)
-  (define-key shell-mode-map (kbd "M-p") 'comint-previous-matching-input-from-input)
-  (define-key shell-mode-map (kbd "M-n") 'comint-next-matching-input-from-input))
+  (define-key shell-mode-map (kbd "M-p")
+              'comint-previous-matching-input-from-input)
+  (define-key shell-mode-map (kbd "M-n")
+              'comint-next-matching-input-from-input))
 
 ;; term
 (with-eval-after-load "term"
@@ -1432,61 +598,13 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
           'term-send-raw-meta
         'term-send-raw))))
 
-;; show-paren
-(setq show-paren-delay 0)
-(show-paren-mode t)
-
-;; smart-compile / (package-install 'smart-compile)
-(when (package-installed-p 'smart-compile)
-  (defun init:smart-recompile (arg)
-    "初回のみ `smart-compile' を呼び出す. 二度目以降は問合せなしに `compile' する.
-ARG が non-nil の場合は再度 `smart-compile' を呼び出す."
-    (interactive "P")
-    (if (or (not (local-variable-p 'compile-command))
-            arg)
-        (smart-compile 4)
-      (compile compile-command)))
-
-  (global-set-key [remap compile] 'init:smart-recompile))
-
-;; ssh-agent / git clone https://github.com/d5884/ssh-agent
-(when (locate-library "ssh-agent")
-  (autoload 'ssh-agent-add-key "ssh-agent" nil t)
-
-  (with-eval-after-load "ssh-agent"
-    (setq ssh-agent-kill-on-exit nil))
-
-  (with-eval-after-load "magit"
-    (defadvice magit-push-dwim (before init:ssh-agent-with-magit-push activate)
-      "git push 前に ssh-add 実行."
-      (ssh-agent-add-key))
-
-    (defadvice magit-fetch (before init:ssh-agent-with-magit-fetch activate)
-      "git fetch 前に ssh-add 実行."
-      (ssh-agent-add-key)))
-
-  (with-eval-after-load "tramp-sh"
-    (defadvice tramp-send-command (before init:ssh-agent-with-tramp activate)
-      "リモートコマンド実行前に ssh-add 実行."
-      (ssh-agent-add-key))))
-
 ;; stripe-buffer / (package-install 'stripe-buffer)
 (when (package-installed-p 'stripe-buffer)
+  (add-hook 'dired-mode-hook 'turn-on-stripe-buffer-mode)
   (add-hook 'tabulated-list-mode-hook 'turn-on-stripe-buffer-mode))
 
 ;; temp-buffer-resize
-(if (not (package-installed-p 'popwin))
-    (temp-buffer-resize-mode t)
-  ;; popwin でも temp-buffer-resize
-  (with-eval-after-load "popwin"
-    (add-hook 'popwin:after-popup-hook
-              (lambda ()
-                (when (and (popwin:popup-window-live-p)
-                           (with-current-buffer popwin:popup-buffer
-                             (not (derived-mode-p 'compilation-mode))))
-                  (let ((max-height (plist-get (cdr popwin:popup-last-config)
-                                               :height)))
-                    (fit-window-to-buffer popwin:popup-window max-height)))))))
+(temp-buffer-resize-mode t)
 
 ;; tramp
 (with-eval-after-load "tramp"
@@ -1495,110 +613,32 @@ ARG が non-nil の場合は再度 `smart-compile' を呼び出す."
 
 (with-eval-after-load "tramp-sh"
   (let ((process-environment tramp-remote-process-environment))
-    (setenv "LC_ALL" nil)               ; リモートのロケールは接続先に準じる
+    ; リモートのロケールは接続先に準じる
+    (setenv "LC_ALL" nil)
     (setq tramp-remote-process-environment process-environment)))
-
-;; transient-mark-mode
-(defadvice exchange-point-and-mark (after init:exchange-point-and-mark-deactivate activate)
-  "Function `transient-mark-mode' が有効な時にリージョンに色が付かないようにする."
-  (if (and (transient-mark-mode mark-active))
-      (deactivate-mark)))
 
 ;; uniquify
 (when (require 'uniquify nil t)
   (setq uniquify-buffer-name-style 'post-forward-angle-brackets)
   (setq uniquify-ignore-buffers-re "*[^*]+*"))
 
-;; view-mode
-(setq view-read-only t)
-(with-eval-after-load "view"
-  (define-key view-mode-map "j" 'next-line)
-  (define-key view-mode-map "k" 'previous-line))
-
-;; windmove
-(global-set-key (kbd "C-z C-n") 'windmove-down)
-(global-set-key (kbd "C-z C-p") 'windmove-up)
-(global-set-key (kbd "C-z C-f") 'windmove-right)
-(global-set-key (kbd "C-z C-b") 'windmove-left)
-
-;; yank/undo highlighting
-;;   from http://www.fan.gr.jp/~ring/Meadow/meadow.html#ys:highlight-string
-(defadvice insert-for-yank (after init:yank-highlight-string activate)
-  "文字列ヤンク時にハイライト表示する."
-  (let ((ol (make-overlay (mark t) (point))))
-    (unwind-protect
-        (progn (overlay-put ol 'face 'highlight)
-               (sit-for 0.5))
-      (delete-overlay ol))))
-
-(defadvice undo (after init:undo-highlight-string activate)
-  "アンドゥで再挿入された文字列をハイライト表示する."
-  (cl-loop for (beg . end) in buffer-undo-list
-	   when (and (integerp beg) (integerp end))
-	   return (let ((ol (make-overlay beg end)))
-		    (unwind-protect
-			(progn (overlay-put ol 'face 'highlight)
-			       (sit-for 0.5))
-		      (delete-overlay ol)))
-	   until (or beg end)))
+(when (require 'volatile-highlights nil t)
+  (volatile-highlights-mode 1))
 
 ;; yascroll / (package-install 'yascroll)
 (when (package-installed-p 'yascroll)
   ;; 1行単位のスクロールにしているとちらつくので必要な時だけ表示にする
-  (dolist (fn '(set-mark exchange-point-and-mark scroll-up scroll-down recenter))
-    (eval `(defadvice ,fn (after ,(intern (format "init:show-yascroll-on-%s" fn)) activate)
-             "スクロールバーを表示する."
-             (unless (memq major-mode '(term-mode shell-mode))
-               (yascroll:show-scroll-bar)))))
+  (dolist (fn '(set-mark
+                exchange-point-and-mark
+                scroll-up
+                scroll-down
+                recenter))
+    (advice-add fn :after
+                (lambda (&rest args)
+                  (unless (memq major-mode '(term-mode shell-mode))
+                    (yascroll:show-scroll-bar)))))
   (with-eval-after-load "isearch"
     (add-hook 'isearch-update-post-hook 'yascroll:show-scroll-bar)))
-
-;; yasnippet / (package-install 'yasnippet)
-(when (require 'yasnippet nil t)
-  (diminish 'yas-minor-mode)
-
-  (setq yas-verbosity 1)
-  (setq yas-prompt-functions (delq 'yas-x-prompt yas-prompt-functions))
-
-  (when (fboundp 'yas--load-yas-setup-file)
-    (init:make-silently-loading yas--load-yas-setup-file))
-
-  (yas-global-mode t)
-
-  (with-eval-after-load "term"
-    (add-hook 'term-mode-hook
-              (lambda () (yas-minor-mode -1))))
-
-  ;; auto-complete
-  (with-eval-after-load "auto-complete"
-    (define-key yas-minor-mode-map (kbd "TAB") nil)
-    (define-key yas-minor-mode-map [(tab)] nil)
-
-    (setq-default ac-sources (cons 'ac-source-yasnippet ac-sources)))
-
-  ;; auto insert
-  (add-hook 'find-file-hook 'auto-insert)
-  (with-eval-after-load "autoinsert"
-    (setq auto-insert-directory (init:emacs-d "template"))
-
-    (defvar init:auto-insert-template-modtime nil
-      "テンプレートディレクトリの更新時間.")
-
-    (defun init:auto-insert-yas-expand ()
-      "`auto-insert' するテンプレートを `yasnippet' のスニペットと見做して展開する."
-      (yas-expand-snippet (buffer-string) (point-min) (point-max)))
-
-    (defadvice auto-insert (before init:auto-insert-update-template activate)
-      "`auto-insert' 前にテンプレート一覧を更新する.
-モード名と拡張子を除いたファイル名が一致する場合テンプレートと見做す."
-      (let ((modtime (file-attributes auto-insert-directory)))
-        (unless (equal modtime init:auto-insert-template-modtime)
-          (setq init:auto-insert-template-modtime modtime)
-          (setq auto-insert-alist
-                (mapcar (lambda (f)
-                          (cons (intern (file-name-sans-extension f))
-                                (vector f 'init:auto-insert-yas-expand)))
-                        (directory-files auto-insert-directory nil "^[^.]"))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 持ち歩きたい関数定義
@@ -1643,12 +683,14 @@ ARG が non-nil の場合は再度 `smart-compile' を呼び出す."
   (interactive)
   (init:awhen (get-buffer "*scratch*")
     (make-directory init:scratch-snapshot-directory t)
-    (let ((name-base (format "scratch-%s%%02d.el" (format-time-string "%Y%m%d-%H%M%S")))
+    (let ((name-base (format "scratch-%s%%02d.el"
+                             (format-time-string "%Y%m%d-%H%M%S")))
           (serial 0)
           snapshot-name)
       (while (file-exists-p
               (setq snapshot-name (expand-file-name
-                                   (format name-base serial) init:scratch-snapshot-directory)))
+                                   (format name-base serial)
+                                   init:scratch-snapshot-directory)))
         (setq serial (1+ serial)))
       (with-current-buffer it
         (save-match-data
@@ -1656,7 +698,8 @@ ARG が non-nil の場合は再度 `smart-compile' を呼び出す."
             (widen)
             (goto-char (point-min))
             (unless (re-search-forward "\\`[ \r\n\t]*\\'" nil t)
-              (write-region (point-min) (point-max) snapshot-name nil 'silent))))))))
+              (write-region (point-min) (point-max)
+                            snapshot-name nil 'silent))))))))
 
 (defun init:resume-scratch-buffer ()
   "`*scratch*' バッファの内容を復帰する."
@@ -1691,7 +734,8 @@ ARG が non-nil の場合は再度 `smart-compile' を呼び出す."
             (init:resume-scratch-buffer)
 
             ;; 読み込みに成功したら自動保存を有効化
-            (run-with-idle-timer init:scratch-buffer-save-interval t 'init:save-scratch-buffer)
+            (run-with-idle-timer init:scratch-buffer-save-interval t
+                                 'init:save-scratch-buffer)
             (add-hook 'kill-emacs-hook 'init:save-scratch-buffer)
 
             ;; 永続化
@@ -1701,66 +745,39 @@ ARG が non-nil の場合は再度 `smart-compile' を呼び出す."
                             (progn (init:refresh-scratch-buffer) nil) t)))
             (add-hook 'after-save-hook
                       (lambda ()
-                        (unless (member "*scratch*" (mapcar 'buffer-name (buffer-list)))
+                        (unless (member "*scratch*"
+                                        (mapcar 'buffer-name (buffer-list)))
                           (init:refresh-scratch-buffer))))))
-
-(defun init:flip-window-state (&optional renew)
-  "ウィンドウ分割状態を切り替える.
-RENEW が non-nil の場合は新しい状態を作る.
-2状態固定."
-  (interactive "P")
-  (let* ((cur (current-window-configuration))
-         (state (frame-parameter nil 'init:last-window-state))
-         (conf (unless renew (car state)))
-         (side (cl-case (cdr state) (?A ?B) (?B ?A) (t ?B))))
-    (if conf
-        (set-window-configuration conf)
-      (delete-other-windows)
-      (switch-to-buffer "*scratch*"))
-    (message "Flip to side \"%c\"." side)
-    (set-frame-parameter nil 'init:last-window-state (cons cur side))
-    (force-mode-line-update)))
-
-(global-set-key (kbd "C-z C-l") 'init:flip-window-state)
-
-;; フレームタイトルに状態を表示する
-(setq frame-title-format
-      (append (if (atom frame-title-format)
-                  (list frame-title-format)
-                frame-title-format)
-              '((:eval (init:awhen (frame-parameter nil 'init:last-window-state)
-                         (format " [%c]" (cdr it)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 色設定
 (require 'color)
 
-(load-theme 'wombat t)
+(require 'modus-themes nil t)
+(setq modus-themes-italic-constructs t)
+(setq modus-themes-bold-constructs t)
+(setq modus-themes-region '(bg-only no-extend))
+(setq modus-themes-paren-match '(bold intense))
+(setq modus-themes-mode-line '(borderless accented 2))
+(load-theme 'modus-vivendi t)
 
-(set-cursor-color "gray55")
+(set-cursor-color "gray66")
 
-(set-face-attribute 'isearch nil
-                    :background "gray77"
-                    :foreground "black")
+;; (set-face-attribute 'isearch nil
+;;                     :background "gray77"
+;;                     :foreground "black")
 
-(with-eval-after-load "cua-base"
-  (face-spec-reset-face 'cua-rectangle)
-  (set-face-attribute 'cua-rectangle nil :inherit 'region)
-  (face-spec-reset-face 'cua-global-mark)
-  (set-face-attribute 'cua-global-mark nil :inherit 'region
-                      :weight 'bold))
 
-(with-eval-after-load "paren"
-  (face-spec-reset-face 'show-paren-match)
-  (set-face-attribute 'show-paren-match nil :inherit 'highlight))
-
-(when (> (display-color-cells nil) 256)
-  (with-eval-after-load "stripe-buffer"
-    (set-face-attribute 'stripe-highlight nil
-                        :background
-                        (if (eq 'light (frame-parameter nil 'background-mode))
-                            (color-darken-name (face-background 'default) 3)
-                          (color-lighten-name (face-background 'default) 3)))))
+(with-eval-after-load "diff-hl"
+  (set-face-attribute 'diff-hl-change nil
+                      :foreground "slate blue"
+                      :background "slate blue")
+  (set-face-attribute 'diff-hl-insert nil
+                      :foreground "cadet blue"
+                      :background "cadet blue")
+  (set-face-attribute 'diff-hl-delete nil
+                      :foreground "dark salmon"
+                      :background "dark salmon"))
 
 (with-eval-after-load "mozc"
   (set-face-attribute 'mozc-cand-overlay-even-face nil
@@ -1792,7 +809,7 @@ RENEW が non-nil の場合は新しい状態を作る.
 (when (require 'ccc nil t)
   (ccc-setup)
   (add-hook 'input-method-activate-hook
-            (lambda () (ccc-set-buffer-local-cursor-color "dark red")))
+            (lambda () (ccc-set-buffer-local-cursor-color "slate blue")))
   (add-hook 'input-method-deactivate-hook
             (lambda () (ccc-set-cursor-color-buffer-local nil))))
 
@@ -1803,6 +820,9 @@ RENEW が non-nil の場合は新しい状態を作る.
 
 ;; 作業ディレクトリをホームディレクトリに
 (init:awhen (getenv "HOME") (cd it))
+
+;; GC を戻す
+(setq gc-cons-threshold (* 1024 1024 128))
 
 ;;; init.el ends here
 

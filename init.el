@@ -34,15 +34,6 @@ BODY 内では PRED の評価結果を `it' で参照出来る."
 (font-lock-add-keywords 'emacs-lisp-mode
                         '(("\\<init:awhen\\>" . font-lock-keyword-face)))
 
-(defmacro init:emacs-d (file)
-  "~/.emacs.d 以下の FILE を返す."
-  `(locate-user-emacs-file ,file))
-
-(defmacro init:locate-directory (directory)
-  "DIRECTORY が存在するなら返す."
-  `(locate-file "." (delq nil (list ,directory)) nil
-                (lambda (p) (when (file-exists-p p) 'dir-ok))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Package 初期化/ロードパス追加
 
@@ -57,8 +48,9 @@ BODY 内では PRED の評価結果を `it' で参照出来る."
 ;; ~/.emacs.d/lisp および直下のディレクトリを load-path へ追加
 (setq load-path
       (append
-       (init:awhen (init:locate-directory (init:emacs-d "lisp"))
-         (cons it (cl-remove-if-not #'file-directory-p (directory-files it t "^[^.]"))))
+       (let ((lisp-dir (locate-user-emacs-file "lisp")))
+         (when (file-directory-p lisp-dir)
+           (cons lisp-dir (cl-remove-if-not 'file-directory-p (directory-files lisp-dir t "^[^.]")))))
        load-path))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -92,7 +84,7 @@ BODY 内では PRED の評価結果を `it' で参照出来る."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; パス追加
-(add-to-list 'exec-path (expand-file-name (init:emacs-d "bin")))
+(add-to-list 'exec-path (expand-file-name (locate-user-emacs-file "bin")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; キーバインド変更
@@ -202,30 +194,68 @@ BODY 内では PRED の評価結果を `it' で参照出来る."
 ;; js-mode
 (setq auto-mode-alist (append '(("\\.js\\'" . js-ts-mode)
                                 ("\\.ts\\'"  . typescript-ts-mode)
-                                ("\\.jsx\\'" . js-jsx-mode)
+                                ("\\.jsx\\'" . tsx-ts-mode)
                                 ("\\.tsx\\'" . tsx-ts-mode))
                               auto-mode-alist))
 (with-eval-after-load "js"
   (define-key js-mode-map (kbd "M-.") 'xref-find-definitions)
 
+  ;; XXX workaround
+  (add-hook 'js-ts-mode (lambda ()
+                          (setq auto-mode-alist (append '(("\\.jsx" . tsx-ts-mode)) auto-mode-alist))))
+
   (dolist (mode '(js-ts-mode-hook js-jsx-mode-hook typescript-ts-mode-hook tsx-ts-mode-hook))
     ;; eglot
     (when (package-installed-p 'eglot)
-      (add-hook mode 'eglot-ensure)
-      ;; flymake-eslint
-      (when (package-installed-p 'flymake-eslint)
-        (add-hook mode (lambda ()
-                         (add-hook 'eglot-managed-mode-hook 'flymake-eslint-enable)))))
+      (add-hook mode 'eglot-ensure))
+    ;; flymake-eslint
+    (when (package-installed-p 'flymake-eslint)
+      (add-hook mode (lambda ()
+                       (add-hook 'eglot-managed-mode-hook 'flymake-eslint-enable nil t))))
     ;; prettier
     (when (package-installed-p 'prettier)
       (add-hook mode 'prettier-mode))))
+
+;; eldoc-box
+(when (package-installed-p 'eldoc-box)
+  (global-set-key (kbd "C-z DEL") 'eldoc-box-help-at-point))
+
+;; (when (and (package-installed-p 'eglot)
+;;            (package-installed-p 'flymake-eslint))
+;;   (add-hook 'eglot-managed-mode-hook 'flymake-eslint-enable))
+
+;; json
+(with-eval-after-load "json-ts-mode"
+  (when (package-installed-p 'prettier-mode)
+    (add-hook 'json-ts-mode-hook 'prettier-mode)))
+
+;; html-mode
+(with-eval-after-load "sgml-mode"
+  (define-key html-mode-map (kbd "C-M-i") 'completion-at-point)
+  (when (package-installed-p 'eglot)
+    (add-hook 'html-mode-hook 'eglot-ensure))
+  (when (package-installed-p 'prettier)
+    (add-hook 'html-mode-hook 'prettier-mode)))
+
+;; css-mode
+(with-eval-after-load "css-mode"
+  (when (package-installed-p 'eglot)
+    (add-hook 'css-mode-hook 'eglot-ensure))
+  (when (package-installed-p 'prettier)
+    (add-hook 'css-mode-hook 'prettier-mode)))
 
 ;; python-mode
 (setq auto-mode-alist (append '(("\\.py\\'" . python-ts-mode))
                               auto-mode-alist))
 
 (with-eval-after-load "python"
-  (add-hook 'python-ts-mode-hook 'eglot-ensure))
+  (when (and (package-installed-p 'blacken)
+             (executable-find "black"))
+    (add-hook 'python-ts-mode-hook 'blacken-mode)
+    (with-eval-after-load "blacken"
+      (setq blacken-line-length 79)))
+  (when (package-installed-p 'eglot)
+    (add-hook 'python-ts-mode-hook 'eglot-ensure)))
 
 ;; editor-config
 (when (require 'editorconfig nil t)
@@ -417,14 +447,13 @@ BODY 内では PRED の評価結果を `it' で参照出来る."
       (setq migemo-coding-system 'utf-8)
       (setq migemo-dictionary
             (expand-file-name (locate-file (format "%S/migemo-dict" migemo-coding-system)
-                                           `(,(init:emacs-d "share/migemo")
+                                           `(,(locate-user-emacs-file "share/migemo")
                                              "/usr/local/share/migemo"
                                              "/usr/share/cmigemo")))))
 
     (setq migemo-use-pattern-alist t)
     (setq migemo-use-frequent-pattern-alist t)
     (setq migemo-pattern-alist-length 1024)
-    (setq migemo-pattern-alist-file (init:emacs-d "migemo-pattern"))
 
     (migemo-init)
 
@@ -645,10 +674,10 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
 
 ;;;;;;;;;;;;;;;;;;;
 ;; scratch 自動保存/永続化
-(defvar init:scratch-save-file (init:emacs-d "scratch")
+(defvar init:scratch-save-file (locate-user-emacs-file "scratch")
   "`*scratch*' バッファの自動保存先ファイル名.")
 
-(defvar init:scratch-snapshot-directory (init:emacs-d "snap")
+(defvar init:scratch-snapshot-directory (locate-user-emacs-file "snap")
   "`*scratch*' バッファのスナップショット先ディレクトリ名.")
 
 (defvar init:scratch-buffer-save-interval 1
@@ -815,7 +844,7 @@ PROCESS が nil の場合はカレントバッファのプロセスに設定す�
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; カスタマイズファイル読み込み
-(setq custom-file (init:emacs-d "custom.el"))
+(setq custom-file (locate-user-emacs-file "custom.el"))
 (load (file-name-sans-extension custom-file) t t)
 
 ;; 作業ディレクトリをホームディレクトリに
